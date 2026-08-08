@@ -4,8 +4,9 @@
     "slug": "360-saksi",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/saksi360_emblem.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": false,
     "updates": {
       "checkAutomatically": "NEVER",
       "enabled": false
@@ -14,11 +15,12 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.saksi360.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#1E293B",
+        "foregroundImage": "./assets/brand/saksi360_emblem.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/brand/saksi360_emblem.png"
       },
       "predictiveBackGestureEnabled": false
     },
