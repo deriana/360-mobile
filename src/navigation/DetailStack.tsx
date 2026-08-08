@@ -78,7 +78,11 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
             headerTitle: () => (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Image source={BRAND_ASSETS.emblem} style={{ width: 26, height: 26 }} resizeMode="contain" />
-                <Image source={BRAND_ASSETS.logoText} style={{ width: 92, height: 18 }} resizeMode="contain" />
+                <Image
+                  source={BRAND_ASSETS.logoText}
+                  style={{ width: 92, height: 18, tintColor: colors.text }}
+                  resizeMode="contain"
+                />
               </View>
             ),
           }}

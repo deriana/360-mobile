@@ -198,7 +198,14 @@ export default function MoreMenuScreen({ navigation }: any) {
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Brand Logo Banner */}
       <View style={[styles.brandBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Image source={BRAND_ASSETS.fullLogo} style={styles.brandLogoImg} resizeMode="contain" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Image source={BRAND_ASSETS.emblem} style={{ width: 28, height: 28 }} resizeMode="contain" />
+          <Image
+            source={BRAND_ASSETS.logoText}
+            style={{ width: 95, height: 20, tintColor: colors.text }}
+            resizeMode="contain"
+          />
+        </View>
         <View style={[styles.appVersionTag, { backgroundColor: colors.primaryLight }]}>
           <Text style={[styles.appVersionText, { color: colors.primary }]}>v1.0.0</Text>
         </View>

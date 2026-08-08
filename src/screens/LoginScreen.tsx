@@ -41,14 +41,17 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Brand Header with Dark Navy Logo Badge Container */}
+        {/* Brand Header with Theme-Adaptive Logo */}
         <View style={styles.brandBlock}>
-          <View style={styles.logoWrapper}>
-            <Image
-              source={BRAND_ASSETS.fullLogo}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+          <View style={[styles.logoWrapper, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Image source={BRAND_ASSETS.emblem} style={{ width: 34, height: 34 }} resizeMode="contain" />
+              <Image
+                source={BRAND_ASSETS.logoText}
+                style={{ width: 130, height: 28, tintColor: colors.text }}
+                resizeMode="contain"
+              />
+            </View>
           </View>
           <Text style={[styles.tagline, { color: colors.textMuted, marginTop: 10 }]}>
             Sistem Pemantauan & Manajemen Saksi TPS Pemilu Indonesia

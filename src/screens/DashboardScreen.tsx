@@ -111,7 +111,11 @@ export default function DashboardScreen({ navigation }: any) {
           <View style={styles.heroHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
-              <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
+              <Image
+                source={BRAND_ASSETS.logoText}
+                style={{ width: 75, height: 15, tintColor: colors.text }}
+                resizeMode="contain"
+              />
             </View>
             <Pill label="Kota Bandung" tone="primary" />
           </View>
@@ -273,7 +277,11 @@ export default function DashboardScreen({ navigation }: any) {
           <View style={styles.heroHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
-              <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
+              <Image
+                source={BRAND_ASSETS.logoText}
+                style={{ width: 75, height: 15, tintColor: colors.text }}
+                resizeMode="contain"
+              />
             </View>
             <Pill label="Kluster COORD-1" tone="primary" />
           </View>
@@ -403,7 +411,11 @@ export default function DashboardScreen({ navigation }: any) {
         <View style={styles.heroHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
-            <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
+            <Image
+              source={BRAND_ASSETS.logoText}
+              style={{ width: 75, height: 15, tintColor: colors.text }}
+              resizeMode="contain"
+            />
           </View>
           <Pill label="TPS 001 Dago" tone="primary" />
         </View>
