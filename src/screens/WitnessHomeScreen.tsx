@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -7,10 +7,12 @@ import { Card, KpiCard, Pill, PrimaryButton, SectionTitle } from '../components/
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { IMAGES, getWitnessAvatar } from '../data/images';
+import { CandidateExplorerModal } from '../components/CandidateExplorerModal';
 
 export default function WitnessHomeScreen({ navigation }: any) {
   const { witnesses, tps, emergencyReports } = useApp();
   const { colors, isDark, toggleTheme } = useTheme();
+  const [showCandidateExplorer, setShowCandidateExplorer] = useState(false);
   const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID)!;
   const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
   const avatar = getWitnessAvatar(0);
@@ -141,12 +143,23 @@ export default function WitnessHomeScreen({ navigation }: any) {
           onPress={() => navigation.navigate('TpsDetail', { tpsId: witness.assignedTpsId })}
         />
         <PrimaryButton
+          label="Cek Profil Paslon & Caleg DPR RI"
+          icon="users"
+          variant="secondary"
+          onPress={() => setShowCandidateExplorer(true)}
+        />
+        <PrimaryButton
           label="Laporkan Kejadian / Darurat TPS"
           icon="alert-triangle"
           variant="danger"
           onPress={() => navigation.navigate('EmergencyForm')}
         />
       </View>
+
+      <CandidateExplorerModal
+        visible={showCandidateExplorer}
+        onClose={() => setShowCandidateExplorer(false)}
+      />
     </ScrollView>
   );
 }

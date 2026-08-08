@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { fontSize, iconSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_LABEL, ROLE_PERMISSIONS, ROLE_SCOPE_DESCRIPTION, getUserProfile } from '../utils/scope';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
+import { CandidateExplorerModal } from '../components/CandidateExplorerModal';
 
 interface MenuItem {
   key: string;
@@ -19,6 +20,7 @@ interface MenuItem {
 export default function MoreMenuScreen({ navigation }: any) {
   const { role, logout } = useApp();
   const { colors, isDark, toggleTheme } = useTheme();
+  const [showCandidateExplorer, setShowCandidateExplorer] = useState(false);
 
   const permissions = ROLE_PERMISSIONS[role];
   const userProfile = getUserProfile(role);
@@ -33,9 +35,17 @@ export default function MoreMenuScreen({ navigation }: any) {
       desc: 'Kartu Identitas Petugas, NIK & Informasi Akun',
     };
 
+    const candidateExplorerItem: MenuItem = {
+      key: 'CandidateExplorer',
+      icon: 'users',
+      label: 'Profil Paslon & Caleg DPR RI',
+      desc: 'Visi, misi, program unggulan, & rekam jejak kandidat Pemilu',
+    };
+
     if (role === 'TPS_WITNESS') {
       return [
         profileItem,
+        candidateExplorerItem,
         {
           key: 'AssignmentLetter',
           icon: 'file-text',
@@ -270,7 +280,13 @@ export default function MoreMenuScreen({ navigation }: any) {
             { backgroundColor: colors.surface, borderColor: colors.border },
             pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
           ]}
-          onPress={() => navigation.navigate(item.key, item.params)}
+          onPress={() => {
+            if (item.key === 'CandidateExplorer') {
+              setShowCandidateExplorer(true);
+            } else {
+              navigation.navigate(item.key, item.params);
+            }
+          }}
         >
           <View style={[styles.iconWrap, { backgroundColor: colors.primaryLight }]}>
             <Feather name={item.icon} size={iconSize.md} color={colors.primary} strokeWidth={iconStrokeWidth} />
@@ -324,7 +340,7 @@ export default function MoreMenuScreen({ navigation }: any) {
         ]}
         onPress={logout}
       >
-        <View style={[styles.iconWrap, { backgroundColor: colors.dangerBg }]}>
+        <View style={[styles.iconWrap, { backgroundColor: isDark ? 'rgba(239,68,68,0.2)' : '#FEE2E2' }]}>
           <Feather name="log-out" size={iconSize.md} color={colors.danger} strokeWidth={iconStrokeWidth} />
         </View>
         <View style={{ flex: 1 }}>
@@ -332,6 +348,11 @@ export default function MoreMenuScreen({ navigation }: any) {
           <Text style={[styles.rowDesc, { color: colors.textMuted }]}>Kembali ke halaman autentikasi</Text>
         </View>
       </Pressable>
+
+      <CandidateExplorerModal
+        visible={showCandidateExplorer}
+        onClose={() => setShowCandidateExplorer(false)}
+      />
     </ScrollView>
   );
 }

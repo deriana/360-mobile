@@ -114,6 +114,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Pilpres" tone="primary" />}>
             Suara Paslon Pilpres
           </SectionTitle>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>Ketuk baris kandidat untuk melihat profil, visi-misi & rekam jejak.</Text>
           {totalParty === 0 ? (
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
@@ -130,6 +131,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Dapil Jabar I" tone="info" />}>
             Suara Caleg DPR RI
           </SectionTitle>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>Ketuk nama caleg untuk melihat profil & program unggulan.</Text>
           {totalParty === 0 || !record.votes.dprCandidateVotes ? (
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
