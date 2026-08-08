@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pill } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
+import { CandidateDetailModal } from '../components/CandidateDetailModal';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
 
@@ -22,6 +23,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
   const { colors, isDark } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
+  const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
 
   const record = tps.find((t) => t.id === tpsId);
   const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId);
@@ -116,7 +118,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
             Object.entries(record.votes.candidateVotes).map(([name, value]) => (
-              <VoteRow key={name} name={name} value={value} total={totalParty} />
+              <VoteRow key={name} name={name} value={value} total={totalParty} onPress={() => setSelectedCandidate(name)} />
             ))
           )}
         </Card>
@@ -132,7 +134,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
             Object.entries(record.votes.dprCandidateVotes).map(([name, value]) => (
-              <VoteRow key={name} name={name} value={value} total={totalParty} />
+              <VoteRow key={name} name={name} value={value} total={totalParty} onPress={() => setSelectedCandidate(name)} />
             ))
           )}
         </Card>
@@ -148,7 +150,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
             Object.entries(record.votes.partyVotes).map(([name, value]) => (
-              <VoteRow key={name} name={name} value={value} total={totalParty} />
+              <VoteRow key={name} name={name} value={value} total={totalParty} onPress={() => setSelectedCandidate(name)} />
             ))
           )}
         </Card>
@@ -189,17 +191,26 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           onPress={() => navigation.navigate('ReportForm', { tpsId: record.id })}
         />
       </View>
+
+      <CandidateDetailModal candidateName={selectedCandidate} onClose={() => setSelectedCandidate(null)} />
     </ScrollView>
   );
 }
 
-function VoteRow({ name, value, total }: { name: string; value: number; total: number }) {
+function VoteRow({ name, value, total, onPress }: { name: string; value: number; total: number; onPress?: () => void }) {
   const { colors } = useTheme();
   const percent = total > 0 ? Math.round((value / total) * 100) : 0;
   const avatarUri = getCandidateAvatar(name);
 
   return (
-    <View style={[styles.voteRow, { borderBottomColor: colors.border }]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.voteRow,
+        { borderBottomColor: colors.border },
+        pressed && { opacity: 0.7 },
+      ]}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
         {avatarUri && <Image source={{ uri: avatarUri }} style={styles.candidateAvatar} />}
         <View style={{ flex: 1, gap: 2 }}>
@@ -207,16 +218,19 @@ function VoteRow({ name, value, total }: { name: string; value: number; total: n
             <Text style={[styles.voteName, { color: colors.text }]} numberOfLines={1}>
               {name}
             </Text>
-            <Text style={[styles.voteValue, { color: colors.text }]}>
-              {value} suara ({percent}%)
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={[styles.voteValue, { color: colors.text }]}>
+                {value} suara ({percent}%)
+              </Text>
+              <Feather name="chevron-right" size={14} color={colors.textMuted} />
+            </View>
           </View>
           <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
             <View style={[styles.progressBarFill, { width: `${percent}%`, backgroundColor: colors.primary }]} />
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
