@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Pill, PrimaryButton, SectionTitle } from './ui';
 import { fontSize, radius, spacing } from '../theme';
-import { CANDIDATE_PROFILES, CandidateProfile } from '../data/candidates';
+import { CANDIDATE_PROFILES } from '../data/candidates';
 import { CandidateDetailModal } from './CandidateDetailModal';
 
 interface CandidateExplorerModalProps {
@@ -21,7 +21,7 @@ export function CandidateExplorerModal({ visible, onClose }: CandidateExplorerMo
 
   if (!visible) return null;
 
-  const profilesList = Object.values(CANDIDATE_PROFILES).filter((p) => {
+  const profilesList = Object.entries(CANDIDATE_PROFILES).filter(([, p]) => {
     if (filter === 'pilpres') return p.category === 'pilpres';
     if (filter === 'dpr') return p.category === 'dpr';
     return true;
@@ -94,15 +94,22 @@ export function CandidateExplorerModal({ visible, onClose }: CandidateExplorerMo
 
           {/* Candidate List */}
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
-            {profilesList.map((cand) => (
+            {profilesList.map(([key, cand]) => (
               <Pressable
-                key={cand.name}
-                onPress={() => setSelectedCandidateName(cand.name)}
+                key={key}
+                onPress={() => setSelectedCandidateName(key)}
                 style={({ pressed }) => [pressed && { opacity: 0.8 }]}
               >
                 <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <Image source={{ uri: cand.avatarUri }} style={[styles.avatar, { borderColor: colors.primary }]} />
+                    {cand.runningMateAvatarUri ? (
+                      <View style={{ flexDirection: 'row' }}>
+                        <Image source={cand.avatarUri} style={[styles.avatar, { borderColor: colors.primary }]} />
+                        <Image source={cand.runningMateAvatarUri} style={[styles.avatar, styles.avatarOverlap, { borderColor: colors.primary }]} />
+                      </View>
+                    ) : (
+                      <Image source={cand.avatarUri} style={[styles.avatar, { borderColor: colors.primary }]} />
+                    )}
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={{ fontSize: 10, fontWeight: '800', color: colors.primary, textTransform: 'uppercase' }}>
                         {cand.numberLabel}
@@ -176,6 +183,9 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1.5,
+  },
+  avatarOverlap: {
+    marginLeft: -16,
   },
   candTitle: {
     fontSize: fontSize.xs + 1,

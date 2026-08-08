@@ -105,7 +105,7 @@ const defaultThemeValue: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultThemeValue);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>('dark'); // Default to sleek Dark Navy theme
+  const [theme, setThemeState] = useState<ThemeMode>('light');
 
   const isDark = theme === 'dark';
   const colors = isDark ? darkThemeColors : lightThemeColors;

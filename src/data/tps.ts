@@ -98,6 +98,8 @@ const baseCoords: Record<string, [number, number]> = {
   'Papua Barat Daya': [-0.88, 131.25],
 };
 
+const BANDUNG_DISTRICT_COORDINATORS = ['Coblong', 'Sukajadi', 'Cicendo', 'Lengkong', 'Sumur Bandung', 'Cibeunying Kaler', 'Batu Nunggal'];
+
 export const tpsList: Tps[] = (() => {
   const list: Tps[] = [];
   let counter = 1;
@@ -122,7 +124,10 @@ export const tpsList: Tps[] = (() => {
             lng: Number((baseLng + (rand() - 0.5) * 0.3).toFixed(5)),
             votersPresent,
             votes: status === 'done' ? reportedVotes(dpt, votersPresent) : emptyVotes(),
-            coordinatorId: `COORD-${((counter - 1) % 6) + 1}`,
+            coordinatorId:
+              regency === 'Kota Bandung' && BANDUNG_DISTRICT_COORDINATORS.includes(district)
+                ? `COORD-${BANDUNG_DISTRICT_COORDINATORS.indexOf(district) + 1}`
+                : `COORD-${((counter - 1) % 6) + 1}`,
           });
           counter += 1;
         }

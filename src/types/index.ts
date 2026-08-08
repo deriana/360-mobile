@@ -49,6 +49,20 @@ export interface Witness {
   checkInLng: number | null;
 }
 
+export interface Coordinator {
+  id: string;
+  name: string;
+  nik: string;
+  phone: string;
+  address: string;
+  regency: string;
+  district: string;
+  avatarIndex: number;
+  status: WitnessStatus;
+  checkInTime: string | null;
+  checkInLocation: string | null;
+}
+
 export type EmergencyCategory =
   | 'intimidation'
   | 'unrest'
@@ -69,7 +83,7 @@ export interface EmergencyReport {
   severity: EmergencySeverity;
   status: EmergencyStatus;
   createdAt: string;
-  photos?: string[];
+  photos?: any[];
 }
 
 export interface Broadcast {
@@ -98,6 +112,30 @@ export interface Payment {
   method?: string | null;
   accountMasked?: string | null;
   invoiceItems?: PaymentInvoiceItem[];
+}
+
+export interface NationalParty {
+  name: string;
+  pct: number;
+  votes: number;
+  lolosThreshold: boolean;
+  seats: number;
+}
+
+export interface LegislativeMember {
+  id: string;
+  province: string;
+  party: string;
+  noUrut: number;
+  name: string;
+  votes: number;
+  terpilih: boolean;
+}
+
+export interface TpsDocPhoto {
+  id: string;
+  source: any;
+  takenAt: string;
 }
 
 export interface Region {

@@ -1,36 +1,34 @@
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, EmptyState, Modal, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
 
-import { IMAGES } from '../data/images';
-
-interface DocPhoto {
-  uri: string;
-  takenAt: string;
-}
-
 export default function DocumentationScreen({ route, navigation }: any) {
   const { colors } = useTheme();
+  const { tps, getDocumentation, addDocumentationPhoto, removeDocumentationPhoto } = useApp();
   const tpsId = route?.params?.tpsId;
+  const [previewSource, setPreviewSource] = useState<any>(null);
 
-  const [photos, setPhotos] = useState<DocPhoto[]>([
-    { uri: IMAGES.tpsSchool, takenAt: '07:30 WIB — Lokasi TPS' },
-    { uri: IMAGES.ballotPaper, takenAt: '08:15 WIB — Papan Hitung' },
-    { uri: IMAGES.c1Form, takenAt: '13:45 WIB — C1 Plano' },
-  ]);
+  const record = tps.find((t) => t.id === tpsId);
+  const photos = tpsId ? getDocumentation(tpsId) : [];
 
-  const handlePick = async (source: 'camera' | 'library') => {
-    const uri = await pickImage(source);
+  const handlePick = async (pickSource: 'camera' | 'library') => {
+    if (!tpsId) return;
+    const uri = await pickImage(pickSource);
     if (!uri) return;
-    setPhotos((prev) => [...prev, { uri, takenAt: `${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB — Foto Lapangan` }]);
+    addDocumentationPhoto(tpsId, {
+      source: { uri },
+      takenAt: `${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB — Foto Lapangan`,
+    });
   };
 
-  const removePhoto = (uri: string) => {
-    setPhotos((prev) => prev.filter((p) => p.uri !== uri));
+  const removePhoto = (id: string) => {
+    if (!tpsId) return;
+    removeDocumentationPhoto(tpsId, id);
   };
 
   return (
@@ -40,11 +38,11 @@ export default function DocumentationScreen({ route, navigation }: any) {
           <Feather name="image" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Dokumentasi Kegiatan {tpsId ? `(${tpsId})` : 'TPS'}
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Dokumentasi Kegiatan TPS</Text>
           <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-            Unggah foto kegiatan lapangan sebagai bukti dokumentasi (persiapan, pemungutan, penghitungan suara, dll).
+            {record
+              ? `${record.id} — TPS ${record.tpsNumber}, Kec. ${record.district}, ${record.regency}`
+              : 'Unggah foto kegiatan lapangan sebagai bukti dokumentasi (persiapan, pemungutan, penghitungan suara, dll).'}
           </Text>
         </View>
       </View>
@@ -73,13 +71,15 @@ export default function DocumentationScreen({ route, navigation }: any) {
           <SectionTitle style={{ marginBottom: 0 }}>Galeri Dokumentasi</SectionTitle>
           <View style={styles.grid}>
             {photos.map((photo) => (
-              <View key={photo.uri} style={styles.gridItemWrap}>
-                <Image source={{ uri: photo.uri }} style={styles.gridImage} />
-                <View style={styles.timeBadge}>
+              <View key={photo.id} style={styles.gridItemWrap}>
+                <Pressable onPress={() => setPreviewSource(photo.source)} style={styles.gridImagePressable}>
+                  <Image source={photo.source} style={styles.gridImage} resizeMode="cover" />
+                </Pressable>
+                <View style={styles.timeBadge} pointerEvents="none">
                   <Text style={styles.timeBadgeText}>{photo.takenAt}</Text>
                 </View>
                 <Pressable
-                  onPress={() => removePhoto(photo.uri)}
+                  onPress={() => removePhoto(photo.id)}
                   hitSlop={8}
                   style={[styles.removeBtn, { backgroundColor: colors.danger }]}
                 >
@@ -97,6 +97,14 @@ export default function DocumentationScreen({ route, navigation }: any) {
         onPress={() => navigation.goBack()}
         disabled={photos.length === 0}
       />
+
+      <Modal visible={!!previewSource} onClose={() => setPreviewSource(null)} variant="floating" title="Pratinjau Foto">
+        {previewSource && (
+          <View style={styles.previewImageWrap}>
+            <Image source={previewSource} style={styles.previewImage} resizeMode="contain" />
+          </View>
+        )}
+      </Modal>
     </ScrollView>
   );
 }
@@ -109,8 +117,11 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.xl, fontWeight: '800' },
   subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 2 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  gridItemWrap: { position: 'relative', width: '31%', aspectRatio: 1 },
-  gridImage: { width: '100%', height: '100%', borderRadius: radius.md },
+  gridItemWrap: { position: 'relative', width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: radius.md },
+  gridImagePressable: { width: '100%', height: '100%' },
+  gridImage: { width: '100%', height: '100%' },
+  previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
   timeBadge: { position: 'absolute', left: 4, bottom: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
   timeBadgeText: { fontSize: 9, color: '#FFFFFF', fontWeight: '700' },
   removeBtn: {

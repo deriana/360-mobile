@@ -169,7 +169,7 @@ export default function DashboardScreen({ navigation }: any) {
                   pressed && { opacity: 0.8 },
                 ]}
               >
-                <Image source={{ uri: getWitnessAvatar(idx) }} style={styles.avatarImg} />
+                <Image source={getWitnessAvatar(idx)} style={styles.avatarImg} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.witnessName, { color: colors.text }]}>{w.name}</Text>
                   <Text style={[styles.witnessSub, { color: colors.primary, fontWeight: '700' }]}>
@@ -291,17 +291,17 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Pemantauan Kluster TPS</Text>
           <Text style={[styles.heroSub, { color: colors.textMuted }]}>
-            Supervisi 6 Saksi & 6 TPS Binaan di Wilayah Kelurahan Dago (Kluster COORD-1)
+            Supervisi {scopedWitnesses.length} Saksi & {scopedTps.length} TPS Binaan di Wilayah Kelurahan Dago (Kluster COORD-1)
           </Text>
 
           <View style={[styles.statRow, { borderTopColor: colors.border }]}>
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.success }]}>{checkedInCount} / 6</Text>
+              <Text style={[styles.statNum, { color: colors.success }]}>{checkedInCount} / {scopedWitnesses.length}</Text>
               <Text style={[styles.statSub, { color: colors.textMuted }]}>Saksi Hadir GPS</Text>
             </View>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>{reportedCount} / 6</Text>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{reportedCount} / {scopedTps.length}</Text>
               <Text style={[styles.statSub, { color: colors.textMuted }]}>Laporan C1 Masuk</Text>
             </View>
           </View>
@@ -315,8 +315,10 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* Supervision List 6 TPS */}
         <Card style={{ gap: spacing.md }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Daftar Presensi & C1 Saksi Binaan (6 TPS Kluster)</SectionTitle>
-          {scopedWitnesses.map((w, idx) => {
+          <SectionTitle style={{ marginBottom: 0 }}>
+            Daftar Presensi & C1 Saksi Binaan (6 TPS Kluster, {scopedWitnesses.length} Saksi)
+          </SectionTitle>
+          {paginatedWitnesses.map((w, idx) => {
             const assigned = tps.find((t) => t.id === w.assignedTpsId);
             const isDone = assigned?.status === 'done';
             return (
@@ -329,7 +331,7 @@ export default function DashboardScreen({ navigation }: any) {
                   pressed && { opacity: 0.8 },
                 ]}
               >
-                <Image source={{ uri: getWitnessAvatar(idx) }} style={styles.avatarImg} />
+                <Image source={getWitnessAvatar(idx)} style={styles.avatarImg} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.witnessName, { color: colors.text }]}>{w.name}</Text>
                   <Text style={[styles.witnessSub, { color: colors.primary, fontWeight: '700' }]}>
@@ -346,6 +348,13 @@ export default function DashboardScreen({ navigation }: any) {
               </Pressable>
             );
           })}
+
+          <PaginationBar
+            currentPage={witnessPage}
+            totalPages={totalWitnessPages}
+            onPrev={() => setWitnessPage((p) => Math.max(1, p - 1))}
+            onNext={() => setWitnessPage((p) => Math.min(totalWitnessPages, p + 1))}
+          />
         </Card>
       </ScrollView>
     );
@@ -578,7 +587,7 @@ function PersonnelHeaderCard({ role, navigation }: { role: any; navigation: any 
       ]}
     >
       <View style={styles.profileAvatarWrapper}>
-        <Image source={{ uri: getWitnessAvatar(profile.avatarIndex) }} style={styles.profileHeaderAvatar} />
+        <Image source={getWitnessAvatar(profile.avatarIndex)} style={styles.profileHeaderAvatar} />
         <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
       </View>
 

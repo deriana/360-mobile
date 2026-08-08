@@ -7,7 +7,14 @@ import { BRAND_ASSETS } from '../data/images';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
 import SupervisionScreen from '../screens/SupervisionScreen';
+import WitnessListScreen from '../screens/WitnessListScreen';
 import WitnessDetailScreen from '../screens/WitnessDetailScreen';
+import CoordinatorListScreen from '../screens/CoordinatorListScreen';
+import CoordinatorDetailScreen from '../screens/CoordinatorDetailScreen';
+import KartuPetugasScreen from '../screens/KartuPetugasScreen';
+import PartyLeaderboardScreen from '../screens/PartyLeaderboardScreen';
+import PartyRosterScreen from '../screens/PartyRosterScreen';
+import LegislativeMemberDetailScreen from '../screens/LegislativeMemberDetailScreen';
 import AssignmentLetterScreen from '../screens/AssignmentLetterScreen';
 import VerifyLetterScreen from '../screens/VerifyLetterScreen';
 import ReportFormScreen from '../screens/ReportFormScreen';
@@ -31,7 +38,14 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Profile', component: ProfileScreen, title: 'Kartu Petugas' },
   { name: 'Supervision', component: SupervisionScreen, title: 'Pengawasan TPS' },
   { name: 'TpsDetail', component: TpsDetailScreen, title: 'Detail TPS' },
+  { name: 'WitnessList', component: WitnessListScreen, title: 'Daftar Saksi' },
   { name: 'WitnessDetail', component: WitnessDetailScreen, title: 'Detail Saksi' },
+  { name: 'CoordinatorList', component: CoordinatorListScreen, title: 'Daftar Koordinator' },
+  { name: 'CoordinatorDetail', component: CoordinatorDetailScreen, title: 'Detail Koordinator' },
+  { name: 'KartuPetugas', component: KartuPetugasScreen, title: 'Kartu Petugas' },
+  { name: 'PartyLeaderboard', component: PartyLeaderboardScreen, title: 'Partai & Legislatif' },
+  { name: 'PartyRoster', component: PartyRosterScreen, title: 'Anggota Legislatif' },
+  { name: 'LegislativeMemberDetail', component: LegislativeMemberDetailScreen, title: 'Detail Anggota DPR RI' },
   { name: 'AssignmentLetter', component: AssignmentLetterScreen, title: 'Surat Tugas Digital' },
   { name: 'VerifyLetter', component: VerifyLetterScreen, title: 'Verifikasi Surat' },
   { name: 'ReportForm', component: ReportFormScreen, title: 'Formulir Laporan' },

@@ -7,6 +7,7 @@ import { Card, EmptyState, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pi
 import { fontSize, radius, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { CandidateDetailModal } from '../components/CandidateDetailModal';
+import { PartyBadge } from '../components/PartyBadge';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
 
@@ -19,7 +20,7 @@ const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof
 
 export default function TpsDetailScreen({ route, navigation }: any) {
   const { tpsId } = route.params;
-  const { tps, witnesses } = useApp();
+  const { tps, witnesses, getDocumentation } = useApp();
   const { colors, isDark } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
@@ -33,6 +34,26 @@ export default function TpsDetailScreen({ route, navigation }: any) {
   }
 
   const totalParty = Object.values(record.votes.partyVotes).reduce((a, b) => a + b, 0);
+  const totalCandidate = Object.values(record.votes.candidateVotes).reduce((a, b) => a + b, 0);
+  const quickCountRanking = Object.entries(record.votes.candidateVotes).sort((a, b) => b[1] - a[1]);
+  const documentation = getDocumentation(record.id);
+
+  const anomalies: string[] = [];
+  if (record.votersPresent > record.dpt) {
+    anomalies.push(`Pemilih hadir (${record.votersPresent}) melebihi jumlah DPT terdaftar (${record.dpt}).`);
+  }
+  if (record.votes.invalidVotes > record.votersPresent) {
+    anomalies.push(`Suara tidak sah (${record.votes.invalidVotes}) melebihi jumlah pemilih hadir (${record.votersPresent}).`);
+  }
+  if (totalCandidate > 0) {
+    const pilpresTotal = totalCandidate + record.votes.invalidVotes;
+    if (pilpresTotal !== record.votersPresent) {
+      const diff = pilpresTotal - record.votersPresent;
+      anomalies.push(
+        `Selisih ${Math.abs(diff)} suara antara total suara Pilpres (sah + tidak sah = ${pilpresTotal}) dengan jumlah pemilih hadir (${record.votersPresent}).`,
+      );
+    }
+  }
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -70,6 +91,25 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           <KpiCard label="Suara Tidak Sah" value={record.votes.invalidVotes} tone={colors.danger} icon="x-circle" />
         </View>
       </ScrollView>
+
+      {/* Quick Count Ringkasan Suara Pilpres TPS Ini */}
+      <Card style={{ gap: spacing.xs }}>
+        <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Quick Count" tone="danger" icon="zap" />}>
+          Hasil Sementara TPS Ini
+        </SectionTitle>
+        {totalCandidate === 0 ? (
+          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada suara masuk untuk quick count TPS ini.</Text>
+        ) : (
+          <>
+            <Text style={{ fontSize: 11, color: colors.textMuted }}>
+              Diurutkan dari perolehan suara Pilpres tertinggi ke terendah di TPS ini.
+            </Text>
+            {quickCountRanking.map(([name, value]) => (
+              <VoteRow key={name} name={name} value={value} total={totalCandidate} onPress={() => setSelectedCandidate(name)} />
+            ))}
+          </>
+        )}
+      </Card>
 
       {/* Segmented Category Selector */}
       <View style={{ gap: spacing.xs }}>
@@ -152,11 +192,55 @@ export default function TpsDetailScreen({ route, navigation }: any) {
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
             Object.entries(record.votes.partyVotes).map(([name, value]) => (
-              <VoteRow key={name} name={name} value={value} total={totalParty} onPress={() => setSelectedCandidate(name)} />
+              <VoteRow key={name} name={name} value={value} total={totalParty} isParty />
             ))
           )}
         </Card>
       )}
+
+      {/* Pemeriksaan Anomali Data */}
+      <Card style={{ gap: spacing.xs }}>
+        <SectionTitle
+          style={{ marginBottom: 0 }}
+          action={
+            <Pill
+              label={anomalies.length > 0 ? `${anomalies.length} Anomali` : 'Data Konsisten'}
+              tone={anomalies.length > 0 ? 'danger' : 'success'}
+              icon={anomalies.length > 0 ? 'alert-triangle' : 'check-circle'}
+            />
+          }
+        >
+          Pemeriksaan Anomali Data
+        </SectionTitle>
+        {anomalies.length === 0 ? (
+          <Text style={[styles.muted, { color: colors.textMuted }]}>Tidak ada anomali terdeteksi pada data TPS ini.</Text>
+        ) : (
+          anomalies.map((a, idx) => (
+            <View key={idx} style={styles.anomalyRow}>
+              <Feather name="alert-triangle" size={13} color={colors.danger} style={{ marginTop: 1 }} />
+              <Text style={[styles.anomalyText, { color: colors.text }]}>{a}</Text>
+            </View>
+          ))
+        )}
+      </Card>
+
+      {/* Ringkasan Dokumentasi TPS */}
+      <Card style={{ gap: spacing.xs }}>
+        <SectionTitle style={{ marginBottom: 0 }} action={<Pill label={`${documentation.length} Foto`} tone={documentation.length > 0 ? 'primary' : 'neutral'} />}>
+          Dokumentasi Kegiatan TPS
+        </SectionTitle>
+        {documentation.length === 0 ? (
+          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada foto dokumentasi diunggah untuk TPS ini.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
+            {documentation.map((doc) => (
+              <View key={doc.id} style={styles.docThumbWrap}>
+                <Image source={doc.source} style={styles.docThumb} resizeMode="cover" />
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </Card>
 
       {/* Daftar Saksi Bertugas */}
       <Card style={{ gap: spacing.xs }}>
@@ -166,7 +250,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
         ) : (
           assignedWitnesses.map((w, idx) => (
             <View key={w.id} style={[styles.witnessRow, { borderBottomColor: colors.border }]}>
-              <Image source={{ uri: getWitnessAvatar(idx) }} style={styles.witnessAvatar} />
+              <Image source={getWitnessAvatar(idx)} style={styles.witnessAvatar} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.witnessName, { color: colors.text }]}>{w.name}</Text>
                 <Text style={[styles.witnessSub, { color: colors.textMuted }]}>No HP: {w.phone}</Text>
@@ -199,22 +283,39 @@ export default function TpsDetailScreen({ route, navigation }: any) {
   );
 }
 
-function VoteRow({ name, value, total, onPress }: { name: string; value: number; total: number; onPress?: () => void }) {
+function VoteRow({
+  name,
+  value,
+  total,
+  onPress,
+  isParty,
+}: {
+  name: string;
+  value: number;
+  total: number;
+  onPress?: () => void;
+  isParty?: boolean;
+}) {
   const { colors } = useTheme();
   const percent = total > 0 ? Math.round((value / total) * 100) : 0;
-  const avatarUri = getCandidateAvatar(name);
+  const avatarUri = isParty ? null : getCandidateAvatar(name);
 
   return (
     <Pressable
       onPress={onPress}
+      disabled={!onPress}
       style={({ pressed }) => [
         styles.voteRow,
         { borderBottomColor: colors.border },
-        pressed && { opacity: 0.7 },
+        pressed && !!onPress && { opacity: 0.7 },
       ]}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-        {avatarUri && <Image source={{ uri: avatarUri }} style={styles.candidateAvatar} />}
+        {isParty ? (
+          <PartyBadge party={name} size={34} />
+        ) : (
+          avatarUri && <Image source={avatarUri} style={styles.candidateAvatar} />
+        )}
         <View style={{ flex: 1, gap: 2 }}>
           <View style={styles.voteTopRow}>
             <Text style={[styles.voteName, { color: colors.text }]} numberOfLines={1}>
@@ -224,7 +325,7 @@ function VoteRow({ name, value, total, onPress }: { name: string; value: number;
               <Text style={[styles.voteValue, { color: colors.text }]}>
                 {value} suara ({percent}%)
               </Text>
-              <Feather name="chevron-right" size={14} color={colors.textMuted} />
+              {onPress && <Feather name="chevron-right" size={14} color={colors.textMuted} />}
             </View>
           </View>
           <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
@@ -268,4 +369,8 @@ const styles = StyleSheet.create({
   witnessAvatar: { width: 36, height: 36, borderRadius: 18 },
   witnessName: { fontSize: fontSize.sm, fontWeight: '700' },
   witnessSub: { fontSize: 11 },
+  anomalyRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', paddingVertical: 2 },
+  anomalyText: { fontSize: fontSize.xs, flex: 1, lineHeight: 17 },
+  docThumbWrap: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' },
+  docThumb: { width: '100%', height: '100%' },
 });

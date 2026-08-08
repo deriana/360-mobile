@@ -1,4 +1,4 @@
-import { PASLON_AVATARS, CALEG_AVATARS } from './images';
+import { PASLON_AVATARS, PASLON_RUNNING_MATE_AVATARS, CALEG_AVATARS } from './images';
 
 export interface CandidateProfile {
   name: string;
@@ -10,7 +10,8 @@ export interface CandidateProfile {
   programs: string[];
   education: string;
   experience: string;
-  avatarUri: string;
+  avatarUri: any;
+  runningMateAvatarUri?: any;
   kpuVerified: boolean;
 }
 
@@ -35,6 +36,7 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     education: "S3 Northern Illinois University (Anies) & S2 Universitas Indonesia (Muhaimin)",
     experience: "Gubernur DKI Jakarta (2017-2022), Mendikbud & Wakil Ketua DPR RI",
     avatarUri: PASLON_AVATARS["Paslon 01 — Anies & Muhaimin"],
+    runningMateAvatarUri: PASLON_RUNNING_MATE_AVATARS["Paslon 01 — Anies & Muhaimin"],
     kpuVerified: true,
   },
   "Paslon 02 — Prabowo & Gibran": {
@@ -57,6 +59,7 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     education: "Fort Moore US Military (Prabowo) & Management Development Institute of Singapore (Gibran)",
     experience: "Menteri Pertahanan RI (2019-2024) & Wali Kota Surakarta (2021-2024)",
     avatarUri: PASLON_AVATARS["Paslon 02 — Prabowo & Gibran"],
+    runningMateAvatarUri: PASLON_RUNNING_MATE_AVATARS["Paslon 02 — Prabowo & Gibran"],
     kpuVerified: true,
   },
   "Paslon 03 — Ganjar & Mahfud": {
@@ -79,13 +82,14 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     education: "S2 Universitas Indonesia (Ganjar) & S3 Universitas Gadjah Mada (Mahfud)",
     experience: "Gubernur Jawa Tengah (2013-2023), Menko Polhukam & Ketua Mahkamah Konstitusi",
     avatarUri: PASLON_AVATARS["Paslon 03 — Ganjar & Mahfud"],
+    runningMateAvatarUri: PASLON_RUNNING_MATE_AVATARS["Paslon 03 — Ganjar & Mahfud"],
     kpuVerified: true,
   },
-  "Atalia Praratya (Partai Golkar)": {
-    name: "Dr. Hj. Atalia Praratya, S.IP., M.I.Kom.",
+  "Kartika Wulandari Praditya (Partai Karya Mandiri)": {
+    name: "Dr. Hj. Kartika Wulandari Praditya, S.IP., M.I.Kom.",
     category: "dpr",
     numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
-    partyOrCoalition: "Partai Golongan Karya (Golkar)",
+    partyOrCoalition: "Partai Karya Mandiri",
     vision: "Pemberdayaan Keluarga, Kesejahteraan Perempuan & Pendidikan Anak Jawa Barat",
     mission: [
       "Peningkatan Literasi & Kualitas Pendidikan Anak",
@@ -98,33 +102,33 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     ],
     education: "S3 Universitas Padjadjaran (Cumlaude)",
     experience: "Ketua Tim Penggerak PKK Jawa Barat & Dosen Universitas Widyatama",
-    avatarUri: CALEG_AVATARS["Atalia Praratya (Partai Golkar)"],
+    avatarUri: CALEG_AVATARS["Kartika Wulandari Praditya (Partai Karya Mandiri)"],
     kpuVerified: true,
   },
-  "H. Ledia Hanifa Amaliah (PKS)": {
-    name: "Hj. Ledia Hanifa Amaliah, S.Si., M.Psi.T.",
+  "Farida Ramadhani Azzahra (Partai Amanah Bangsa)": {
+    name: "Hj. Farida Ramadhani Azzahra, S.Si., M.Psi.T.",
     category: "dpr",
     numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
-    partyOrCoalition: "Partai Keadilan Sejahtera (PKS)",
+    partyOrCoalition: "Partai Amanah Bangsa",
     vision: "Mewujudkan Masyarakat Mandiri, Berpendidikan, dan Berkeadilan Sosial",
     mission: [
       "Advokasi Kebijakan Perlindungan Disabilitas dan Lansia",
       "Penguatan Karakter & Anggaran Pendidikan Rakyat",
     ],
     programs: [
-      "Beasiswa Program Indonesia Pintar (PIP)",
+      "Beasiswa Pendidikan untuk Keluarga Kurang Mampu",
       "Bantuan Sarana Pendidikan Agama & Komunitas",
     ],
     education: "S2 Psikologi Universitas Indonesia",
-    experience: "Anggota DPR RI Komisi X (2009-Sekarang)",
-    avatarUri: CALEG_AVATARS["H. Ledia Hanifa Amaliah (PKS)"],
+    experience: "Anggota DPR RI Komisi X (2014-Sekarang)",
+    avatarUri: CALEG_AVATARS["Farida Ramadhani Azzahra (Partai Amanah Bangsa)"],
     kpuVerified: true,
   },
-  "Junico BP Siahaan / Nico Siahaan (PDI Perjuangan)": {
-    name: "Junico BP Siahaan, S.E. (Nico Siahaan)",
+  "Bima Aditya Nugraha (Partai Perjuangan Nusantara)": {
+    name: "Bima Aditya Nugraha, S.E.",
     category: "dpr",
     numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
-    partyOrCoalition: "Partai Demokrasi Indonesia Perjuangan (PDI Perjuangan)",
+    partyOrCoalition: "Partai Perjuangan Nusantara",
     vision: "Pengembangan Ekonomi Kreatif, Kebudayaan, dan Kepemudaan Bandung",
     mission: [
       "Pemberdayaan Pelaku Ekonomi Kreatif & Seni Budaya Kota Bandung",
@@ -136,15 +140,15 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     ],
     education: "S1 Ekonomi Universitas Padjadjaran",
     experience: "Anggota DPR RI Komisi X & Presenter Profesional",
-    avatarUri: CALEG_AVATARS["Junico BP Siahaan / Nico Siahaan (PDI Perjuangan)"],
+    avatarUri: CALEG_AVATARS["Bima Aditya Nugraha (Partai Perjuangan Nusantara)"],
     kpuVerified: true,
   },
-  "H. Muhammad Farhan (Partai NasDem)": {
-    name: "H. Muhammad Farhan, S.E.",
+  "Rizky Firmansyah Malik (Partai Nusantara Bersatu)": {
+    name: "H. Rizky Firmansyah Malik, S.E.",
     category: "dpr",
     numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
-    partyOrCoalition: "Partai NasDem",
-    vision: "Transformasi Digital, Penyiaran Berkwalitas & Pariwisata Kota Bandung",
+    partyOrCoalition: "Partai Nusantara Bersatu",
+    vision: "Transformasi Digital, Penyiaran Berkualitas & Pariwisata Kota Bandung",
     mission: [
       "Pengembangan Infrastruktur Digital & Penyiaran Publik",
       "Dukungan Industri Wisata dan Kuliner Lokal",
@@ -155,12 +159,51 @@ export const CANDIDATE_PROFILES: Record<string, CandidateProfile> = {
     ],
     education: "S1 Ekonomi Universitas Padjadjaran",
     experience: "Anggota DPR RI Komisi I & Penyiar Radio / Presenter",
-    avatarUri: CALEG_AVATARS["H. Muhammad Farhan (Partai NasDem)"],
+    avatarUri: CALEG_AVATARS["Rizky Firmansyah Malik (Partai Nusantara Bersatu)"],
+    kpuVerified: true,
+  },
+  "Ningsih Purnama Sari (Partai Demokrasi Sejahtera)": {
+    name: "Dr. Hj. Ningsih Purnama Sari",
+    category: "dpr",
+    numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
+    partyOrCoalition: "Partai Demokrasi Sejahtera",
+    vision: "Penguatan Supremasi Hukum dan Reformasi Birokrasi yang Berkeadilan",
+    mission: [
+      "Pengawasan Legislasi Anti-Korupsi & Reformasi Birokrasi",
+      "Advokasi Kesetaraan Gender dalam Politik dan Pemerintahan",
+    ],
+    programs: [
+      "Klinik Hukum Gratis untuk Masyarakat Kurang Mampu",
+      "Pelatihan Kepemimpinan Perempuan di Legislatif",
+    ],
+    education: "S3 Ilmu Hukum Universitas Indonesia",
+    experience: "Anggota Komisi Yudisial & Akademisi Hukum Tata Negara",
+    avatarUri: CALEG_AVATARS["Ningsih Purnama Sari (Partai Demokrasi Sejahtera)"],
+    kpuVerified: true,
+  },
+  "Solihin Maulana Ibrahim (Partai Kebangkitan Rakyat)": {
+    name: "H. Solihin Maulana Ibrahim, S.Pd.",
+    category: "dpr",
+    numberLabel: "Caleg DPR RI Dapil Jabar I — No. Urut 1",
+    partyOrCoalition: "Partai Kebangkitan Rakyat",
+    vision: "Pendidikan Berkualitas dan Merata bagi Seluruh Anak Bangsa",
+    mission: [
+      "Peningkatan Anggaran & Kualitas Pendidikan Berbasis Pesantren",
+      "Pemerataan Akses Pendidikan di Daerah Tertinggal",
+    ],
+    programs: [
+      "Beasiswa Santri Berprestasi",
+      "Bantuan Sarana Belajar Sekolah Pinggiran",
+    ],
+    education: "S2 Pendidikan Universitas Pendidikan Indonesia",
+    experience: "Anggota DPR RI Komisi X (2009-Sekarang)",
+    avatarUri: CALEG_AVATARS["Solihin Maulana Ibrahim (Partai Kebangkitan Rakyat)"],
     kpuVerified: true,
   },
 };
 
 export function getCandidateProfile(name: string): CandidateProfile {
+  if (CANDIDATE_PROFILES[name]) return CANDIDATE_PROFILES[name];
   for (const [key, profile] of Object.entries(CANDIDATE_PROFILES)) {
     if (name.includes(key) || key.includes(name)) return profile;
   }
@@ -180,7 +223,7 @@ export function getCandidateProfile(name: string): CandidateProfile {
     programs: ['Bantuan Usaha Rakyat', 'Beasiswa Pendidikan Unggulan', 'Layanan Kesehatan Terjangkau'],
     education: 'Perguruan Tinggi Terakreditasi',
     experience: 'Tokoh Masyarakat & Pengabdi Publik',
-    avatarUri: PASLON_AVATARS[name] || CALEG_AVATARS[name] || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    avatarUri: PASLON_AVATARS[name] || CALEG_AVATARS[name] || require('../../assets/avatars/witness_3.jpg'),
     kpuVerified: true,
   };
 }

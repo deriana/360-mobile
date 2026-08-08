@@ -753,16 +753,16 @@ export const partyNames = [
 ];
 
 export const candidateNames = [
-  "Paslon 01 — Prabowo & Gibran",
-  "Paslon 02 — Anies & Muhaimin",
+  "Paslon 01 — Anies & Muhaimin",
+  "Paslon 02 — Prabowo & Gibran",
   "Paslon 03 — Ganjar & Mahfud",
 ];
 
 export const dprCandidates = [
-  "Atalia Praratya (Partai Golkar)",
-  "H. Ledia Hanifa Amaliah (PKS)",
-  "Junico BP Siahaan / Nico Siahaan (PDI Perjuangan)",
-  "H. Muhammad Farhan (Partai NasDem)",
-  "Dr. H. Melani Leimena Suharli (Partai Demokrat)",
-  "H. Syaiful Huda (PKB)",
+  "Kartika Wulandari Praditya (Partai Karya Mandiri)",
+  "Farida Ramadhani Azzahra (Partai Amanah Bangsa)",
+  "Bima Aditya Nugraha (Partai Perjuangan Nusantara)",
+  "Rizky Firmansyah Malik (Partai Nusantara Bersatu)",
+  "Ningsih Purnama Sari (Partai Demokrasi Sejahtera)",
+  "Solihin Maulana Ibrahim (Partai Kebangkitan Rakyat)",
 ];

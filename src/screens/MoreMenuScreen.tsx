@@ -18,13 +18,14 @@ interface MenuItem {
 }
 
 export default function MoreMenuScreen({ navigation }: any) {
-  const { role, logout } = useApp();
+  const { role, logout, witnesses } = useApp();
   const { colors, isDark, toggleTheme } = useTheme();
   const [showCandidateExplorer, setShowCandidateExplorer] = useState(false);
 
   const permissions = ROLE_PERMISSIONS[role];
   const userProfile = getUserProfile(role);
   const avatarUrl = getWitnessAvatar(userProfile.avatarIndex);
+  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
 
   // Dynamically filter menu items per role according to RBAC matrix
   const getRoleMenuItems = (): MenuItem[] => {
@@ -42,10 +43,18 @@ export default function MoreMenuScreen({ navigation }: any) {
       desc: 'Visi, misi, program unggulan, & rekam jejak kandidat Pemilu',
     };
 
+    const partyLeaderboardItem: MenuItem = {
+      key: 'PartyLeaderboard',
+      icon: 'bar-chart-2',
+      label: 'Partai & Legislatif',
+      desc: 'Koalisi mana yang menang gede & anggota DPR RI terpilih',
+    };
+
     if (role === 'TPS_WITNESS') {
       return [
         profileItem,
         candidateExplorerItem,
+        partyLeaderboardItem,
         {
           key: 'AssignmentLetter',
           icon: 'file-text',
@@ -76,6 +85,7 @@ export default function MoreMenuScreen({ navigation }: any) {
           icon: 'image',
           label: 'Dokumentasi Kegiatan TPS',
           desc: 'Unggah foto persiapan, pemungutan, & penghitungan suara',
+          params: { tpsId: currentWitness?.assignedTpsId },
         },
         {
           key: 'Broadcast',
@@ -96,6 +106,19 @@ export default function MoreMenuScreen({ navigation }: any) {
           desc: 'Monitoring status & presensi saksi TPS se-Kota Bandung',
         },
         {
+          key: 'CoordinatorList',
+          icon: 'shield',
+          label: 'Daftar Koordinator TPS',
+          desc: 'Cek kehadiran, detail & kartu petugas koordinator binaan',
+        },
+        {
+          key: 'WitnessList',
+          icon: 'users',
+          label: 'Daftar Saksi TPS',
+          desc: 'Cek kehadiran, detail & kartu petugas saksi se-Kota Bandung',
+        },
+        partyLeaderboardItem,
+        {
           key: 'KtpOcr',
           icon: 'credit-card',
           label: 'Scan / Foto KTP Saksi',
@@ -112,12 +135,6 @@ export default function MoreMenuScreen({ navigation }: any) {
           icon: 'alert-circle',
           label: 'Cek Laporan Kendala TPS',
           desc: 'Monitoring laporan kendala se-Kota Bandung',
-        },
-        {
-          key: 'Documentation',
-          icon: 'image',
-          label: 'Dokumentasi Kegiatan TPS',
-          desc: 'Unggah foto bukti pendampingan lapangan',
         },
         {
           key: 'Broadcast',
@@ -138,6 +155,13 @@ export default function MoreMenuScreen({ navigation }: any) {
           desc: 'Monitoring status & presensi 6 TPS binaan kluster',
         },
         {
+          key: 'WitnessList',
+          icon: 'users',
+          label: 'Daftar Saksi Kluster',
+          desc: 'Cek kehadiran, detail & kartu petugas saksi binaan',
+        },
+        partyLeaderboardItem,
+        {
           key: 'KtpOcr',
           icon: 'credit-card',
           label: 'Scan / Foto KTP Saksi',
@@ -148,12 +172,6 @@ export default function MoreMenuScreen({ navigation }: any) {
           icon: 'alert-triangle',
           label: 'Laporan Darurat Kluster TPS',
           desc: 'Monitoring laporan kendala dari 6 saksi binaan',
-        },
-        {
-          key: 'Documentation',
-          icon: 'image',
-          label: 'Dokumentasi Kegiatan TPS',
-          desc: 'Unggah foto bukti supervisi kluster',
         },
         {
           key: 'Broadcast',
@@ -170,7 +188,7 @@ export default function MoreMenuScreen({ navigation }: any) {
       ];
     }
 
-    const items: MenuItem[] = [profileItem];
+    const items: MenuItem[] = [profileItem, partyLeaderboardItem];
 
     if (permissions.canAccessEmergencyList) {
       items.push({
@@ -233,7 +251,7 @@ export default function MoreMenuScreen({ navigation }: any) {
         ]}
       >
         <View style={styles.profileAvatarWrapper}>
-          <Image source={{ uri: avatarUrl }} style={styles.profileHeaderAvatar} />
+          <Image source={avatarUrl} style={styles.profileHeaderAvatar} />
           <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
         </View>
 

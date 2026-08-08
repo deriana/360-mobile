@@ -33,7 +33,14 @@ export function CandidateDetailModal({ candidateName, onClose }: CandidateDetail
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
             {/* Candidate Header Badge */}
             <View style={{ alignItems: 'center', gap: spacing.xs, marginVertical: spacing.xs }}>
-              <Image source={{ uri: profile.avatarUri }} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+              {profile.runningMateAvatarUri ? (
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+                  <Image source={profile.runningMateAvatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+                </View>
+              ) : (
+                <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+              )}
               <Text style={[styles.candidateNumber, { color: colors.primary }]}>{profile.numberLabel}</Text>
               <Text style={[styles.candidateTitle, { color: colors.text }]}>{profile.name}</Text>
               <Pill label={profile.partyOrCoalition} tone="neutral" />

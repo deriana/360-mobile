@@ -1,4 +1,6 @@
-// High quality official brand assets and real Indonesian election TPS venue photos.
+// Brand assets, real Indonesian election documentation photos, and stock
+// portraits (Southeast Asian subjects) — all bundled locally, no external
+// network calls needed at runtime.
 
 export const BRAND_ASSETS = {
   emblem: require('../../assets/brand/saksi360_emblem.png'),
@@ -7,7 +9,6 @@ export const BRAND_ASSETS = {
 };
 
 export const TPS_LOCAL_IMAGES = [
-  require('../../assets/tps/tps_pemilu_2024.jpg'),
   require('../../assets/tps/tps_petanggan.jpg'),
   require('../../assets/tps/kpu_petugas.jpg'),
   require('../../assets/tps/pengamanan_tps.jpg'),
@@ -20,32 +21,32 @@ export const IMAGES = {
   fullLogo: BRAND_ASSETS.fullLogo,
   logoText: BRAND_ASSETS.logoText,
 
-  // TPS Venues & Real Election Photos
-  tpsHero: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=1000&q=80',
-  tpsSchool: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80',
-  tpsCommunity: 'https://images.unsplash.com/photo-1494172961521-33799ddd43a5?auto=format&fit=crop&w=800&q=80',
-  tpsOutdoor: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=800&q=80',
-  
-  // Documents & C1 Forms
-  c1Form: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
-  ballotPaper: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?auto=format&fit=crop&w=800&q=80',
-  idCard: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80',
+  // TPS Venues & Real Election Documentation Photos
+  tpsHero: require('../../assets/tps/pengamanan_tps.jpg'),
+  tpsSchool: require('../../assets/documents/pemilih_tps.jpg'),
+  tpsCommunity: require('../../assets/tps/tps_petanggan.jpg'),
+  tpsOutdoor: require('../../assets/tps/pengamanan_tps.jpg'),
 
-  // Witness Avatars
+  // Documents & C1 Forms
+  c1Form: require('../../assets/tps/kpu_petugas.jpg'),
+  ballotPaper: require('../../assets/documents/bukti_pencoblosan.jpg'),
+  idCard: require('../../assets/tps/bawaslu_tps.jpg'),
+
+  // Witness Avatars (Southeast Asian portraits)
   witnesses: [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
-    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
+    require('../../assets/avatars/witness_1.jpg'),
+    require('../../assets/avatars/witness_2.jpg'),
+    require('../../assets/avatars/witness_3.jpg'),
+    require('../../assets/avatars/witness_4.jpg'),
+    require('../../assets/avatars/witness_5.jpg'),
+    require('../../assets/avatars/witness_6.jpg'),
   ],
 
   // Map Location previews
-  mapPreview: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80',
+  mapPreview: require('../../assets/tps/tps_petanggan.jpg'),
 };
 
-export function getWitnessAvatar(index: number): string {
+export function getWitnessAvatar(index: number): any {
   return IMAGES.witnesses[index % IMAGES.witnesses.length];
 }
 
@@ -53,22 +54,39 @@ export function getTpsPhoto(index: number): any {
   return TPS_LOCAL_IMAGES[index % TPS_LOCAL_IMAGES.length];
 }
 
-export const PASLON_AVATARS: Record<string, string> = {
-  "Paslon 01 — Anies & Muhaimin": "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80",
-  "Paslon 02 — Prabowo & Gibran": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80",
-  "Paslon 03 — Ganjar & Mahfud": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+// Stable avatar tied to an identity string (e.g. a member id), independent of
+// its position in whatever filtered/sorted list is currently rendering it —
+// so the same person always gets the same photo everywhere.
+export function getStableAvatar(id: string): any {
+  const hash = id.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return IMAGES.witnesses[hash % IMAGES.witnesses.length];
+}
+
+// Real, verified official/electoral portraits (Wikimedia Commons).
+export const PASLON_AVATARS: Record<string, any> = {
+  "Paslon 01 — Anies & Muhaimin": require('../../assets/avatars/paslon01_a.jpg'),
+  "Paslon 02 — Prabowo & Gibran": require('../../assets/avatars/paslon02_a.jpg'),
+  "Paslon 03 — Ganjar & Mahfud": require('../../assets/avatars/paslon03_a.png'),
 };
 
-export const CALEG_AVATARS: Record<string, string> = {
-  "Atalia Praratya (Partai Golkar)": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80",
-  "H. Ledia Hanifa Amaliah (PKS)": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80",
-  "Junico BP Siahaan / Nico Siahaan (PDI Perjuangan)": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
-  "H. Muhammad Farhan (Partai NasDem)": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
-  "Dr. H. Melani Leimena Suharli (Partai Demokrat)": "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=300&q=80",
-  "H. Syaiful Huda (PKB)": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80",
+export const PASLON_RUNNING_MATE_AVATARS: Record<string, any> = {
+  "Paslon 01 — Anies & Muhaimin": require('../../assets/avatars/paslon01_b.jpg'),
+  "Paslon 02 — Prabowo & Gibran": require('../../assets/avatars/paslon02_b.jpg'),
+  "Paslon 03 — Ganjar & Mahfud": require('../../assets/avatars/paslon03_b.jpg'),
 };
 
-export function getCandidateAvatar(name: string): string {
+export const CALEG_AVATARS: Record<string, any> = {
+  "Kartika Wulandari Praditya (Partai Karya Mandiri)": require('../../assets/avatars/caleg_kartika.jpg'),
+  "Farida Ramadhani Azzahra (Partai Amanah Bangsa)": require('../../assets/avatars/caleg_farida.jpg'),
+  "Bima Aditya Nugraha (Partai Perjuangan Nusantara)": require('../../assets/avatars/caleg_bima.jpg'),
+  "Rizky Firmansyah Malik (Partai Nusantara Bersatu)": require('../../assets/avatars/caleg_rizky.jpg'),
+  "Ningsih Purnama Sari (Partai Demokrasi Sejahtera)": require('../../assets/avatars/caleg_ningsih.jpg'),
+  "Solihin Maulana Ibrahim (Partai Kebangkitan Rakyat)": require('../../assets/avatars/caleg_solihin.jpg'),
+};
+
+export function getCandidateAvatar(name: string): any {
+  if (PASLON_AVATARS[name]) return PASLON_AVATARS[name];
+  if (CALEG_AVATARS[name]) return CALEG_AVATARS[name];
   // Check exact or partial match for Paslon
   for (const [key, uri] of Object.entries(PASLON_AVATARS)) {
     if (name.includes(key) || key.includes(name)) return uri;

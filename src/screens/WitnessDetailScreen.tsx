@@ -53,6 +53,12 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
 
       <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
         <PrimaryButton
+          label="Lihat Kartu Petugas"
+          variant="secondary"
+          icon="credit-card"
+          onPress={() => navigation.navigate('KartuPetugas', { personType: 'witness', personId: witness.id })}
+        />
+        <PrimaryButton
           label="Lihat Surat Tugas Digital"
           variant="secondary"
           icon="file-text"

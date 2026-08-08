@@ -2,20 +2,32 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import {
   tpsList as initialTps,
   witnesses as initialWitnesses,
+  coordinators as initialCoordinators,
   emergencyReports as initialEmergencyReports,
   broadcasts as initialBroadcasts,
   payments as initialPayments,
 } from '../data';
+import { IMAGES } from '../data/images';
 import {
   Broadcast,
+  Coordinator,
   EmergencyReport,
   Payment,
   Role,
   Tps,
+  TpsDocPhoto,
   TpsStatus,
   VoteCounts,
   Witness,
 } from '../types';
+
+const SEED_DOCUMENTATION: Record<string, TpsDocPhoto[]> = {
+  'TPS-001': [
+    { id: 'seed-1', source: IMAGES.tpsSchool, takenAt: '07:30 WIB — Lokasi TPS' },
+    { id: 'seed-2', source: IMAGES.ballotPaper, takenAt: '08:15 WIB — Papan Hitung' },
+    { id: 'seed-3', source: IMAGES.c1Form, takenAt: '13:45 WIB — C1 Plano' },
+  ],
+};
 
 interface AppContextValue {
   role: Role;
@@ -25,9 +37,14 @@ interface AppContextValue {
   logout: () => void;
   tps: Tps[];
   witnesses: Witness[];
+  coordinators: Coordinator[];
   emergencyReports: EmergencyReport[];
   broadcasts: Broadcast[];
   payments: Payment[];
+  documentation: Record<string, TpsDocPhoto[]>;
+  getDocumentation: (tpsId: string) => TpsDocPhoto[];
+  addDocumentationPhoto: (tpsId: string, photo: Omit<TpsDocPhoto, 'id'>) => void;
+  removeDocumentationPhoto: (tpsId: string, photoId: string) => void;
   checkInWitness: (witnessId: string, override?: { lat: number; lng: number; locationLabel?: string }) => void;
   submitTpsReport: (
     tpsId: string,
@@ -45,9 +62,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [tps, setTps] = useState<Tps[]>(initialTps);
   const [witnesses, setWitnesses] = useState<Witness[]>(initialWitnesses);
+  const [coordinators] = useState<Coordinator[]>(initialCoordinators);
   const [emergencyReports, setEmergencyReports] = useState<EmergencyReport[]>(initialEmergencyReports);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>(initialBroadcasts);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
+  const [documentation, setDocumentation] = useState<Record<string, TpsDocPhoto[]>>(SEED_DOCUMENTATION);
+
+  const getDocumentation = (tpsId: string) => documentation[tpsId] ?? [];
+
+  const addDocumentationPhoto: AppContextValue['addDocumentationPhoto'] = (tpsId, photo) => {
+    setDocumentation((prev) => ({
+      ...prev,
+      [tpsId]: [...(prev[tpsId] ?? []), { ...photo, id: `${tpsId}-${(prev[tpsId]?.length ?? 0) + 1}-${Date.now()}` }],
+    }));
+  };
+
+  const removeDocumentationPhoto: AppContextValue['removeDocumentationPhoto'] = (tpsId, photoId) => {
+    setDocumentation((prev) => ({
+      ...prev,
+      [tpsId]: (prev[tpsId] ?? []).filter((p) => p.id !== photoId),
+    }));
+  };
 
   const checkInWitness: AppContextValue['checkInWitness'] = (witnessId, override) => {
     setWitnesses((prev) =>
@@ -115,16 +150,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       logout,
       tps,
       witnesses,
+      coordinators,
       emergencyReports,
       broadcasts,
       payments,
+      documentation,
+      getDocumentation,
+      addDocumentationPhoto,
+      removeDocumentationPhoto,
       checkInWitness,
       submitTpsReport,
       addEmergencyReport,
       addBroadcast,
       markPaymentPaid,
     }),
-    [role, loggedIn, tps, witnesses, emergencyReports, broadcasts, payments],
+    [role, loggedIn, tps, witnesses, coordinators, emergencyReports, broadcasts, payments, documentation],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

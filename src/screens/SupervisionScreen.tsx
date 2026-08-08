@@ -10,7 +10,7 @@ import { IMAGES, getTpsPhoto } from '../data/images';
 import { TpsStatus } from '../types';
 
 export default function SupervisionScreen({ navigation }: any) {
-  const { role, tps, witnesses } = useApp();
+  const { role, tps, witnesses, getDocumentation } = useApp();
   const { colors } = useTheme();
 
   const [query, setQuery] = useState('');
@@ -94,6 +94,10 @@ export default function SupervisionScreen({ navigation }: any) {
             const assignedWit = witnesses.filter((w) => w.assignedTpsId === item.id);
             const checkedInWit = assignedWit.filter((w) => w.status === 'checked_in').length;
 
+            const totalCandidate = Object.values(item.votes.candidateVotes).reduce((a, b) => a + b, 0);
+            const leading = Object.entries(item.votes.candidateVotes).sort((a, b) => b[1] - a[1])[0];
+            const leadingPercent = leading && totalCandidate > 0 ? Math.round((leading[1] / totalCandidate) * 100) : 0;
+
             return (
               <Pressable
                 onPress={() => navigation.navigate('TpsDetail', { tpsId: item.id })}
@@ -127,6 +131,21 @@ export default function SupervisionScreen({ navigation }: any) {
                         Saksi Hadir: {checkedInWit}/{assignedWit.length || 1}
                       </Text>
                     </View>
+                    <View style={styles.metaItem}>
+                      <Feather name="image" size={12} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
+                      <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                        Dokumentasi: {getDocumentation(item.id).length} foto
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.quickCountRow, { borderTopColor: colors.border }]}>
+                    <Feather name="zap" size={12} color={colors.danger} strokeWidth={iconStrokeWidth} />
+                    <Text style={[styles.quickCountText, { color: colors.text }]} numberOfLines={1}>
+                      {leading && totalCandidate > 0
+                        ? `Quick Count: ${leading[0].split('—')[0].trim()} ${leadingPercent}%`
+                        : 'Quick Count: belum ada suara masuk'}
+                    </Text>
                   </View>
                 </View>
                 <Feather name="chevron-right" size={18} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
@@ -171,4 +190,6 @@ const styles = StyleSheet.create({
   cardMetaRow: { flexDirection: 'row', gap: spacing.md, paddingTop: 4, borderTopWidth: 0.5 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 11, fontWeight: '700' },
+  quickCountRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 4, borderTopWidth: 0.5 },
+  quickCountText: { fontSize: 11, fontWeight: '700', flexShrink: 1 },
 });

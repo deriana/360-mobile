@@ -36,7 +36,7 @@ export default function EmergencyListScreen({ navigation }: any) {
   const permissions = ROLE_PERMISSIONS[role];
   const [tpsFilter, setTpsFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState<EmergencyReport | null>(null);
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewSource, setPreviewSource] = useState<any>(null);
 
   const scopedTps = scopeTps(role, tps, witnesses);
   const clusterTpsIds = new Set(scopedTps.map((t) => t.id));
@@ -145,9 +145,9 @@ export default function EmergencyListScreen({ navigation }: any) {
                   Foto Bukti Lapangan ({selectedReport.photos.length})
                 </Text>
                 <View style={styles.photosGrid}>
-                  {selectedReport.photos.map((uri) => (
-                    <Pressable key={uri} onPress={() => setPreviewUri(uri)}>
-                      <Image source={{ uri }} style={styles.photoThumb} />
+                  {selectedReport.photos.map((photo, photoIdx) => (
+                    <Pressable key={photoIdx} onPress={() => setPreviewSource(photo)} style={styles.photoThumbWrap}>
+                      <Image source={photo} style={styles.photoThumb} resizeMode="cover" />
                     </Pressable>
                   ))}
                 </View>
@@ -157,8 +157,12 @@ export default function EmergencyListScreen({ navigation }: any) {
         )}
       </Modal>
 
-      <Modal visible={!!previewUri} onClose={() => setPreviewUri(null)} variant="floating" title="Pratinjau Foto">
-        {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+      <Modal visible={!!previewSource} onClose={() => setPreviewSource(null)} variant="floating" title="Pratinjau Foto">
+        {previewSource && (
+          <View style={styles.previewImageWrap}>
+            <Image source={previewSource} style={styles.previewImage} resizeMode="contain" />
+          </View>
+        )}
       </Modal>
     </View>
   );
@@ -193,6 +197,8 @@ const styles = StyleSheet.create({
   detailRowValue: { fontSize: fontSize.xs, fontWeight: '700', flex: 1 },
   photosLabel: { fontSize: fontSize.xs, fontWeight: '700' },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  photoThumb: { width: 92, height: 92, borderRadius: radius.md },
-  previewImage: { width: '100%', aspectRatio: 1, borderRadius: radius.md },
+  photoThumbWrap: { width: 92, height: 92, borderRadius: radius.md, overflow: 'hidden' },
+  photoThumb: { width: '100%', height: '100%' },
+  previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
 });

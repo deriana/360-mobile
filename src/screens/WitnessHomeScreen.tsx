@@ -25,7 +25,7 @@ export default function WitnessHomeScreen({ navigation }: any) {
       {/* Welcome Banner Card with Profile Avatar */}
       <View style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.profileHeaderRow}>
-          <Image source={{ uri: avatar }} style={styles.avatarImage} />
+          <Image source={avatar} style={styles.avatarImage} />
           <View style={{ flex: 1, gap: 2 }}>
             <View style={styles.nameStatusRow}>
               <Text style={[styles.greeting, { color: colors.text }]}>{witness.name}</Text>
@@ -41,7 +41,7 @@ export default function WitnessHomeScreen({ navigation }: any) {
 
       {/* Assigned TPS Photo Card */}
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <ImageBackground source={{ uri: IMAGES.tpsSchool }} style={styles.tpsPhotoHeader}>
+        <ImageBackground source={IMAGES.tpsSchool} style={styles.tpsPhotoHeader}>
           <View style={[styles.tpsPhotoOverlay, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(255, 255, 255, 0.94)' }]}>
             <Text style={[styles.tpsTag, { color: colors.primary }]}>LOKASI PENUGASAN SAKSI</Text>
             <Text style={[styles.tpsHeadline, { color: colors.text }]}>

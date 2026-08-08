@@ -209,7 +209,7 @@ export default function CheckInScreen() {
       {/* Header: Greeting, Live Clock, Status */}
       <View style={styles.headerTopRow}>
         <View style={styles.headerLeftRow}>
-          <Image source={{ uri: getWitnessAvatar(0) }} style={styles.avatarImg} />
+          <Image source={getWitnessAvatar(0)} style={styles.avatarImg} />
           <View>
             <Text style={[styles.greetingText, { color: colors.text }]}>Halo, {witness.name.split(' ')[0]}</Text>
             <Text style={[styles.roleText, { color: colors.textMuted }]}>Saksi Resmi TPS</Text>

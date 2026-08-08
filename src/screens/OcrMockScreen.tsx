@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
+import { pickImage } from '../utils/pickImage';
+import { UploadRow } from './ReportFormScreen';
 
-type Stage = 'before' | 'scanning' | 'after' | 'done';
+type Stage = 'before' | 'scanning' | 'review' | 'attachment' | 'done';
 
 export default function OcrMockScreen({ route, navigation }: any) {
   const { tpsId } = route.params;
@@ -21,6 +23,17 @@ export default function OcrMockScreen({ route, navigation }: any) {
   const [candidateValues, setCandidateValues] = useState<Record<string, string>>({});
   const [dprCandidateValues, setDprCandidateValues] = useState<Record<string, string>>({});
   const [votersPresent, setVotersPresent] = useState('0');
+  const [uploads, setUploads] = useState<{ formPhoto: any; tpsPhoto: any; tpsVideo: boolean }>({
+    formPhoto: null,
+    tpsPhoto: null,
+    tpsVideo: false,
+  });
+  const toggleVideo = () => setUploads((prev) => ({ ...prev, tpsVideo: !prev.tpsVideo }));
+  const handlePickUpload = async (key: 'formPhoto' | 'tpsPhoto', source: 'camera' | 'library') => {
+    const uri = await pickImage(source);
+    if (!uri) return;
+    setUploads((prev) => ({ ...prev, [key]: { uri } }));
+  };
 
   if (!record) {
     return <EmptyState title="TPS Tidak Ditemukan" body="Tidak dapat memproses OCR." icon="alert-circle" />;
@@ -53,11 +66,15 @@ export default function OcrMockScreen({ route, navigation }: any) {
         [dprCandidates[4]]: String(Math.floor(share * 0.2)),
         [dprCandidates[5]]: String(Math.floor(share * 0.15)),
       });
-      setStage('after');
+      setStage('review');
     }, 1400);
   };
 
   const confirm = () => {
+    if (!uploads.formPhoto || !uploads.tpsPhoto) {
+      Alert.alert('Lengkapi Dokumen', 'Unggah foto formulir C1 Plano dan foto lokasi TPS sebelum konfirmasi hasil scan.');
+      return;
+    }
     submitTpsReport(record.id, {
       votersPresent: Number(votersPresent) || 0,
       votes: {
@@ -74,7 +91,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Pemindaian Formulir C.Hasil</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Scan Formulir C1</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {record.id} — TPS {record.tpsNumber}, {record.district}, {record.regency}
         </Text>
@@ -83,36 +100,36 @@ export default function OcrMockScreen({ route, navigation }: any) {
       <Card style={{ alignItems: 'center', gap: spacing.md }}>
         <View style={[styles.photoPlaceholder, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}>
           <Feather name="file-text" size={40} color={colors.primary} strokeWidth={iconStrokeWidth} />
-          <Text style={[styles.photoCaption, { color: colors.primary }]}>Area Pratinjau Pemindaian C.Hasil</Text>
+          <Text style={[styles.photoCaption, { color: colors.primary }]}>Arahkan kamera ke Formulir C1</Text>
         </View>
 
         {stage === 'before' && (
-          <PrimaryButton label="Jalankan Pemindaian C.Hasil" icon="zap" onPress={runScan} style={{ width: '100%' }} />
+          <PrimaryButton label="Mulai Scan C1" icon="zap" onPress={runScan} style={{ width: '100%' }} />
         )}
         {stage === 'scanning' && (
-          <PrimaryButton label="Memproses Gambar C.Hasil..." onPress={() => {}} loading style={{ width: '100%' }} />
+          <PrimaryButton label="Memindai..." onPress={() => {}} loading style={{ width: '100%' }} />
         )}
       </Card>
 
-      {(stage === 'after' || stage === 'done') && (
+      {stage === 'review' && (
         <>
           <Card style={{ gap: spacing.sm }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Hasil Pembacaan Data</SectionTitle>
+            <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Langkah 1/2" tone="info" />}>
+              Hasil Scan
+            </SectionTitle>
             <Text style={[styles.hint, { color: colors.textMuted }]}>
-              Silakan periksa dan selaraskan angka jika terdapat perbedaan dengan fisik formulir C.Hasil.
+              Data udah keisi otomatis dari hasil scan. Cek sekilas, samain sama formulir C1 asli kalau ada yang meleset.
             </Text>
             <Input
               label="Pemilih Hadir"
               value={votersPresent}
               onChangeText={setVotersPresent}
-              editable={stage === 'after'}
               keyboardType="numeric"
             />
             <Input
               label="Suara Tidak Sah"
               value={invalidVotes}
               onChangeText={setInvalidVotes}
-              editable={stage === 'after'}
               keyboardType="numeric"
             />
 
@@ -123,7 +140,6 @@ export default function OcrMockScreen({ route, navigation }: any) {
                 label={p}
                 value={partyValues[p] ?? '0'}
                 onChangeText={(v) => setPartyValues((prev) => ({ ...prev, [p]: v }))}
-                editable={stage === 'after'}
                 keyboardType="numeric"
               />
             ))}
@@ -135,7 +151,6 @@ export default function OcrMockScreen({ route, navigation }: any) {
                 label={c}
                 value={candidateValues[c] ?? '0'}
                 onChangeText={(v) => setCandidateValues((prev) => ({ ...prev, [c]: v }))}
-                editable={stage === 'after'}
                 keyboardType="numeric"
               />
             ))}
@@ -147,23 +162,51 @@ export default function OcrMockScreen({ route, navigation }: any) {
                 label={c}
                 value={dprCandidateValues[c] ?? '0'}
                 onChangeText={(v) => setDprCandidateValues((prev) => ({ ...prev, [c]: v }))}
-                editable={stage === 'after'}
                 keyboardType="numeric"
               />
             ))}
           </Card>
 
-          {stage === 'after' && (
-            <PrimaryButton label="Konfirmasi & Simpan Hasil" icon="check" onPress={confirm} />
-          )}
-
-          {stage === 'done' && (
-            <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg }}>
-              <Pill label="Hasil Terverifikasi & Terkirim" tone="success" icon="check-circle" />
-              <PrimaryButton label="Kembali ke Laporan" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
-            </Card>
-          )}
+          <PrimaryButton label="Lanjut ke Lampiran" icon="arrow-right" onPress={() => setStage('attachment')} />
         </>
+      )}
+
+      {stage === 'attachment' && (
+        <>
+          <Card style={{ gap: spacing.sm }}>
+            <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Langkah 2/2" tone="info" />}>
+              Lampiran Foto & Video
+            </SectionTitle>
+            <Text style={[styles.hint, { color: colors.textMuted }]}>
+              Data C1 udah beres. Lengkapi bukti foto formulir & papan hasil hitung sebelum dikirim.
+            </Text>
+            <UploadRow
+              label="Foto Formulir C1 (Wajib)"
+              imageSource={uploads.formPhoto}
+              onPick={(source) => handlePickUpload('formPhoto', source)}
+            />
+            <UploadRow
+              label="Foto Papan Hasil Hitung (Wajib)"
+              imageSource={uploads.tpsPhoto}
+              onPick={(source) => handlePickUpload('tpsPhoto', source)}
+            />
+            <UploadRow
+              label="Video Suasana TPS (Opsional)"
+              done={uploads.tpsVideo}
+              onPress={toggleVideo}
+            />
+          </Card>
+
+          <PrimaryButton label="Kirim Laporan" icon="send" onPress={confirm} />
+          <PrimaryButton label="Kembali Cek Data" variant="secondary" icon="arrow-left" onPress={() => setStage('review')} />
+        </>
+      )}
+
+      {stage === 'done' && (
+        <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg }}>
+          <Pill label="Berhasil Dikirim" tone="success" icon="check-circle" />
+          <PrimaryButton label="Kembali ke Laporan" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
+        </Card>
       )}
     </ScrollView>
   );

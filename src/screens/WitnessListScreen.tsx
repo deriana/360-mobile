@@ -25,7 +25,7 @@ export default function WitnessListScreen({ navigation }: any) {
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
 
-  const scopedTps = useMemo(() => scopeTps(role, tps), [role, tps]);
+  const scopedTps = useMemo(() => scopeTps(role, tps, witnesses), [role, tps, witnesses]);
   const scopedWitnesses = useMemo(() => scopeWitnesses(role, witnesses, scopedTps), [role, witnesses, scopedTps]);
 
   const filtered = scopedWitnesses.filter((w) =>
@@ -73,7 +73,7 @@ export default function WitnessListScreen({ navigation }: any) {
                 ]}
                 onPress={() => navigation.navigate('WitnessDetail', { witnessId: item.id })}
               >
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                <Image source={avatarUrl} style={styles.avatarImage} />
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
                   <View style={styles.subRow}>

@@ -160,8 +160,8 @@ export default function EmergencyFormScreen({ navigation }: any) {
             <View style={styles.attachmentGrid}>
               {attachedPhotos.map((uri) => (
                 <View key={uri} style={styles.attachmentPreviewWrap}>
-                  <Pressable onPress={() => setPreviewUri(uri)}>
-                    <Image source={{ uri }} style={styles.attachmentPreview} />
+                  <Pressable onPress={() => setPreviewUri(uri)} style={styles.attachmentPreviewClip}>
+                    <Image source={{ uri }} style={styles.attachmentPreview} resizeMode="cover" />
                   </Pressable>
                   <Pressable
                     onPress={() => removeAttachment(uri)}
@@ -185,7 +185,11 @@ export default function EmergencyFormScreen({ navigation }: any) {
       </ScrollView>
 
       <Modal visible={!!previewUri} onClose={() => setPreviewUri(null)} variant="floating" title="Pratinjau Foto">
-        {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+        {previewUri && (
+          <View style={styles.previewImageWrap}>
+            <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />
+          </View>
+        )}
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -208,7 +212,8 @@ const styles = StyleSheet.create({
   chipText: { fontSize: fontSize.xs, fontWeight: '700' },
   attachmentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   attachmentPreviewWrap: { position: 'relative' },
-  attachmentPreview: { width: 92, height: 92, borderRadius: radius.md },
+  attachmentPreviewClip: { width: 92, height: 92, borderRadius: radius.md, overflow: 'hidden' },
+  attachmentPreview: { width: '100%', height: '100%' },
   removeAttachmentBtn: {
     position: 'absolute',
     top: -6,
@@ -221,7 +226,8 @@ const styles = StyleSheet.create({
   },
   gpsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   gpsNote: { fontSize: fontSize.xs },
-  previewImage: { width: '100%', aspectRatio: 1, borderRadius: radius.md },
+  previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
 });
 
 

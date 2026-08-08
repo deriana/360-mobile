@@ -1,6 +1,7 @@
-import { Role, Tps, Witness } from '../types';
+import { Coordinator, Role, Tps, Witness } from '../types';
 
 export const CURRENT_WITNESS_ID = 'SAKSI-001';
+export const CURRENT_COORDINATOR_ID = 'COORD-1';
 
 // Each non-witness role is anchored to one mock home region/unit for this demo.
 export const ROLE_HOME: Record<Role, { province?: string; regency?: string; district?: string; coordinatorId?: string }> = {
@@ -201,4 +202,11 @@ export function scopeWitnesses(role: Role, witnesses: Witness[], tpsInScope: Tps
   }
   const tpsIds = new Set(tpsInScope.map((t) => t.id));
   return witnesses.filter((w) => tpsIds.has(w.assignedTpsId));
+}
+
+// Only Pengawas (OPERATOR) supervises coordinators; a Koordinator's own scope is saksi-only.
+export function scopeCoordinators(role: Role, coordinators: Coordinator[], tpsInScope: Tps[]): Coordinator[] {
+  if (role !== 'OPERATOR') return [];
+  const districtsInScope = new Set(tpsInScope.map((t) => t.district));
+  return coordinators.filter((c) => districtsInScope.has(c.district));
 }

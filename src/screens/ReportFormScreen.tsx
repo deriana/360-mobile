@@ -3,11 +3,12 @@ import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollV
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
+import { Card, DropdownPicker, EmptyState, IconButton, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
+import { pickImage } from '../utils/pickImage';
 import { Tps } from '../types';
 
 type MainViewMode = 'history' | 'form';
@@ -51,7 +52,11 @@ export default function ReportFormScreen({ route, navigation }: any) {
   const [dprCandidateValues, setDprCandidateValues] = useState<Record<string, string>>(
     Object.fromEntries(dprCandidates.map((c) => [c, String(activeRecord?.votes.dprCandidateVotes?.[c] || '')])),
   );
-  const [uploads, setUploads] = useState({ formPhoto: true, tpsPhoto: true, tpsVideo: false });
+  const [uploads, setUploads] = useState<{ formPhoto: any; tpsPhoto: any; tpsVideo: boolean }>({
+    formPhoto: IMAGES.c1Form,
+    tpsPhoto: IMAGES.ballotPaper,
+    tpsVideo: false,
+  });
   const [isEditing, setIsEditing] = useState(false);
 
   // Load a specific TPS into the editor form
@@ -64,7 +69,11 @@ export default function ReportFormScreen({ route, navigation }: any) {
     setDprCandidateValues(
       Object.fromEntries(dprCandidates.map((c) => [c, String(targetTps.votes.dprCandidateVotes?.[c] || '')])),
     );
-    setUploads({ formPhoto: targetTps.status === 'done', tpsPhoto: targetTps.status === 'done', tpsVideo: false });
+    setUploads({
+      formPhoto: targetTps.status === 'done' ? IMAGES.c1Form : null,
+      tpsPhoto: targetTps.status === 'done' ? IMAGES.ballotPaper : null,
+      tpsVideo: false,
+    });
     setIsEditing(targetTps.status === 'done');
     setViewMode('form');
   };
@@ -75,7 +84,13 @@ export default function ReportFormScreen({ route, navigation }: any) {
     setIsEditing(false);
   };
 
-  const toggleUpload = (key: keyof typeof uploads) => setUploads((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleVideo = () => setUploads((prev) => ({ ...prev, tpsVideo: !prev.tpsVideo }));
+
+  const handlePickUpload = async (key: 'formPhoto' | 'tpsPhoto', source: 'camera' | 'library') => {
+    const uri = await pickImage(source);
+    if (!uri) return;
+    setUploads((prev) => ({ ...prev, [key]: { uri } }));
+  };
 
   const handleSubmitForm = () => {
     if (!uploads.formPhoto || !uploads.tpsPhoto) {
@@ -304,32 +319,25 @@ export default function ReportFormScreen({ route, navigation }: any) {
               </Text>
             </View>
 
-            {/* Quick Switcher Select TPS */}
-            <Card style={{ gap: spacing.xs }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Pilih TPS untuk Diisi / Di-edit</SectionTitle>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
-                {scopedTps.map((t) => {
-                  const isSelected = t.id === selectedTpsId;
-                  return (
-                    <Pressable
-                      key={t.id}
-                      onPress={() => handleSelectTpsForEdit(t)}
-                      style={[
-                        styles.tpsSelectorPill,
-                        {
-                          backgroundColor: isSelected ? colors.primary : colors.surface,
-                          borderColor: isSelected ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: isSelected ? '#FFFFFF' : colors.text }}>
-                        {t.id} (TPS {t.tpsNumber})
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </Card>
+            {/* Quick Switcher Select TPS — only shown when there's actually a choice */}
+            {scopedTps.length > 1 && (
+              <Card style={{ gap: spacing.xs }}>
+                <SectionTitle style={{ marginBottom: 0 }}>Pilih TPS untuk Diisi / Di-edit</SectionTitle>
+                <DropdownPicker
+                  label="TPS"
+                  icon="map-pin"
+                  value={selectedTpsId}
+                  options={scopedTps.map((t) => ({
+                    label: `${t.id} (TPS ${t.tpsNumber} — Kec. ${t.district})`,
+                    value: t.id,
+                  }))}
+                  onSelect={(id) => {
+                    const target = scopedTps.find((t) => t.id === id);
+                    if (target) handleSelectTpsForEdit(target);
+                  }}
+                />
+              </Card>
+            )}
 
             <PrimaryButton
               label="Scan Otomatis Kamera Formulir C1 (OCR)"
@@ -457,20 +465,18 @@ export default function ReportFormScreen({ route, navigation }: any) {
               <SectionTitle style={{ marginBottom: 0 }}>Lampiran Foto & Video C1</SectionTitle>
               <UploadRow
                 label="Foto Formulir C.Hasil Plano (Wajib)"
-                done={uploads.formPhoto}
-                imageUri={uploads.formPhoto ? IMAGES.c1Form : undefined}
-                onPress={() => toggleUpload('formPhoto')}
+                imageSource={uploads.formPhoto}
+                onPick={(source) => handlePickUpload('formPhoto', source)}
               />
               <UploadRow
                 label="Foto Papan Perhitungan TPS (Wajib)"
-                done={uploads.tpsPhoto}
-                imageUri={uploads.tpsPhoto ? IMAGES.ballotPaper : undefined}
-                onPress={() => toggleUpload('tpsPhoto')}
+                imageSource={uploads.tpsPhoto}
+                onPick={(source) => handlePickUpload('tpsPhoto', source)}
               />
               <UploadRow
                 label="Video Suasana TPS (Opsional)"
                 done={uploads.tpsVideo}
-                onPress={() => toggleUpload('tpsVideo')}
+                onPress={toggleVideo}
               />
             </Card>
 
@@ -498,7 +504,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
 
             {previewTps && (
               <ScrollView contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
-                <Image source={{ uri: IMAGES.c1Form }} style={styles.modalFormImage} resizeMode="contain" />
+                <Image source={IMAGES.c1Form} style={styles.modalFormImage} resizeMode="contain" />
 
                 <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
                   <SectionTitle style={{ marginBottom: 0 }}>Statistik Suara {previewTps.id}</SectionTitle>
@@ -516,7 +522,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
                   </SectionTitle>
                   {Object.entries(previewTps.votes.candidateVotes).map(([name, val]) => (
                     <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
-                      <Image source={{ uri: getCandidateAvatar(name) }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                      <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
                       <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
                       <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
                     </View>
@@ -530,7 +536,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
                     </SectionTitle>
                     {Object.entries(previewTps.votes.dprCandidateVotes).map(([name, val]) => (
                       <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
-                        <Image source={{ uri: getCandidateAvatar(name) }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                        <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
                         <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
                         <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
                       </View>
@@ -556,27 +562,52 @@ export default function ReportFormScreen({ route, navigation }: any) {
   );
 }
 
-function UploadRow({
+export function UploadRow({
   label,
+  imageSource,
+  onPick,
   done,
-  imageUri,
   onPress,
 }: {
   label: string;
-  done: boolean;
-  imageUri?: string;
-  onPress: () => void;
+  imageSource?: any;
+  onPick?: (source: 'camera' | 'library') => void;
+  done?: boolean;
+  onPress?: () => void;
 }) {
   const { colors } = useTheme();
+
+  // Real camera/gallery picker mode (photo rows)
+  if (onPick) {
+    const isDone = !!imageSource;
+    return (
+      <View style={[styles.uploadRow, { borderBottomColor: colors.border }]}>
+        {isDone ? (
+          <Image source={imageSource} style={styles.previewImage} />
+        ) : (
+          <View style={[styles.previewPlaceholder, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}>
+            <Feather name="image" size={16} color={colors.primary} />
+          </View>
+        )}
+        <Text style={[styles.uploadLabel, { color: colors.text }]}>{label}</Text>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <IconButton icon="camera" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('camera')} />
+          <IconButton icon="image" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('library')} />
+        </View>
+      </View>
+    );
+  }
+
+  // Simple toggle mode (optional video row — no real picker)
   return (
     <View style={[styles.uploadRow, { borderBottomColor: colors.border }]}>
-      {imageUri && <Image source={{ uri: imageUri }} style={styles.previewImage} />}
+      {imageSource && <Image source={imageSource} style={styles.previewImage} />}
       <Text style={[styles.uploadLabel, { color: colors.text }]}>{label}</Text>
       <PrimaryButton
-        label={done ? 'Terunggah' : 'Unggah Foto'}
-        icon={done ? 'check' : 'upload'}
+        label={done ? 'Ditandai' : 'Tandai Ada'}
+        icon={done ? 'check' : 'video'}
         variant={done ? 'primary' : 'secondary'}
-        onPress={onPress}
+        onPress={onPress ?? (() => {})}
         style={{ minHeight: 38, paddingVertical: 6, paddingHorizontal: 10 }}
       />
     </View>
@@ -617,15 +648,10 @@ const styles = StyleSheet.create({
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   summaryText: { fontSize: 11 },
-  tpsSelectorPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
   uploadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm },
   uploadLabel: { fontSize: fontSize.xs, fontWeight: '600', flex: 1 },
   previewImage: { width: 44, height: 44, borderRadius: radius.sm, borderWidth: 1, borderColor: '#4F46E5' },
+  previewPlaceholder: { width: 44, height: 44, borderRadius: radius.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   categoryTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
