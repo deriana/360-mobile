@@ -50,11 +50,19 @@ export default function MoreMenuScreen({ navigation }: any) {
       desc: 'Koalisi mana yang menang gede & anggota DPR RI terpilih',
     };
 
+    const helpCenterItem: MenuItem = {
+      key: 'HelpCenter',
+      icon: 'help-circle',
+      label: 'Pusat Bantuan',
+      desc: 'FAQ seputar check-in, lapor C1, dokumentasi, & honorarium',
+    };
+
     if (role === 'TPS_WITNESS') {
       return [
         profileItem,
         candidateExplorerItem,
         partyLeaderboardItem,
+        helpCenterItem,
         {
           key: 'AssignmentLetter',
           icon: 'file-text',
@@ -118,6 +126,7 @@ export default function MoreMenuScreen({ navigation }: any) {
           desc: 'Cek kehadiran, detail & kartu petugas saksi se-Kota Bandung',
         },
         partyLeaderboardItem,
+        helpCenterItem,
         {
           key: 'KtpOcr',
           icon: 'credit-card',
@@ -161,6 +170,7 @@ export default function MoreMenuScreen({ navigation }: any) {
           desc: 'Cek kehadiran, detail & kartu petugas saksi binaan',
         },
         partyLeaderboardItem,
+        helpCenterItem,
         {
           key: 'KtpOcr',
           icon: 'credit-card',
@@ -188,7 +198,7 @@ export default function MoreMenuScreen({ navigation }: any) {
       ];
     }
 
-    const items: MenuItem[] = [profileItem, partyLeaderboardItem];
+    const items: MenuItem[] = [profileItem, partyLeaderboardItem, helpCenterItem];
 
     if (permissions.canAccessEmergencyList) {
       items.push({

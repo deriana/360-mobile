@@ -23,6 +23,14 @@ export const NATIONAL_PARTIES: NationalParty[] = [
   { name: 'Partai Perindo', pct: 1.3, votes: 1973356, lolosThreshold: false, seats: 0 },
   { name: 'PPP', pct: 3.87, votes: 5874530, lolosThreshold: false, seats: 0 },
   { name: 'Partai Ummat', pct: 0.29, votes: 440210, lolosThreshold: false, seats: 0 },
+  // Partai lokal Aceh — hanya ikut Pemilu DPRA/DPRK Aceh, tidak berkontestasi
+  // untuk kursi DPR RI nasional (jadi seats/pct selalu 0 di level nasional ini).
+  { name: 'Partai Aceh', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
+  { name: 'Partai Nanggroe Aceh', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
+  { name: 'Partai Generasi Aceh Beusaboh Thaat dan Taqwa', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
+  { name: 'Partai Darul Aceh', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
+  { name: 'Partai Adil Sejahtera Aceh', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
+  { name: 'Partai SIRA', pct: 0, votes: 0, lolosThreshold: false, seats: 0, isLocal: true },
 ];
 
 
@@ -45,6 +53,12 @@ export const PARTY_COLORS: Record<string, string> = {
   'Partai Perindo': '#951B81',
   PPP: '#00854A',
   'Partai Ummat': '#0F7A3D',
+  'Partai Aceh': '#D0202A',
+  'Partai Nanggroe Aceh': '#F58220',
+  'Partai Generasi Aceh Beusaboh Thaat dan Taqwa': '#1A1A1A',
+  'Partai Darul Aceh': '#5EA8DE',
+  'Partai Adil Sejahtera Aceh': '#1E7A34',
+  'Partai SIRA': '#2E86D8',
 };
 
 // Real official party logos (Wikimedia Commons / Wikipedia, verified per party).
@@ -67,6 +81,12 @@ export const PARTY_LOGOS: Record<string, any> = {
   'Partai Perindo': require('../../assets/parties/perindo.png'),
   PPP: require('../../assets/parties/ppp.png'),
   'Partai Ummat': require('../../assets/parties/ummat.png'),
+  'Partai Aceh': require('../../assets/parties/pa.png'),
+  'Partai Nanggroe Aceh': require('../../assets/parties/pna.jpg'),
+  'Partai Generasi Aceh Beusaboh Thaat dan Taqwa': require('../../assets/parties/gabthat.jpg'),
+  'Partai Darul Aceh': require('../../assets/parties/pda.jpg'),
+  'Partai Adil Sejahtera Aceh': require('../../assets/parties/pasa.png'),
+  'Partai SIRA': require('../../assets/parties/sira.png'),
 };
 
 export function partyInitials(name: string): string {

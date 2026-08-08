@@ -8,7 +8,7 @@ import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { EmergencyCategory, EmergencyReport, EmergencySeverity, EmergencyStatus } from '../types';
 import { ROLE_PERMISSIONS, scopeTps } from '../utils/scope';
 
-const CATEGORY_LABEL: Record<EmergencyCategory, string> = {
+export const CATEGORY_LABEL: Record<EmergencyCategory, string> = {
   intimidation: 'Intimidasi Saksi',
   unrest: 'Kerusuhan',
   ballot_shortage: 'Kekurangan Surat Suara',

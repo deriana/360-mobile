@@ -30,6 +30,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import InsightsScreen from '../screens/InsightsScreen';
 import SecurityScreen from '../screens/SecurityScreen';
 import CheckInScreen from '../screens/CheckInScreen';
+import HelpCenterScreen from '../screens/HelpCenterScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -59,6 +60,7 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Leadership', component: LeadershipScreen, title: 'Dashboard Pimpinan' },
   { name: 'Insights', component: InsightsScreen, title: 'Pemantauan TPS' },
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
+  { name: 'HelpCenter', component: HelpCenterScreen, title: 'Pusat Bantuan' },
 ];
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {

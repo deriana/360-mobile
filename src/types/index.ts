@@ -120,6 +120,7 @@ export interface NationalParty {
   votes: number;
   lolosThreshold: boolean;
   seats: number;
+  isLocal?: boolean;
 }
 
 export interface LegislativeMember {

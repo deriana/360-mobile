@@ -68,7 +68,9 @@ export default function PartyLeaderboardScreen({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <Text style={[styles.partyName, { color: colors.text }]} numberOfLines={1}>{p.name}</Text>
               <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                {p.pct}% suara • {p.seats > 0 ? `${p.seats} kursi DPR RI` : 'Tidak lolos ambang batas 4%'}
+                {p.isLocal
+                  ? 'Partai Lokal Aceh (DPRA/DPRK, tidak ikut kursi DPR RI)'
+                  : `${p.pct}% suara • ${p.seats > 0 ? `${p.seats} kursi DPR RI` : 'Tidak lolos ambang batas 4%'}`}
               </Text>
             </View>
             <Feather name="chevron-right" size={16} color={colors.textMuted} strokeWidth={iconStrokeWidth} />

@@ -745,11 +745,28 @@ export const districtsFor = (regency: string): string[] => {
   return map[regency] ?? ["Kecamatan Barat", "Kecamatan Timur", "Kecamatan Utara", "Kecamatan Selatan"];
 };
 
+// Real 18 partai nasional peserta Pemilu 2024 (nama sama persis dengan
+// NATIONAL_PARTIES/PARTY_LOGOS di data/legislative.ts biar logo & detail
+// partai nyambung dari suara TPS).
 export const partyNames = [
-  "Partai Nusantara Utama",
-  "Partai Garuda Sejahtera",
-  "Partai Bhinneka Perjuangan",
-  "Partai Keadilan Mandiri",
+  "PKB",
+  "Partai Gerindra",
+  "PDI Perjuangan",
+  "Partai Golkar",
+  "Partai NasDem",
+  "Partai Buruh",
+  "Partai Gelora Indonesia",
+  "PKS",
+  "PKN",
+  "Partai Hanura",
+  "Partai Garuda",
+  "PAN",
+  "PBB",
+  "Partai Demokrat",
+  "PSI",
+  "Partai Perindo",
+  "PPP",
+  "Partai Ummat",
 ];
 
 export const candidateNames = [

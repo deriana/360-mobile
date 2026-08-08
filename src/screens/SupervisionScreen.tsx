@@ -98,6 +98,12 @@ export default function SupervisionScreen({ navigation }: any) {
             const leading = Object.entries(item.votes.candidateVotes).sort((a, b) => b[1] - a[1])[0];
             const leadingPercent = leading && totalCandidate > 0 ? Math.round((leading[1] / totalCandidate) * 100) : 0;
 
+            const hasAnomaly =
+              item.status === 'problem' ||
+              item.votersPresent > item.dpt ||
+              item.votes.invalidVotes > item.votersPresent ||
+              (totalCandidate > 0 && totalCandidate + item.votes.invalidVotes !== item.votersPresent);
+
             return (
               <Pressable
                 onPress={() => navigation.navigate('TpsDetail', { tpsId: item.id })}
@@ -113,7 +119,10 @@ export default function SupervisionScreen({ navigation }: any) {
                     <Text style={[styles.tpsNumberTitle, { color: colors.text }]}>
                       TPS {item.tpsNumber} — {item.village || item.district}
                     </Text>
-                    <StatusBadge status={item.status} />
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      {hasAnomaly && <Pill label="Anomali" tone="danger" icon="alert-triangle" />}
+                      <StatusBadge status={item.status} />
+                    </View>
                   </View>
 
                   <Text style={[styles.tpsLocationSub, { color: colors.textMuted }]}>

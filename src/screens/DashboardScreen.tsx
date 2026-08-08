@@ -107,6 +107,8 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Personnel Profile Header Card */}
         <PersonnelHeaderCard role={role} navigation={navigation} />
 
+        <BroadcastQuickButton navigation={navigation} />
+
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -275,6 +277,8 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Personnel Profile Header Card */}
         <PersonnelHeaderCard role={role} navigation={navigation} />
 
+        <BroadcastQuickButton navigation={navigation} />
+
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -419,6 +423,8 @@ export default function DashboardScreen({ navigation }: any) {
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Personnel Profile Header Card */}
       <PersonnelHeaderCard role={role} navigation={navigation} />
+
+      <BroadcastQuickButton navigation={navigation} />
 
       <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.heroHeaderRow}>
@@ -573,6 +579,29 @@ function PaginationBar({ currentPage, totalPages, onPrev, onNext }: { currentPag
   );
 }
 
+function BroadcastQuickButton({ navigation }: { navigation: any }) {
+  const { colors } = useTheme();
+  const { broadcasts } = useApp();
+  const count = broadcasts.length;
+
+  return (
+    <Pressable
+      onPress={() => navigation.navigate('Broadcast')}
+      style={({ pressed }) => [
+        styles.broadcastButton,
+        { backgroundColor: colors.primaryLight, borderColor: colors.border },
+        pressed && { opacity: 0.85 },
+      ]}
+    >
+      <Feather name="radio" size={16} color={colors.primary} strokeWidth={iconStrokeWidth} />
+      <Text style={[styles.broadcastButtonText, { color: colors.primary }]}>
+        {count > 0 ? `${count} Broadcast Masuk` : 'Belum Ada Broadcast'}
+      </Text>
+      <Feather name="chevron-right" size={16} color={colors.primary} strokeWidth={iconStrokeWidth} />
+    </Pressable>
+  );
+}
+
 function PersonnelHeaderCard({ role, navigation }: { role: any; navigation: any }) {
   const { colors } = useTheme();
   const profile = getUserProfile(role);
@@ -611,6 +640,16 @@ function PersonnelHeaderCard({ role, navigation }: { role: any; navigation: any 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+  broadcastButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  broadcastButtonText: { flex: 1, fontSize: fontSize.xs, fontWeight: '800' },
   profileHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',

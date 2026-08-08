@@ -137,4 +137,16 @@ export const tpsList: Tps[] = (() => {
   return list;
 })();
 
+// Seed a couple of deliberately-inconsistent TPS so the anomaly-detection
+// feature (TpsDetailScreen/SupervisionScreen) has real examples to show
+// instead of always reading "Data Konsisten". Mimics real-world data-entry
+// mistakes (e.g. a saksi mistyping numbers in the report form).
+if (tpsList[0]) {
+  tpsList[0].status = 'done';
+  tpsList[0].votersPresent = tpsList[0].dpt + 8; // pemilih hadir > DPT terdaftar
+}
+if (tpsList[1]) {
+  tpsList[1].votes.invalidVotes = tpsList[1].votersPresent + 15; // suara tidak sah > pemilih hadir
+}
+
 export const STATUS_ORDER: TpsStatus[] = ['not_reported', 'in_progress', 'done', 'problem'];

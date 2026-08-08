@@ -23,22 +23,23 @@ const ENTRY_TABS: Array<{ key: EntryTab; label: string; icon: keyof typeof Feath
 ];
 
 export default function ReportFormScreen({ route, navigation }: any) {
-  const { witnesses, tps, submitTpsReport, role } = useApp();
+  const { witnesses, tps, submitTpsReport, addDocumentationPhoto, role } = useApp();
   const { colors, isDark } = useTheme();
 
   const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
   const scopedTps = scopeTps(role, tps, witnesses);
 
-  // Initial TPS from route params or assigned TPS
-  const initialTpsId = route?.params?.tpsId ?? currentWitness?.assignedTpsId ?? tps[0]?.id;
+  // Initial TPS from route params or the witness's own assignment — otherwise
+  // leave unselected so ambiguous "new report" entry forces an explicit pick.
+  const initialTpsId: string | null = route?.params?.tpsId ?? currentWitness?.assignedTpsId ?? null;
 
   const [viewMode, setViewMode] = useState<MainViewMode>(route?.params?.tpsId ? 'form' : 'history');
-  const [selectedTpsId, setSelectedTpsId] = useState<string>(initialTpsId);
+  const [selectedTpsId, setSelectedTpsId] = useState<string | null>(initialTpsId);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
   const [previewTps, setPreviewTps] = useState<Tps | null>(null);
 
-  // Form State for active TPS being edited
-  const activeRecord = tps.find((t) => t.id === selectedTpsId) ?? tps[0];
+  // Form State for active TPS being edited — null until a TPS is explicitly chosen
+  const activeRecord = selectedTpsId ? tps.find((t) => t.id === selectedTpsId) ?? null : null;
 
   const [entryCategory, setEntryCategory] = useState<EntryTab>('pilpres');
   const [votersPresent, setVotersPresent] = useState(String(activeRecord?.votersPresent || ''));
@@ -58,6 +59,10 @@ export default function ReportFormScreen({ route, navigation }: any) {
     tpsVideo: false,
   });
   const [isEditing, setIsEditing] = useState(false);
+  // Tracks which uploads are real user-picked photos (vs the stock placeholder
+  // shown for already-submitted TPS) — only real ones get carried into
+  // TPS documentation on submit.
+  const [pickedReal, setPickedReal] = useState<{ formPhoto: boolean; tpsPhoto: boolean }>({ formPhoto: false, tpsPhoto: false });
 
   // Load a specific TPS into the editor form
   const handleSelectTpsForEdit = (targetTps: Tps) => {
@@ -74,14 +79,22 @@ export default function ReportFormScreen({ route, navigation }: any) {
       tpsPhoto: targetTps.status === 'done' ? IMAGES.ballotPaper : null,
       tpsVideo: false,
     });
+    setPickedReal({ formPhoto: false, tpsPhoto: false });
     setIsEditing(targetTps.status === 'done');
     setViewMode('form');
   };
 
   const handleCreateNewReport = () => {
-    const unsubmitted = tps.find((t) => t.status !== 'done') ?? tps[0];
-    handleSelectTpsForEdit(unsubmitted);
+    if (scopedTps.length === 1) {
+      handleSelectTpsForEdit(scopedTps[0]);
+      setIsEditing(false);
+      return;
+    }
+    // Multiple TPS in scope — force an explicit pick via the dropdown instead
+    // of silently guessing one (was picking an out-of-scope TPS before).
+    setSelectedTpsId(null);
     setIsEditing(false);
+    setViewMode('form');
   };
 
   const toggleVideo = () => setUploads((prev) => ({ ...prev, tpsVideo: !prev.tpsVideo }));
@@ -90,12 +103,21 @@ export default function ReportFormScreen({ route, navigation }: any) {
     const uri = await pickImage(source);
     if (!uri) return;
     setUploads((prev) => ({ ...prev, [key]: { uri } }));
+    setPickedReal((prev) => ({ ...prev, [key]: true }));
   };
 
   const handleSubmitForm = () => {
+    if (!activeRecord) return;
     if (!uploads.formPhoto || !uploads.tpsPhoto) {
       Alert.alert('Lengkapi Dokumen', 'Unggah foto formulir C1 Plano dan foto lokasi TPS sebelum submit.');
       return;
+    }
+    const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    if (pickedReal.formPhoto) {
+      addDocumentationPhoto(activeRecord.id, { source: uploads.formPhoto, takenAt: `${now} WIB — Foto Formulir C1 Plano` });
+    }
+    if (pickedReal.tpsPhoto) {
+      addDocumentationPhoto(activeRecord.id, { source: uploads.tpsPhoto, takenAt: `${now} WIB — Foto Papan Perhitungan TPS` });
     }
     submitTpsReport(activeRecord.id, {
       votersPresent: Number(votersPresent) || 0,
@@ -310,12 +332,14 @@ export default function ReportFormScreen({ route, navigation }: any) {
             <View style={styles.header}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <SectionTitle style={{ marginBottom: 0 }}>
-                  {isEditing ? `Edit Laporan ${activeRecord.id}` : `Formulir Baru ${activeRecord.id}`}
+                  {activeRecord ? (isEditing ? `Edit Laporan ${activeRecord.id}` : `Formulir Baru ${activeRecord.id}`) : 'Formulir Baru'}
                 </SectionTitle>
-                <Pill label={isEditing ? 'Perbarui Data' : 'Baru'} tone={isEditing ? 'warning' : 'primary'} />
+                {activeRecord && <Pill label={isEditing ? 'Perbarui Data' : 'Baru'} tone={isEditing ? 'warning' : 'primary'} />}
               </View>
               <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                {activeRecord.id} — TPS {activeRecord.tpsNumber}, {activeRecord.district}, {activeRecord.regency}
+                {activeRecord
+                  ? `${activeRecord.id} — TPS ${activeRecord.tpsNumber}, ${activeRecord.district}, ${activeRecord.regency}`
+                  : 'Pilih TPS dulu di bawah sebelum mengisi formulir.'}
               </Text>
             </View>
 
@@ -326,7 +350,8 @@ export default function ReportFormScreen({ route, navigation }: any) {
                 <DropdownPicker
                   label="TPS"
                   icon="map-pin"
-                  value={selectedTpsId}
+                  value={selectedTpsId ?? ''}
+                  placeholder="Belum ada TPS dipilih"
                   options={scopedTps.map((t) => ({
                     label: `${t.id} (TPS ${t.tpsNumber} — Kec. ${t.district})`,
                     value: t.id,
@@ -339,16 +364,24 @@ export default function ReportFormScreen({ route, navigation }: any) {
               </Card>
             )}
 
-            <PrimaryButton
-              label="Scan Otomatis Kamera Formulir C1 (OCR)"
-              icon="zap"
-              variant="secondary"
-              onPress={() => navigation.navigate('C1Ocr', { tpsId: activeRecord.id })}
-            />
+            {!activeRecord ? (
+              <EmptyState
+                title="Belum Ada TPS Dipilih"
+                body="Pilih TPS dari dropdown di atas untuk mulai mengisi formulir C1. Input belum bisa diisi sebelum TPS ditentukan."
+                icon="map-pin"
+              />
+            ) : (
+              <>
+                <PrimaryButton
+                  label="Scan Otomatis Kamera Formulir C1 (OCR)"
+                  icon="zap"
+                  variant="secondary"
+                  onPress={() => navigation.navigate('C1Ocr', { tpsId: activeRecord.id })}
+                />
 
-            <Card style={{ gap: spacing.md }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Data Kehadiran Pemilih</SectionTitle>
-              <Input label="Jumlah DPT Terdaftar" value={String(activeRecord.dpt)} editable={false} icon="users" />
+                <Card style={{ gap: spacing.md }}>
+                  <SectionTitle style={{ marginBottom: 0 }}>Data Kehadiran Pemilih</SectionTitle>
+                  <Input label="Jumlah DPT Terdaftar" value={String(activeRecord.dpt)} editable={false} icon="users" />
               <Input
                 label="Jumlah Pemilih Hadir"
                 value={votersPresent}
@@ -480,11 +513,13 @@ export default function ReportFormScreen({ route, navigation }: any) {
               />
             </Card>
 
-            <PrimaryButton
-              label={isEditing ? 'Simpan Perubahan Laporan C1' : 'Kirim & Simpan Laporan TPS Baru'}
-              icon="send"
-              onPress={handleSubmitForm}
-            />
+                <PrimaryButton
+                  label={isEditing ? 'Simpan Perubahan Laporan C1' : 'Kirim & Simpan Laporan TPS Baru'}
+                  icon="send"
+                  onPress={handleSubmitForm}
+                />
+              </>
+            )}
           </>
         )}
       </ScrollView>

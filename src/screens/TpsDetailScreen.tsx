@@ -3,11 +3,12 @@ import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View }
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pill } from '../components/ui';
+import { Card, EmptyState, Modal, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pill } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { CandidateDetailModal } from '../components/CandidateDetailModal';
 import { PartyBadge } from '../components/PartyBadge';
+import { CATEGORY_LABEL } from './EmergencyListScreen';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
 
@@ -20,11 +21,12 @@ const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof
 
 export default function TpsDetailScreen({ route, navigation }: any) {
   const { tpsId } = route.params;
-  const { tps, witnesses, getDocumentation } = useApp();
+  const { tps, witnesses, emergencyReports, getDocumentation } = useApp();
   const { colors, isDark } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   const record = tps.find((t) => t.id === tpsId);
   const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId);
@@ -52,6 +54,19 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       anomalies.push(
         `Selisih ${Math.abs(diff)} suara antara total suara Pilpres (sah + tidak sah = ${pilpresTotal}) dengan jumlah pemilih hadir (${record.votersPresent}).`,
       );
+    }
+  }
+
+  // TPS berstatus "Bermasalah" wajib punya alasan jelas — tarik dari laporan
+  // darurat yang terhubung ke TPS ini, bukan cuma badge status tanpa konteks.
+  const linkedReports = emergencyReports.filter((r) => r.tpsId === record.id);
+  if (record.status === 'problem') {
+    if (linkedReports.length > 0) {
+      linkedReports.forEach((r) => {
+        anomalies.push(`TPS Bermasalah — ${CATEGORY_LABEL[r.category]}: ${r.description}`);
+      });
+    } else {
+      anomalies.push('TPS ditandai Bermasalah, namun belum ada laporan darurat yang menjelaskan penyebabnya.');
     }
   }
 
@@ -188,11 +203,19 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Partai" tone="neutral" />}>
             Suara Partai Politik
           </SectionTitle>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>Ketuk partai untuk melihat detail & anggota legislatifnya.</Text>
           {totalParty === 0 ? (
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
           ) : (
             Object.entries(record.votes.partyVotes).map(([name, value]) => (
-              <VoteRow key={name} name={name} value={value} total={totalParty} isParty />
+              <VoteRow
+                key={name}
+                name={name}
+                value={value}
+                total={totalParty}
+                isParty
+                onPress={() => navigation.navigate('PartyRoster', { party: name })}
+              />
             ))
           )}
         </Card>
@@ -234,9 +257,9 @@ export default function TpsDetailScreen({ route, navigation }: any) {
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
             {documentation.map((doc) => (
-              <View key={doc.id} style={styles.docThumbWrap}>
+              <Pressable key={doc.id} onPress={() => setPreviewDoc(doc.source)} style={styles.docThumbWrap}>
                 <Image source={doc.source} style={styles.docThumb} resizeMode="cover" />
-              </View>
+              </Pressable>
             ))}
           </ScrollView>
         )}
@@ -279,6 +302,14 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       </View>
 
       <CandidateDetailModal candidateName={selectedCandidate} onClose={() => setSelectedCandidate(null)} />
+
+      <Modal visible={!!previewDoc} onClose={() => setPreviewDoc(null)} variant="floating" title="Pratinjau Dokumentasi">
+        {previewDoc && (
+          <View style={styles.previewImageWrap}>
+            <Image source={previewDoc} style={styles.previewImage} resizeMode="contain" />
+          </View>
+        )}
+      </Modal>
     </ScrollView>
   );
 }
@@ -373,4 +404,6 @@ const styles = StyleSheet.create({
   anomalyText: { fontSize: fontSize.xs, flex: 1, lineHeight: 17 },
   docThumbWrap: { width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' },
   docThumb: { width: '100%', height: '100%' },
+  previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
 });
