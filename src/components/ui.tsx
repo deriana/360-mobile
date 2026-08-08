@@ -148,10 +148,10 @@ export function SectionTitle({ children, style, action }: SectionTitleProps) {
 
   return (
     <View style={[styles.sectionHeader, { marginBottom: spacing.md }]}>
-      <Text style={[styles.sectionTitleText, { color: colors.text, fontSize: fontSize.lg }, style]}>
+      <Text style={[styles.sectionTitleText, { color: colors.text, fontSize: fontSize.lg, flexShrink: 1 }, style]}>
         {children}
       </Text>
-      {action && <View>{action}</View>}
+      {action && <View style={{ marginLeft: spacing.xs }}>{action}</View>}
     </View>
   );
 }

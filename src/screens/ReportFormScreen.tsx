@@ -169,10 +169,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Pilpres Votes Card */}
         {(entryCategory === 'pilpres' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
-              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Pemilu Presiden & Wapres</SectionTitle>
-              <Pill label="Pilpres" tone="primary" />
-            </View>
+            <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Pilpres" tone="primary" />}>
+              Pemilu Presiden & Wapres
+            </SectionTitle>
             {candidateNames.map((c) => (
               <Input
                 key={c}
@@ -189,10 +188,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Caleg DPR RI Votes Card */}
         {(entryCategory === 'dpr' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
-              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Caleg DPR RI</SectionTitle>
-              <Pill label="Dapil Jabar I" tone="info" />
-            </View>
+            <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Dapil Jabar I" tone="info" />}>
+              Suara Caleg DPR RI
+            </SectionTitle>
             {dprCandidates.map((c) => (
               <Input
                 key={c}
@@ -209,10 +207,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Party Votes Card */}
         {(entryCategory === 'partai' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
-              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Partai Politik</SectionTitle>
-              <Pill label="Partai" tone="neutral" />
-            </View>
+            <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Partai" tone="neutral" />}>
+              Suara Partai Politik
+            </SectionTitle>
             {partyNames.map((p) => (
               <Input
                 key={p}
