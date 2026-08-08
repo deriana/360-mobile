@@ -176,11 +176,19 @@ export default function TpsDetailScreen({ route, navigation }: any) {
         )}
       </Card>
 
-      <PrimaryButton
-        label="Isi / Perbarui Laporan C1 TPS"
-        icon="edit-3"
-        onPress={() => navigation.navigate('ReportForm', { tpsId: record.id })}
-      />
+      <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+        <PrimaryButton
+          label="Lihat & Unggah Dokumentasi TPS"
+          icon="image"
+          variant="secondary"
+          onPress={() => navigation.navigate('Documentation', { tpsId: record.id })}
+        />
+        <PrimaryButton
+          label="Isi / Perbarui Laporan C1 TPS"
+          icon="edit-3"
+          onPress={() => navigation.navigate('ReportForm', { tpsId: record.id })}
+        />
+      </View>
     </ScrollView>
   );
 }

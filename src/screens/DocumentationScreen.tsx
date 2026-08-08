@@ -6,19 +6,27 @@ import { Card, EmptyState, PrimaryButton, SectionTitle } from '../components/ui'
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
 
+import { IMAGES } from '../data/images';
+
 interface DocPhoto {
   uri: string;
   takenAt: string;
 }
 
-export default function DocumentationScreen({ navigation }: any) {
+export default function DocumentationScreen({ route, navigation }: any) {
   const { colors } = useTheme();
-  const [photos, setPhotos] = useState<DocPhoto[]>([]);
+  const tpsId = route?.params?.tpsId;
+
+  const [photos, setPhotos] = useState<DocPhoto[]>([
+    { uri: IMAGES.tpsSchool, takenAt: '07:30 WIB — Lokasi TPS' },
+    { uri: IMAGES.ballotPaper, takenAt: '08:15 WIB — Papan Hitung' },
+    { uri: IMAGES.c1Form, takenAt: '13:45 WIB — C1 Plano' },
+  ]);
 
   const handlePick = async (source: 'camera' | 'library') => {
     const uri = await pickImage(source);
     if (!uri) return;
-    setPhotos((prev) => [...prev, { uri, takenAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }]);
+    setPhotos((prev) => [...prev, { uri, takenAt: `${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB — Foto Lapangan` }]);
   };
 
   const removePhoto = (uri: string) => {
@@ -32,7 +40,9 @@ export default function DocumentationScreen({ navigation }: any) {
           <Feather name="image" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Dokumentasi Kegiatan TPS</Text>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Dokumentasi Kegiatan {tpsId ? `(${tpsId})` : 'TPS'}
+          </Text>
           <Text style={[styles.subTitle, { color: colors.textMuted }]}>
             Unggah foto kegiatan lapangan sebagai bukti dokumentasi (persiapan, pemungutan, penghitungan suara, dll).
           </Text>
