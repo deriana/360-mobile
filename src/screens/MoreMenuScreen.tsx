@@ -199,7 +199,9 @@ export default function MoreMenuScreen({ navigation }: any) {
       {/* Brand Logo Banner */}
       <View style={[styles.brandBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Image source={BRAND_ASSETS.emblem} style={{ width: 28, height: 28 }} resizeMode="contain" />
+          <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
+            <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+          </View>
           <Image
             source={BRAND_ASSETS.logoText}
             style={{ width: 95, height: 20, tintColor: colors.text }}

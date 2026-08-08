@@ -45,7 +45,9 @@ export default function LoginScreen() {
         <View style={styles.brandBlock}>
           <View style={[styles.logoWrapper, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Image source={BRAND_ASSETS.emblem} style={{ width: 34, height: 34 }} resizeMode="contain" />
+              <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={BRAND_ASSETS.emblem} style={{ width: 28, height: 28 }} resizeMode="contain" />
+              </View>
               <Image
                 source={BRAND_ASSETS.logoText}
                 style={{ width: 130, height: 28, tintColor: colors.text }}

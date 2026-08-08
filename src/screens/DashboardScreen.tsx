@@ -109,8 +109,10 @@ export default function DashboardScreen({ navigation }: any) {
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
+              </View>
               <Image
                 source={BRAND_ASSETS.logoText}
                 style={{ width: 75, height: 15, tintColor: colors.text }}
@@ -275,8 +277,10 @@ export default function DashboardScreen({ navigation }: any) {
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
+              </View>
               <Image
                 source={BRAND_ASSETS.logoText}
                 style={{ width: 75, height: 15, tintColor: colors.text }}
@@ -409,8 +413,10 @@ export default function DashboardScreen({ navigation }: any) {
 
       <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.heroHeaderRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
+              <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
+            </View>
             <Image
               source={BRAND_ASSETS.logoText}
               style={{ width: 75, height: 15, tintColor: colors.text }}
