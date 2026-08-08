@@ -46,7 +46,8 @@
           "photosPermission": "Saksi 360 memerlukan akses galeri untuk mengunggah foto dokumen.",
           "cameraPermission": "Saksi 360 memerlukan akses kamera untuk memotret dokumen."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }
