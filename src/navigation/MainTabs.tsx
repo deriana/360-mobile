@@ -60,9 +60,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   if (keyboardVisible) return null;
 
-  const bottomInset = Math.max(insets.bottom, 8);
-  const activeColor = '#FFFFFF'; // White text & icon inside red capsule
-  const inactiveColor = colors.textMuted;
+  const bottomInset = Math.max(insets.bottom, 6);
 
   return (
     <View
@@ -105,8 +103,9 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             ? options.title
             : route.name;
 
-        const textColor = isFocused ? activeColor : inactiveColor;
-        const iconColor = isFocused ? activeColor : inactiveColor;
+        const activeColor = colors.primary;
+        const inactiveColor = colors.textMuted;
+        const color = isFocused ? activeColor : inactiveColor;
 
         return (
           <Pressable
@@ -119,19 +118,25 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onLongPress={onLongPress}
             style={({ pressed }) => [
               styles.tabItem,
-              isFocused && styles.activeRedPillTab,
-              pressed && { opacity: 0.8 },
+              pressed && { opacity: 0.7 },
             ]}
           >
-            {options.tabBarIcon ? (
-              options.tabBarIcon({ focused: isFocused, color: iconColor, size: 18 })
-            ) : null}
+            {/* Top Indicator Line */}
+            {isFocused && (
+              <View style={[styles.activeIndicatorBar, { backgroundColor: activeColor }]} />
+            )}
+
+            {/* Icon Wrapper Pill */}
+            <View style={[styles.iconWrapper, isFocused && { backgroundColor: colors.primaryLight }]}>
+              {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color, size: 20 }) : null}
+            </View>
+
             <Text
               style={[
                 styles.tabLabel,
                 {
-                  color: textColor,
-                  fontWeight: isFocused ? '800' : '600',
+                  color,
+                  fontWeight: isFocused ? '800' : '500',
                 },
               ]}
               numberOfLines={1}
@@ -167,7 +172,7 @@ export default function MainTabs() {
           options={{
             tabBarLabel: tab.label,
             tabBarIcon: ({ color }: { color: string }) => (
-              <Feather name={tab.icon} size={18} color={color} strokeWidth={iconStrokeWidth} />
+              <Feather name={tab.icon} size={20} color={color} strokeWidth={iconStrokeWidth} />
             ),
           }}
         />
@@ -182,33 +187,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    paddingTop: 8,
-    paddingHorizontal: 8,
+    paddingTop: 4,
+    paddingHorizontal: 4,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 8,
   },
   tabItem: {
     flex: 1,
+    position: 'relative',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 20,
+    paddingVertical: 4,
     gap: 2,
   },
-  activeRedPillTab: {
-    backgroundColor: '#E60012', // Vibrant Red Capsule (SAKSI 360 brand)
-    borderRadius: 999, // 100% round sides (capsule pill)
-    paddingVertical: 6,
-    shadowColor: '#E60012',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
+  activeIndicatorBar: {
+    position: 'absolute',
+    top: -4,
+    width: 24,
+    height: 3,
+    borderRadius: 2,
+  },
+  iconWrapper: {
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabLabel: {
     fontSize: 11,
