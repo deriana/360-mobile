@@ -22,10 +22,12 @@ import LeadershipScreen from '../screens/LeadershipScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import InsightsScreen from '../screens/InsightsScreen';
 import SecurityScreen from '../screens/SecurityScreen';
+import CheckInScreen from '../screens/CheckInScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string }> = [
+  { name: 'CheckIn', component: CheckInScreen, title: 'Presensi Kehadiran GPS' },
   { name: 'Profile', component: ProfileScreen, title: 'Kartu Petugas' },
   { name: 'Supervision', component: SupervisionScreen, title: 'Pengawasan TPS' },
   { name: 'TpsDetail', component: TpsDetailScreen, title: 'Detail TPS' },
