@@ -207,9 +207,9 @@ const styles = StyleSheet.create({
   activeIndicatorBar: {
     position: 'absolute',
     top: -4,
-    width: 24,
-    height: 3,
-    borderRadius: 2,
+    width: 26,
+    height: 4,
+    borderRadius: 999, // Smooth fully-rounded capsule ends
   },
   iconWrapper: {
     paddingHorizontal: 12,
