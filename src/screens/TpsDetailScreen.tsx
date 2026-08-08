@@ -1,15 +1,27 @@
-import React from 'react';
-import { Image, ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pill } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
 
+type CategoryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
+
+const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof Feather.glyphMap }> = [
+  { key: 'pilpres', label: 'Pilpres', icon: 'flag' },
+  { key: 'dpr', label: 'Caleg DPR RI', icon: 'users' },
+  { key: 'partai', label: 'Partai Politik', icon: 'grid' },
+  { key: 'all', label: 'Semua Data', icon: 'layers' },
+];
+
 export default function TpsDetailScreen({ route, navigation }: any) {
   const { tpsId } = route.params;
   const { tps, witnesses } = useApp();
   const { colors } = useTheme();
+
+  const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
 
   const record = tps.find((t) => t.id === tpsId);
   const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId);
@@ -57,47 +69,93 @@ export default function TpsDetailScreen({ route, navigation }: any) {
         </View>
       </ScrollView>
 
+      {/* Segmented Category Selector */}
+      <View style={{ gap: spacing.xs }}>
+        <SectionTitle style={{ marginBottom: 0 }}>Kategori Pemilihan</SectionTitle>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
+          {CATEGORY_TABS.map((tab) => {
+            const isSelected = activeCategory === tab.key;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveCategory(tab.key)}
+                style={({ pressed }) => [
+                  styles.categoryTabPill,
+                  {
+                    backgroundColor: isSelected ? colors.primary : colors.surface,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather name={tab.icon} size={13} color={isSelected ? '#FFFFFF' : colors.textMuted} />
+                <Text
+                  style={[
+                    styles.categoryTabText,
+                    {
+                      color: isSelected ? '#FFFFFF' : colors.text,
+                      fontWeight: isSelected ? '800' : '600',
+                    },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       {/* Perolehan Suara Paslon Pilpres */}
-      <Card style={{ gap: spacing.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Paslon Pilpres</SectionTitle>
-          <Pill label="Pilpres" tone="primary" />
-        </View>
-        {totalParty === 0 ? (
-          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
-        ) : (
-          Object.entries(record.votes.candidateVotes).map(([name, value]) => (
-            <VoteRow key={name} name={name} value={value} total={totalParty} />
-          ))
-        )}
-      </Card>
+      {(activeCategory === 'pilpres' || activeCategory === 'all') && (
+        <Card style={{ gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Paslon Pilpres</SectionTitle>
+            <Pill label="Pilpres" tone="primary" />
+          </View>
+          {totalParty === 0 ? (
+            <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
+          ) : (
+            Object.entries(record.votes.candidateVotes).map(([name, value]) => (
+              <VoteRow key={name} name={name} value={value} total={totalParty} />
+            ))
+          )}
+        </Card>
+      )}
 
       {/* Perolehan Suara Caleg DPR RI */}
-      <Card style={{ gap: spacing.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Caleg DPR RI (Dapil Jabar I)</SectionTitle>
-          <Pill label="Caleg DPR RI" tone="info" />
-        </View>
-        {totalParty === 0 || !record.votes.dprCandidateVotes ? (
-          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
-        ) : (
-          Object.entries(record.votes.dprCandidateVotes).map(([name, value]) => (
-            <VoteRow key={name} name={name} value={value} total={totalParty} />
-          ))
-        )}
-      </Card>
+      {(activeCategory === 'dpr' || activeCategory === 'all') && (
+        <Card style={{ gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Caleg DPR RI (Dapil Jabar I)</SectionTitle>
+            <Pill label="Caleg DPR RI" tone="info" />
+          </View>
+          {totalParty === 0 || !record.votes.dprCandidateVotes ? (
+            <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
+          ) : (
+            Object.entries(record.votes.dprCandidateVotes).map(([name, value]) => (
+              <VoteRow key={name} name={name} value={value} total={totalParty} />
+            ))
+          )}
+        </Card>
+      )}
 
       {/* Perolehan Suara Partai */}
-      <Card style={{ gap: spacing.xs }}>
-        <SectionTitle>Perolehan Suara Partai Politik</SectionTitle>
-        {totalParty === 0 ? (
-          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
-        ) : (
-          Object.entries(record.votes.partyVotes).map(([name, value]) => (
-            <VoteRow key={name} name={name} value={value} total={totalParty} />
-          ))
-        )}
-      </Card>
+      {(activeCategory === 'partai' || activeCategory === 'all') && (
+        <Card style={{ gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
+            <Pill label="Partai" tone="neutral" />
+          </View>
+          {totalParty === 0 ? (
+            <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
+          ) : (
+            Object.entries(record.votes.partyVotes).map(([name, value]) => (
+              <VoteRow key={name} name={name} value={value} total={totalParty} />
+            ))
+          )}
+        </Card>
+      )}
 
       {/* Daftar Saksi Bertugas */}
       <Card style={{ gap: spacing.xs }}>
@@ -158,6 +216,16 @@ const styles = StyleSheet.create({
   locationText: { fontSize: fontSize.xs, color: '#64748B', marginTop: 2 },
   statRow: { flexDirection: 'row', gap: spacing.sm },
   muted: { fontSize: fontSize.xs },
+  categoryTabPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  categoryTabText: { fontSize: 12 },
   voteRow: { paddingVertical: spacing.xs, gap: 4 },
   voteTopRow: { flexDirection: 'row', justifyContent: 'space-between' },
   voteName: { fontSize: fontSize.sm, fontWeight: '600' },

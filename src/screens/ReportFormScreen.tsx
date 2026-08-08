@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
@@ -8,9 +9,20 @@ import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES } from '../data/images';
 
+type EntryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
+
+const ENTRY_TABS: Array<{ key: EntryTab; label: string; icon: keyof typeof Feather.glyphMap }> = [
+  { key: 'pilpres', label: 'Pilpres', icon: 'flag' },
+  { key: 'dpr', label: 'Caleg DPR RI', icon: 'users' },
+  { key: 'partai', label: 'Partai Politik', icon: 'grid' },
+  { key: 'all', label: 'Semua Formulir', icon: 'layers' },
+];
+
 export default function ReportFormScreen({ route, navigation }: any) {
   const { witnesses, tps, submitTpsReport } = useApp();
   const { colors } = useTheme();
+
+  const [entryCategory, setEntryCategory] = useState<EntryTab>('pilpres');
 
   const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
   const tpsId = route?.params?.tpsId ?? currentWitness?.assignedTpsId;
@@ -117,56 +129,102 @@ export default function ReportFormScreen({ route, navigation }: any) {
           />
         </Card>
 
+        {/* Category Tabs Selector */}
+        <View style={{ gap: spacing.xs }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Pilih Kategori Entri Suara</SectionTitle>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
+            {ENTRY_TABS.map((tab) => {
+              const isSelected = entryCategory === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setEntryCategory(tab.key)}
+                  style={({ pressed }) => [
+                    styles.categoryTabPill,
+                    {
+                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <Feather name={tab.icon} size={13} color={isSelected ? '#FFFFFF' : colors.textMuted} />
+                  <Text
+                    style={[
+                      styles.categoryTabText,
+                      {
+                        color: isSelected ? '#FFFFFF' : colors.text,
+                        fontWeight: isSelected ? '800' : '600',
+                      },
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* Pilpres Votes Card */}
-        <Card style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Pemilu Presiden & Wapres (Pilpres)</SectionTitle>
-            <Pill label="Pilpres" tone="primary" />
-          </View>
-          {candidateNames.map((c) => (
-            <Input
-              key={c}
-              label={c}
-              value={candidateValues[c]}
-              onChangeText={(v) => setCandidateValues((prev) => ({ ...prev, [c]: v }))}
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          ))}
-        </Card>
+        {(entryCategory === 'pilpres' || entryCategory === 'all') && (
+          <Card style={{ gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SectionTitle style={{ marginBottom: 0 }}>Pemilu Presiden & Wapres (Pilpres)</SectionTitle>
+              <Pill label="Pilpres" tone="primary" />
+            </View>
+            {candidateNames.map((c) => (
+              <Input
+                key={c}
+                label={c}
+                value={candidateValues[c]}
+                onChangeText={(v) => setCandidateValues((prev) => ({ ...prev, [c]: v }))}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            ))}
+          </Card>
+        )}
 
         {/* Caleg DPR RI Votes Card */}
-        <Card style={{ gap: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Pemilihan Caleg DPR RI (Dapil Jabar I)</SectionTitle>
-            <Pill label="Caleg DPR RI" tone="info" />
-          </View>
-          {dprCandidates.map((c) => (
-            <Input
-              key={c}
-              label={c}
-              value={dprCandidateValues[c]}
-              onChangeText={(v) => setDprCandidateValues((prev) => ({ ...prev, [c]: v }))}
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          ))}
-        </Card>
+        {(entryCategory === 'dpr' || entryCategory === 'all') && (
+          <Card style={{ gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SectionTitle style={{ marginBottom: 0 }}>Pemilihan Caleg DPR RI (Dapil Jabar I)</SectionTitle>
+              <Pill label="Caleg DPR RI" tone="info" />
+            </View>
+            {dprCandidates.map((c) => (
+              <Input
+                key={c}
+                label={c}
+                value={dprCandidateValues[c]}
+                onChangeText={(v) => setDprCandidateValues((prev) => ({ ...prev, [c]: v }))}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            ))}
+          </Card>
+        )}
 
         {/* Party Votes Card */}
-        <Card style={{ gap: spacing.md }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
-          {partyNames.map((p) => (
-            <Input
-              key={p}
-              label={p}
-              value={partyValues[p]}
-              onChangeText={(v) => setPartyValues((prev) => ({ ...prev, [p]: v }))}
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          ))}
-        </Card>
+        {(entryCategory === 'partai' || entryCategory === 'all') && (
+          <Card style={{ gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
+              <Pill label="Partai" tone="neutral" />
+            </View>
+            {partyNames.map((p) => (
+              <Input
+                key={p}
+                label={p}
+                value={partyValues[p]}
+                onChangeText={(v) => setPartyValues((prev) => ({ ...prev, [p]: v }))}
+                keyboardType="numeric"
+                placeholder="0"
+              />
+            ))}
+          </Card>
+        )}
 
         <Card style={{ gap: spacing.sm }}>
           <SectionTitle style={{ marginBottom: 0 }}>Lampiran Foto & Video C1</SectionTitle>
@@ -235,4 +293,14 @@ const styles = StyleSheet.create({
   successThumbnail: { width: 120, height: 120, borderRadius: radius.lg, marginBottom: spacing.xs },
   successTitle: { fontSize: fontSize.lg, fontWeight: '800' },
   successText: { fontSize: fontSize.sm, textAlign: 'center', paddingHorizontal: spacing.md },
+  categoryTabPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  categoryTabText: { fontSize: 12 },
 });
