@@ -7,7 +7,7 @@ import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input, StatusBadge
 import { fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
-import { IMAGES, getTpsPhoto } from '../data/images';
+import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { Tps } from '../types';
 
 type MainViewMode = 'history' | 'form';
@@ -515,8 +515,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
                     Suara Paslon Pilpres
                   </SectionTitle>
                   {Object.entries(previewTps.votes.candidateVotes).map(([name, val]) => (
-                    <View key={name} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 12, color: colors.text, flex: 1 }}>{name}</Text>
+                    <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
+                      <Image source={{ uri: getCandidateAvatar(name) }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                      <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
                       <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
                     </View>
                   ))}
@@ -528,8 +529,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
                       Suara Caleg DPR RI
                     </SectionTitle>
                     {Object.entries(previewTps.votes.dprCandidateVotes).map(([name, val]) => (
-                      <View key={name} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 12, color: colors.text, flex: 1 }}>{name}</Text>
+                      <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
+                        <Image source={{ uri: getCandidateAvatar(name) }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                        <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
                         <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
                       </View>
                     ))}

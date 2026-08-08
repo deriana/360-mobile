@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, PrimaryButton, SectionTitle, StatusBadge, KpiCard, Pill } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
-import { IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
+import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai' | 'all';
 
@@ -196,15 +196,25 @@ export default function TpsDetailScreen({ route, navigation }: any) {
 function VoteRow({ name, value, total }: { name: string; value: number; total: number }) {
   const { colors } = useTheme();
   const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+  const avatarUri = getCandidateAvatar(name);
 
   return (
     <View style={[styles.voteRow, { borderBottomColor: colors.border }]}>
-      <View style={styles.voteTopRow}>
-        <Text style={[styles.voteName, { color: colors.text }]}>{name}</Text>
-        <Text style={[styles.voteValue, { color: colors.text }]}>{value} suara ({percent}%)</Text>
-      </View>
-      <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
-        <View style={[styles.progressBarFill, { width: `${percent}%`, backgroundColor: colors.primary }]} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        {avatarUri && <Image source={{ uri: avatarUri }} style={styles.candidateAvatar} />}
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={styles.voteTopRow}>
+            <Text style={[styles.voteName, { color: colors.text }]} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={[styles.voteValue, { color: colors.text }]}>
+              {value} suara ({percent}%)
+            </Text>
+          </View>
+          <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+            <View style={[styles.progressBarFill, { width: `${percent}%`, backgroundColor: colors.primary }]} />
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -232,9 +242,10 @@ const styles = StyleSheet.create({
   },
   categoryTabText: { fontSize: 12 },
   voteRow: { paddingVertical: spacing.xs, gap: 4 },
-  voteTopRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  voteName: { fontSize: fontSize.sm, fontWeight: '600' },
-  voteValue: { fontSize: fontSize.sm, fontWeight: '800' },
+  candidateAvatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: '#CBD5E1' },
+  voteTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  voteName: { fontSize: fontSize.xs + 1, fontWeight: '700', flex: 1, marginRight: 4 },
+  voteValue: { fontSize: fontSize.xs, fontWeight: '800' },
   progressBarBg: { height: 6, borderRadius: 3, width: '100%', overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 3 },
   witnessRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs, borderBottomWidth: 0.5 },
