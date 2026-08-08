@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<EmergencyStatus, string> = {
   resolved: 'Selesai',
 };
 
-const NAV_CLEARANCE = spacing.xxl + 80;
+const NAV_CLEARANCE = spacing.xl;
 
 export default function EmergencyListScreen({ navigation }: any) {
   const { role, emergencyReports, tps, witnesses } = useApp();

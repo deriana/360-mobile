@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
-import { partyNames, candidateNames } from '../data/regions';
+import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES } from '../data/images';
 
 export default function ReportFormScreen({ route, navigation }: any) {
@@ -23,6 +23,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
   );
   const [candidateValues, setCandidateValues] = useState<Record<string, string>>(
     Object.fromEntries(candidateNames.map((c) => [c, String(record?.votes.candidateVotes[c] || '')])),
+  );
+  const [dprCandidateValues, setDprCandidateValues] = useState<Record<string, string>>(
+    Object.fromEntries(dprCandidates.map((c) => [c, String(record?.votes.dprCandidateVotes?.[c] || '')])),
   );
   const [uploads, setUploads] = useState({ formPhoto: false, tpsPhoto: false, tpsVideo: false });
   const [submitted, setSubmitted] = useState(false);
@@ -43,6 +46,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
       votes: {
         partyVotes: Object.fromEntries(partyNames.map((p) => [p, Number(partyValues[p]) || 0])),
         candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, Number(candidateValues[c]) || 0])),
+        dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, Number(dprCandidateValues[c]) || 0])),
         invalidVotes: Number(invalidVotes) || 0,
       },
       status: 'done',
@@ -58,7 +62,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
           <Pill label="Laporan TPS Terkirim & Terverifikasi" tone="success" icon="check-circle" />
           <Text style={[styles.successTitle, { color: colors.text }]}>Laporan {record.id} Berhasil Dikirim!</Text>
           <Text style={[styles.successText, { color: colors.textMuted }]}>
-            Data perolehan suara dan dokumen C.Hasil telah tersimpan dengan aman dan status TPS resmi diperbarui menjadi Selesai.
+            Data perolehan suara Pilpres, Caleg DPR RI, dan dokumen C.Hasil telah tersimpan dengan aman.
           </Text>
           <PrimaryButton label="Kembali ke Dashboard" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
         </Card>
@@ -86,7 +90,7 @@ export default function ReportFormScreen({ route, navigation }: any) {
         </View>
 
         <PrimaryButton
-          label="Scan Otomatis Formulir AI (OCR)"
+          label="Pindai Otomatis Formulir C1"
           icon="zap"
           variant="secondary"
           onPress={() => navigation.navigate('C1Ocr', { tpsId: record.id })}
@@ -113,28 +117,51 @@ export default function ReportFormScreen({ route, navigation }: any) {
           />
         </Card>
 
+        {/* Pilpres Votes Card */}
         <Card style={{ gap: spacing.md }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai</SectionTitle>
-          {partyNames.map((p) => (
-            <Input
-              key={p}
-              label={p}
-              value={partyValues[p]}
-              onChangeText={(v) => setPartyValues((prev) => ({ ...prev, [p]: v }))}
-              keyboardType="numeric"
-              placeholder="0"
-            />
-          ))}
-        </Card>
-
-        <Card style={{ gap: spacing.md }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Kandidat</SectionTitle>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionTitle style={{ marginBottom: 0 }}>Pemilu Presiden & Wapres (Pilpres)</SectionTitle>
+            <Pill label="Pilpres" tone="primary" />
+          </View>
           {candidateNames.map((c) => (
             <Input
               key={c}
               label={c}
               value={candidateValues[c]}
               onChangeText={(v) => setCandidateValues((prev) => ({ ...prev, [c]: v }))}
+              keyboardType="numeric"
+              placeholder="0"
+            />
+          ))}
+        </Card>
+
+        {/* Caleg DPR RI Votes Card */}
+        <Card style={{ gap: spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionTitle style={{ marginBottom: 0 }}>Pemilihan Caleg DPR RI (Dapil Jabar I)</SectionTitle>
+            <Pill label="Caleg DPR RI" tone="info" />
+          </View>
+          {dprCandidates.map((c) => (
+            <Input
+              key={c}
+              label={c}
+              value={dprCandidateValues[c]}
+              onChangeText={(v) => setDprCandidateValues((prev) => ({ ...prev, [c]: v }))}
+              keyboardType="numeric"
+              placeholder="0"
+            />
+          ))}
+        </Card>
+
+        {/* Party Votes Card */}
+        <Card style={{ gap: spacing.md }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
+          {partyNames.map((p) => (
+            <Input
+              key={p}
+              label={p}
+              value={partyValues[p]}
+              onChangeText={(v) => setPartyValues((prev) => ({ ...prev, [p]: v }))}
               keyboardType="numeric"
               placeholder="0"
             />

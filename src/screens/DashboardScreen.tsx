@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, KpiCard, Pill, SectionTitle, StatusBadge } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_LABEL, getUserProfile, scopeTps, scopeWitnesses } from '../utils/scope';
-import { IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
+import { BRAND_ASSETS, IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -52,7 +52,7 @@ export default function DashboardScreen({ navigation }: any) {
         id: 'ktp',
         icon: 'credit-card',
         title: 'Scan KTP Saksi',
-        subtitle: 'Registrasi & AI OCR NIK',
+        subtitle: 'Registrasi & Entri NIK',
         badge: 'Utama',
         onPress: () => navigation.navigate('KtpOcr'),
       },
@@ -109,9 +109,9 @@ export default function DashboardScreen({ navigation }: any) {
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={[styles.roleBadge, { backgroundColor: colors.primaryLight }]}>
-              <Feather name="tool" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
-              <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{ROLE_LABEL.OPERATOR}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+              <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
             </View>
             <Pill label="Kota Bandung" tone="primary" />
           </View>
@@ -140,7 +140,7 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* Bento Grid Shortcut for Operator */}
         <View style={{ gap: spacing.xs }}>
-          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Pintar Operator Lapangan</SectionTitle>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi Operator Lapangan</SectionTitle>
           <BentoGridShortcut items={operatorBentoItems} />
         </View>
 
@@ -236,7 +236,7 @@ export default function DashboardScreen({ navigation }: any) {
         id: 'ktp',
         icon: 'credit-card',
         title: 'Scan KTP Saksi',
-        subtitle: 'Registrasi & AI OCR NIK',
+        subtitle: 'Registrasi & Entri NIK',
         onPress: () => navigation.navigate('KtpOcr'),
       },
       {
@@ -271,9 +271,9 @@ export default function DashboardScreen({ navigation }: any) {
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={[styles.roleBadge, { backgroundColor: colors.primaryLight }]}>
-              <Feather name="users" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
-              <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{ROLE_LABEL.TPS_COORDINATOR}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+              <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
             </View>
             <Pill label="Kluster COORD-1" tone="primary" />
           </View>
@@ -297,7 +297,7 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* Bento Grid Shortcut for Koordinator */}
         <View style={{ gap: spacing.xs }}>
-          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Pintar Koordinator Kluster</SectionTitle>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi Koordinator TPS</SectionTitle>
           <BentoGridShortcut items={coordinatorBentoItems} />
         </View>
 
@@ -363,7 +363,7 @@ export default function DashboardScreen({ navigation }: any) {
       id: 'c1',
       icon: 'edit-3',
       title: 'Formulir C1',
-      subtitle: 'Scan AI & Entri Suara',
+      subtitle: 'Foto & Entri Suara',
       badge: 'Step 3',
       onPress: () => navigation.navigate('ReportForm', { tpsId: 'TPS-001' }),
     },
@@ -401,9 +401,9 @@ export default function DashboardScreen({ navigation }: any) {
 
       <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.heroHeaderRow}>
-          <View style={[styles.roleBadge, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="user-check" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
-            <Text style={[styles.roleBadgeText, { color: colors.primary }]}>{ROLE_LABEL[role]}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+            <Image source={BRAND_ASSETS.logoText} style={{ width: 75, height: 15 }} resizeMode="contain" />
           </View>
           <Pill label="TPS 001 Dago" tone="primary" />
         </View>
@@ -583,7 +583,7 @@ function PersonnelHeaderCard({ role, navigation }: { role: any; navigation: any 
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   profileHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',

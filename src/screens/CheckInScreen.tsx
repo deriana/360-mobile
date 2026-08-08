@@ -482,7 +482,7 @@ export default function CheckInScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeftRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatarImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#E60012' },

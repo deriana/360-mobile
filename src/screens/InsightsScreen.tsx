@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
-import { aiInsights } from '../data/insights';
+import { insightsList } from '../data/insights';
 
 export default function InsightsScreen() {
   const { colors } = useTheme();
@@ -20,21 +20,21 @@ export default function InsightsScreen() {
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-          <Feather name="cpu" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
-          <Text style={[styles.badgeText, { color: colors.primary }]}>AI Assistant</Text>
+          <Feather name="activity" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
+          <Text style={[styles.badgeText, { color: colors.primary }]}>Analisis Lapangan</Text>
         </View>
-        <Text style={[styles.title, { color: colors.text }]}>AI Insights Panel</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Ringkasan & Pemantauan TPS</Text>
         <Text style={[styles.disclaimer, { color: colors.textMuted }]}>
-          Analisis kecerdasan buatan berbasis data pelaporan TPS terdistribusi.
+          Ringkasan indikator perkembangan pelaporan dan presensi saksi secara terpadu.
         </Text>
       </View>
 
-      {aiInsights.map((insight) => {
+      {insightsList.map((insight) => {
         const accentColor = TONE_COLOR[insight.tone] ?? colors.primary;
         return (
           <Card key={insight.id} style={[styles.insightCard, { borderLeftColor: accentColor }]}>
             <View style={styles.headerRow}>
-              <Feather name="zap" size={18} color={colors.primary} strokeWidth={iconStrokeWidth} />
+              <Feather name="check-square" size={18} color={colors.primary} strokeWidth={iconStrokeWidth} />
               <SectionTitle style={{ marginBottom: 0, fontSize: fontSize.md }}>{insight.title}</SectionTitle>
             </View>
             <Text style={[styles.body, { color: colors.textMuted }]}>{insight.body}</Text>
@@ -47,7 +47,7 @@ export default function InsightsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: 4 },
   badge: {
     flexDirection: 'row',

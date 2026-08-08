@@ -13,6 +13,7 @@ export type TpsStatus = 'not_reported' | 'in_progress' | 'done' | 'problem';
 export interface VoteCounts {
   partyVotes: Record<string, number>;
   candidateVotes: Record<string, number>;
+  dprCandidateVotes?: Record<string, number>;
   invalidVotes: number;
 }
 

@@ -89,7 +89,7 @@ export default function LeadershipScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   title: { fontSize: fontSize.xl, fontWeight: '800' },
   bentoRow: { flexDirection: 'row', gap: spacing.md },
   rankRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm, borderBottomWidth: 0.5 },

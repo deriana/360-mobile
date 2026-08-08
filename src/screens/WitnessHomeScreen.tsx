@@ -153,7 +153,7 @@ export default function WitnessHomeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   profileCard: { padding: spacing.md, borderRadius: radius.xl, borderWidth: 1 },
   profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatarImage: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#4F46E5' },

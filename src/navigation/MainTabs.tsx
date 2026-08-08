@@ -60,7 +60,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   if (keyboardVisible) return null;
 
-  const bottomInset = Math.max(insets.bottom, 12);
+  const bottomInset = Math.max(insets.bottom, 8);
   const activeColor = '#FFFFFF'; // White text & icon inside red capsule
   const inactiveColor = colors.textMuted;
 
@@ -69,9 +69,9 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       style={[
         styles.tabBarContainer,
         {
-          bottom: bottomInset,
+          paddingBottom: bottomInset,
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderTopColor: colors.border,
         },
       ]}
     >
@@ -178,21 +178,17 @@ export default function MainTabs() {
 
 const styles = StyleSheet.create({
   tabBarContainer: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 40,
-    borderWidth: 1,
-    paddingVertical: 6,
+    borderTopWidth: 1,
+    paddingTop: 8,
     paddingHorizontal: 8,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tabItem: {
     flex: 1,
@@ -201,18 +197,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 4,
-    borderRadius: 24,
-    gap: 3,
+    borderRadius: 20,
+    gap: 2,
   },
   activeRedPillTab: {
     backgroundColor: '#E60012', // Vibrant Red Capsule (SAKSI 360 brand)
     borderRadius: 999, // 100% round sides (capsule pill)
-    paddingVertical: 8,
+    paddingVertical: 6,
     shadowColor: '#E60012',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   tabLabel: {
     fontSize: 11,

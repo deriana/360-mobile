@@ -161,7 +161,7 @@ export default function CommandCenterScreen({ navigation }: any) {
           keyExtractor={(t) => t.id}
           numColumns={2}
           columnWrapperStyle={{ gap: spacing.sm }}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl + 40 }}
+          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xl }}
           renderItem={({ item }) => (
             <Pressable
               hitSlop={4}

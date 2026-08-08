@@ -25,7 +25,7 @@ export default function BroadcastScreen() {
         <FlatList
           data={broadcasts}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl + 40 }}
+          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xl }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <Card style={{ gap: spacing.xs }}>

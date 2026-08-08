@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { iconStrokeWidth, useTheme } from '../theme';
+import { useTheme } from '../theme';
+import { BRAND_ASSETS } from '../data/images';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
 import SupervisionScreen from '../screens/SupervisionScreen';
@@ -32,15 +33,15 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'AssignmentLetter', component: AssignmentLetterScreen, title: 'Surat Tugas Digital' },
   { name: 'VerifyLetter', component: VerifyLetterScreen, title: 'Verifikasi Surat' },
   { name: 'ReportForm', component: ReportFormScreen, title: 'Formulir Laporan' },
-  { name: 'C1Ocr', component: C1OcrScreen, title: 'Pemindaian C1 (AI OCR)' },
-  { name: 'KtpOcr', component: KtpOcrScreen, title: 'Pemindaian KTP (AI OCR)' },
+  { name: 'C1Ocr', component: C1OcrScreen, title: 'Pemindaian C1 Plano' },
+  { name: 'KtpOcr', component: KtpOcrScreen, title: 'Pemindaian KTP Saksi' },
   { name: 'Documentation', component: DocumentationScreen, title: 'Dokumentasi Kegiatan TPS' },
   { name: 'EmergencyList', component: EmergencyListScreen, title: 'Laporan Darurat' },
   { name: 'EmergencyForm', component: EmergencyFormScreen, title: 'Lapor Kejadian' },
   { name: 'Broadcast', component: BroadcastScreen, title: 'Broadcast' },
   { name: 'Payment', component: PaymentScreen, title: 'Honorarium' },
   { name: 'Leadership', component: LeadershipScreen, title: 'Dashboard Pimpinan' },
-  { name: 'Insights', component: InsightsScreen, title: 'AI Insights' },
+  { name: 'Insights', component: InsightsScreen, title: 'Pemantauan TPS' },
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
 ];
 
@@ -70,7 +71,18 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
 
     return (
       <Stack.Navigator screenOptions={screenOptions}>
-        <Stack.Screen name={homeName} component={HomeComponent} options={{ title: homeTitle }} />
+        <Stack.Screen
+          name={homeName}
+          component={HomeComponent}
+          options={{
+            headerTitle: () => (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Image source={BRAND_ASSETS.emblem} style={{ width: 26, height: 26 }} resizeMode="contain" />
+                <Image source={BRAND_ASSETS.logoText} style={{ width: 92, height: 18 }} resizeMode="contain" />
+              </View>
+            ),
+          }}
+        />
         {DETAIL_SCREENS.filter((s) => s.name !== homeName).map((s) => (
           <Stack.Screen key={s.name} name={s.name} component={s.component} options={{ title: s.title }} />
         ))}

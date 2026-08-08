@@ -89,7 +89,7 @@ export default function SupervisionScreen({ navigation }: any) {
         <FlatList
           data={filteredTps}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl + 40 }}
+          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xl }}
           renderItem={({ item, index }) => {
             const assignedWit = witnesses.filter((w) => w.assignedTpsId === item.id);
             const checkedInWit = assignedWit.filter((w) => w.status === 'checked_in').length;

@@ -757,3 +757,12 @@ export const candidateNames = [
   "Paslon 02 — Anies & Muhaimin",
   "Paslon 03 — Ganjar & Mahfud",
 ];
+
+export const dprCandidates = [
+  "Atalia Praratya (Partai Golkar)",
+  "H. Ledia Hanifa Amaliah (PKS)",
+  "Junico BP Siahaan / Nico Siahaan (PDI Perjuangan)",
+  "H. Muhammad Farhan (Partai NasDem)",
+  "Dr. H. Melani Leimena Suharli (Partai Demokrat)",
+  "H. Syaiful Huda (PKB)",
+];

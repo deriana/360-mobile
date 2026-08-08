@@ -59,7 +59,7 @@ export default function WitnessListScreen({ navigation }: any) {
         <FlatList
           data={filtered}
           keyExtractor={(w) => w.id}
-          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl + 40 }}
+          contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xl }}
           renderItem={({ item, index }) => {
             const avatarUrl = getWitnessAvatar(index);
 

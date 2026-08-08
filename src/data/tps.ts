@@ -1,5 +1,5 @@
 import { Tps, TpsStatus, VoteCounts } from '../types';
-import { regions, districtsFor, partyNames, candidateNames } from './regions';
+import { regions, districtsFor, partyNames, candidateNames, dprCandidates } from './regions';
 import { rand, randInt, pick } from './seed';
 
 const STATUS_WEIGHTS: TpsStatus[] = [
@@ -13,6 +13,7 @@ function emptyVotes(): VoteCounts {
   return {
     partyVotes: Object.fromEntries(partyNames.map((p) => [p, 0])),
     candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, 0])),
+    dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, 0])),
     invalidVotes: 0,
   };
 }
@@ -22,6 +23,8 @@ function reportedVotes(dpt: number, votersPresent: number): VoteCounts {
   const remaining = votersPresent - invalidVotes;
   const partyVotes: Record<string, number> = {};
   const candidateVotes: Record<string, number> = {};
+  const dprCandidateVotes: Record<string, number> = {};
+
   let leftP = remaining;
   partyNames.forEach((p, i) => {
     const isLast = i === partyNames.length - 1;
@@ -29,6 +32,7 @@ function reportedVotes(dpt: number, votersPresent: number): VoteCounts {
     partyVotes[p] = v;
     leftP -= v;
   });
+
   let leftC = remaining;
   candidateNames.forEach((c, i) => {
     const isLast = i === candidateNames.length - 1;
@@ -36,7 +40,16 @@ function reportedVotes(dpt: number, votersPresent: number): VoteCounts {
     candidateVotes[c] = v;
     leftC -= v;
   });
-  return { partyVotes, candidateVotes, invalidVotes };
+
+  let leftDpr = remaining;
+  dprCandidates.forEach((c, i) => {
+    const isLast = i === dprCandidates.length - 1;
+    const v = isLast ? leftDpr : randInt(0, Math.floor(leftDpr * 0.4));
+    dprCandidateVotes[c] = v;
+    leftDpr -= v;
+  });
+
+  return { partyVotes, candidateVotes, dprCandidateVotes, invalidVotes };
 }
 
 const baseCoords: Record<string, [number, number]> = {

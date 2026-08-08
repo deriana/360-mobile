@@ -101,7 +101,7 @@ function DetailRow({ icon, label, value, isSuccess }: { icon: keyof typeof Feath
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   idCardContainer: { padding: 0, overflow: 'hidden', borderRadius: radius.xl, borderWidth: 1, ...shadow.lg },
   cardHeader: {
     paddingHorizontal: spacing.lg,

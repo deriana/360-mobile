@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
-import { partyNames, candidateNames } from '../data/regions';
+import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 
 type Stage = 'before' | 'scanning' | 'after' | 'done';
 
@@ -19,6 +19,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
   const [invalidVotes, setInvalidVotes] = useState('0');
   const [partyValues, setPartyValues] = useState<Record<string, string>>({});
   const [candidateValues, setCandidateValues] = useState<Record<string, string>>({});
+  const [dprCandidateValues, setDprCandidateValues] = useState<Record<string, string>>({});
   const [votersPresent, setVotersPresent] = useState('0');
 
   if (!record) {
@@ -44,6 +45,14 @@ export default function OcrMockScreen({ route, navigation }: any) {
         [candidateNames[1]]: String(share - 3),
         [candidateNames[2]]: String(remaining - (share + 8) - (share - 3)),
       });
+      setDprCandidateValues({
+        [dprCandidates[0]]: String(Math.floor(share * 0.4)),
+        [dprCandidates[1]]: String(Math.floor(share * 0.3)),
+        [dprCandidates[2]]: String(Math.floor(share * 0.25)),
+        [dprCandidates[3]]: String(Math.floor(share * 0.35)),
+        [dprCandidates[4]]: String(Math.floor(share * 0.2)),
+        [dprCandidates[5]]: String(Math.floor(share * 0.15)),
+      });
       setStage('after');
     }, 1400);
   };
@@ -54,6 +63,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
       votes: {
         partyVotes: Object.fromEntries(partyNames.map((p) => [p, Number(partyValues[p]) || 0])),
         candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, Number(candidateValues[c]) || 0])),
+        dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, Number(dprCandidateValues[c]) || 0])),
         invalidVotes: Number(invalidVotes) || 0,
       },
       status: 'done',
@@ -64,7 +74,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>AI OCR — Pindai Formulir C.Hasil</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Pemindaian Formulir C.Hasil</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           {record.id} — TPS {record.tpsNumber}, {record.district}, {record.regency}
         </Text>
@@ -77,19 +87,19 @@ export default function OcrMockScreen({ route, navigation }: any) {
         </View>
 
         {stage === 'before' && (
-          <PrimaryButton label="Jalankan Pemindaian AI OCR" icon="zap" onPress={runScan} style={{ width: '100%' }} />
+          <PrimaryButton label="Jalankan Pemindaian C.Hasil" icon="zap" onPress={runScan} style={{ width: '100%' }} />
         )}
         {stage === 'scanning' && (
-          <PrimaryButton label="Memproses Gambar dengan AI..." onPress={() => {}} loading style={{ width: '100%' }} />
+          <PrimaryButton label="Memproses Gambar C.Hasil..." onPress={() => {}} loading style={{ width: '100%' }} />
         )}
       </Card>
 
       {(stage === 'after' || stage === 'done') && (
         <>
           <Card style={{ gap: spacing.sm }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Hasil Ekstraksi OCR</SectionTitle>
+            <SectionTitle style={{ marginBottom: 0 }}>Hasil Pembacaan Data</SectionTitle>
             <Text style={[styles.hint, { color: colors.textMuted }]}>
-              Silakan periksa dan perbaiki angka yang diekstrak AI jika terdapat perbedaan.
+              Silakan periksa dan selaraskan angka jika terdapat perbedaan dengan fisik formulir C.Hasil.
             </Text>
             <Input
               label="Pemilih Hadir"
@@ -118,13 +128,25 @@ export default function OcrMockScreen({ route, navigation }: any) {
               />
             ))}
 
-            <Text style={[styles.subHeading, { color: colors.text }]}>Suara Kandidat</Text>
+            <Text style={[styles.subHeading, { color: colors.text }]}>Suara Paslon Pilpres</Text>
             {candidateNames.map((c) => (
               <Input
                 key={c}
                 label={c}
                 value={candidateValues[c] ?? '0'}
                 onChangeText={(v) => setCandidateValues((prev) => ({ ...prev, [c]: v }))}
+                editable={stage === 'after'}
+                keyboardType="numeric"
+              />
+            ))}
+
+            <Text style={[styles.subHeading, { color: colors.text }]}>Suara Caleg DPR RI</Text>
+            {dprCandidates.map((c) => (
+              <Input
+                key={c}
+                label={c}
+                value={dprCandidateValues[c] ?? '0'}
+                onChangeText={(v) => setDprCandidateValues((prev) => ({ ...prev, [c]: v }))}
                 editable={stage === 'after'}
                 keyboardType="numeric"
               />
@@ -137,7 +159,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
 
           {stage === 'done' && (
             <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg }}>
-              <Pill label="Hasil AI Terverifikasi & Terkirim" tone="success" icon="check-circle" />
+              <Pill label="Hasil Terverifikasi & Terkirim" tone="success" icon="check-circle" />
               <PrimaryButton label="Kembali ke Laporan" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
             </Card>
           )}
@@ -149,7 +171,7 @@ export default function OcrMockScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: 2 },
   title: { fontSize: fontSize.xl, fontWeight: '800' },
   subtitle: { fontSize: fontSize.xs },

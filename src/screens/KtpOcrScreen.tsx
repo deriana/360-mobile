@@ -8,7 +8,7 @@ import { pickImage } from '../utils/pickImage';
 
 type ScanStage = 'idle' | 'scanning' | 'extracted' | 'saved';
 
-const STEPS = ['Foto KTP', 'Ekstraksi AI', 'Simpan Data'];
+const STEPS = ['Foto KTP', 'Ekstraksi Data', 'Simpan Data'];
 
 const MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const WEEKDAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
@@ -86,18 +86,18 @@ export default function KtpOcrScreen({ navigation }: any) {
 
   const scrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef(0);
-  const scrollFieldIntoView = (fieldRef: React.RefObject<View | null>) => () => {
-    requestAnimationFrame(() => {
+  const scrollFieldIntoView = (fieldRef: React.RefObject<View | null>, offsetExtra = 0) => () => {
+    setTimeout(() => {
       const node = fieldRef.current;
       const scrollNode = scrollRef.current;
       if (!node || !scrollNode) return;
       node.measureInWindow((_fx: number, fy: number) => {
         (scrollNode as any).measureInWindow((_sx: number, sy: number) => {
-          const delta = fy - sy - 100;
+          const delta = fy - sy - 60 + offsetExtra;
           if (delta > 0) scrollNode.scrollTo({ y: scrollOffsetRef.current + delta, animated: true });
         });
       });
-    });
+    }, 150);
   };
   const nikFieldRef = useRef<View>(null);
   const nameFieldRef = useRef<View>(null);
@@ -220,9 +220,9 @@ export default function KtpOcrScreen({ navigation }: any) {
             <Feather name="credit-card" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>Pemindaian Cerdas KTP</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Pemindaian KTP Saksi</Text>
             <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-              Pindai KTP Saksi untuk mengekstrak NIK, nama, dan alamat otomatis tanpa mengetik manual.
+              Pindai KTP Saksi untuk mengisi NIK, nama, dan alamat secara otomatis.
             </Text>
           </View>
         </View>
@@ -237,10 +237,10 @@ export default function KtpOcrScreen({ navigation }: any) {
           <View style={styles.headerNumBadge}>
             <Text style={styles.headerNumBadgeText}>1</Text>
           </View>
-          <Text style={styles.ktpHeaderTitle}>Asisten Pemindai KTP Lapangan</Text>
+          <Text style={styles.ktpHeaderTitle}>Pemindaian KTP Lapangan</Text>
           <View style={[styles.ocrBadge, { backgroundColor: `${colors.primary}55` }]}>
-            <Feather name="zap" size={10} color="#FFFFFF" strokeWidth={iconStrokeWidth} />
-            <Text style={styles.ocrBadgeText}>AI OCR</Text>
+            <Feather name="camera" size={10} color="#FFFFFF" strokeWidth={iconStrokeWidth} />
+            <Text style={styles.ocrBadgeText}>KTP</Text>
           </View>
         </View>
 
@@ -275,7 +275,7 @@ export default function KtpOcrScreen({ navigation }: any) {
         <View style={[styles.ktpActionFooter, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
           {photoUri ? (
             <PrimaryButton
-              label={stage === 'scanning' ? 'Memproses Ekstraksi AI...' : 'Pindai Ulang KTP'}
+              label={stage === 'scanning' ? 'Memproses Foto KTP...' : 'Pindai Ulang KTP'}
               icon="camera"
               onPress={() => handlePick('camera')}
               loading={stage === 'scanning'}
@@ -381,26 +381,26 @@ export default function KtpOcrScreen({ navigation }: any) {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <Text style={[styles.optionalLabel, { color: colors.textMuted }]}>Data Tambahan (Opsional)</Text>
 
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View ref={phoneFieldRef} style={{ flex: 1 }}>
+          <View style={{ gap: spacing.sm }}>
+            <View ref={phoneFieldRef}>
               <Input
                 label="No. Telepon"
                 icon="phone"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
-                onFocus={scrollFieldIntoView(phoneFieldRef)}
+                onFocus={scrollFieldIntoView(phoneFieldRef, 60)}
               />
             </View>
-            <View ref={emailFieldRef} style={{ flex: 1 }}>
+            <View ref={emailFieldRef}>
               <Input
-                label="Email"
+                label="Email Saksi"
                 icon="mail"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                onFocus={scrollFieldIntoView(emailFieldRef)}
+                onFocus={scrollFieldIntoView(emailFieldRef, 120)}
               />
             </View>
           </View>
@@ -492,7 +492,7 @@ export default function KtpOcrScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: 2 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },

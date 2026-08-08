@@ -93,7 +93,7 @@ export default function DocumentationScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: fontSize.xl, fontWeight: '800' },

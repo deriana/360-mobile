@@ -57,25 +57,43 @@ export default function TpsDetailScreen({ route, navigation }: any) {
         </View>
       </ScrollView>
 
-      {/* Perolehan Suara Partai */}
+      {/* Perolehan Suara Paslon Pilpres */}
       <Card style={{ gap: spacing.xs }}>
-        <SectionTitle>Perolehan Suara Partai</SectionTitle>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Paslon Pilpres</SectionTitle>
+          <Pill label="Pilpres" tone="primary" />
+        </View>
         {totalParty === 0 ? (
           <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
         ) : (
-          Object.entries(record.votes.partyVotes).map(([name, value]) => (
+          Object.entries(record.votes.candidateVotes).map(([name, value]) => (
             <VoteRow key={name} name={name} value={value} total={totalParty} />
           ))
         )}
       </Card>
 
-      {/* Perolehan Suara Kandidat */}
+      {/* Perolehan Suara Caleg DPR RI */}
       <Card style={{ gap: spacing.xs }}>
-        <SectionTitle>Perolehan Suara Paslon</SectionTitle>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Caleg DPR RI (Dapil Jabar I)</SectionTitle>
+          <Pill label="Caleg DPR RI" tone="info" />
+        </View>
+        {totalParty === 0 || !record.votes.dprCandidateVotes ? (
+          <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
+        ) : (
+          Object.entries(record.votes.dprCandidateVotes).map(([name, value]) => (
+            <VoteRow key={name} name={name} value={value} total={totalParty} />
+          ))
+        )}
+      </Card>
+
+      {/* Perolehan Suara Partai */}
+      <Card style={{ gap: spacing.xs }}>
+        <SectionTitle>Perolehan Suara Partai Politik</SectionTitle>
         {totalParty === 0 ? (
           <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
         ) : (
-          Object.entries(record.votes.candidateVotes).map(([name, value]) => (
+          Object.entries(record.votes.partyVotes).map(([name, value]) => (
             <VoteRow key={name} name={name} value={value} total={totalParty} />
           ))
         )}
@@ -131,7 +149,7 @@ function VoteRow({ name, value, total }: { name: string; value: number; total: n
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl + 40 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   tpsBanner: { width: '100%', height: 140, justifyContent: 'flex-end' },
   tpsOverlay: { padding: spacing.md, backgroundColor: 'rgba(255,255,255,0.92)' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },

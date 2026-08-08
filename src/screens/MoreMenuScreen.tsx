@@ -1,10 +1,11 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { fontSize, iconSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
-import { CURRENT_WITNESS_ID, ROLE_LABEL, ROLE_PERMISSIONS, ROLE_SCOPE_DESCRIPTION } from '../utils/scope';
+import { CURRENT_WITNESS_ID, ROLE_LABEL, ROLE_PERMISSIONS, ROLE_SCOPE_DESCRIPTION, getUserProfile } from '../utils/scope';
+import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 
 interface MenuItem {
   key: string;
@@ -20,11 +21,21 @@ export default function MoreMenuScreen({ navigation }: any) {
   const { colors, isDark, toggleTheme } = useTheme();
 
   const permissions = ROLE_PERMISSIONS[role];
+  const userProfile = getUserProfile(role);
+  const avatarUrl = getWitnessAvatar(userProfile.avatarIndex);
 
   // Dynamically filter menu items per role according to RBAC matrix
   const getRoleMenuItems = (): MenuItem[] => {
+    const profileItem: MenuItem = {
+      key: 'Profile',
+      icon: 'user',
+      label: 'Profil Akun Saya',
+      desc: 'Kartu Identitas Petugas, NIK & Informasi Akun',
+    };
+
     if (role === 'TPS_WITNESS') {
       return [
+        profileItem,
         {
           key: 'AssignmentLetter',
           icon: 'file-text',
@@ -67,6 +78,7 @@ export default function MoreMenuScreen({ navigation }: any) {
 
     if (role === 'OPERATOR') {
       return [
+        profileItem,
         {
           key: 'Supervision',
           icon: 'grid',
@@ -76,8 +88,8 @@ export default function MoreMenuScreen({ navigation }: any) {
         {
           key: 'KtpOcr',
           icon: 'credit-card',
-          label: 'Scan / Foto KTP Saksi (AI OCR)',
-          desc: 'Ekstraksi otomatis NIK, Nama, Tanggal Lahir, & Alamat',
+          label: 'Scan / Foto KTP Saksi',
+          desc: 'Pembacaan otomatis NIK, Nama, Tanggal Lahir, & Alamat',
         },
         {
           key: 'EmergencyForm',
@@ -108,6 +120,7 @@ export default function MoreMenuScreen({ navigation }: any) {
 
     if (role === 'TPS_COORDINATOR') {
       return [
+        profileItem,
         {
           key: 'Supervision',
           icon: 'grid',
@@ -117,8 +130,8 @@ export default function MoreMenuScreen({ navigation }: any) {
         {
           key: 'KtpOcr',
           icon: 'credit-card',
-          label: 'Scan / Foto KTP Saksi (AI OCR)',
-          desc: 'Ekstraksi otomatis NIK, Nama, Tanggal Lahir, & Alamat',
+          label: 'Scan / Foto KTP Saksi',
+          desc: 'Pembacaan otomatis NIK, Nama, Tanggal Lahir, & Alamat',
         },
         {
           key: 'EmergencyList',
@@ -147,7 +160,7 @@ export default function MoreMenuScreen({ navigation }: any) {
       ];
     }
 
-    const items: MenuItem[] = [];
+    const items: MenuItem[] = [profileItem];
 
     if (permissions.canAccessEmergencyList) {
       items.push({
@@ -183,7 +196,44 @@ export default function MoreMenuScreen({ navigation }: any) {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {/* Role & Scope Header */}
+      {/* Brand Logo Banner */}
+      <View style={[styles.brandBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Image source={BRAND_ASSETS.fullLogo} style={styles.brandLogoImg} resizeMode="contain" />
+        <View style={[styles.appVersionTag, { backgroundColor: colors.primaryLight }]}>
+          <Text style={[styles.appVersionText, { color: colors.primary }]}>v1.0.0</Text>
+        </View>
+      </View>
+
+      {/* Logged-In User Profile Card */}
+      <Pressable
+        onPress={() => navigation.navigate('Profile')}
+        style={({ pressed }) => [
+          styles.profileHeaderCard,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          pressed && { opacity: 0.88, transform: [{ scale: 0.99 }] },
+        ]}
+      >
+        <View style={styles.profileAvatarWrapper}>
+          <Image source={{ uri: avatarUrl }} style={styles.profileHeaderAvatar} />
+          <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+        </View>
+
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={styles.profileHeaderTopRow}>
+            <Text style={[styles.profileHeaderName, { color: colors.text }]}>{userProfile.name}</Text>
+            <View style={[styles.badgeIdPill, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.badgeIdPillText, { color: colors.primary }]}>{userProfile.badgeId}</Text>
+            </View>
+          </View>
+          <Text style={[styles.profileHeaderRole, { color: colors.primary }]}>{userProfile.roleLabel}</Text>
+          <Text style={[styles.profileHeaderScope, { color: colors.textMuted }]}>
+            📍 {userProfile.scopeLocation}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={colors.textMuted} />
+      </Pressable>
+
+      {/* Role & Scope Description */}
       <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.roleBadgeRow}>
           <View style={[styles.roleBadge, { backgroundColor: colors.primaryLight }]}>
@@ -279,7 +329,37 @@ export default function MoreMenuScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl + 40, gap: spacing.sm },
+  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
+  brandBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  brandLogoImg: { width: 120, height: 32 },
+  appVersionTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
+  appVersionText: { fontSize: 10, fontWeight: '800' },
+  profileHeaderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    ...shadow.card,
+  },
+  profileAvatarWrapper: { position: 'relative' },
+  profileHeaderAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#E60012' },
+  onlineDot: { width: 12, height: 12, borderRadius: 6, position: 'absolute', bottom: 0, right: 0, borderWidth: 2, borderColor: '#FFFFFF' },
+  profileHeaderTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  profileHeaderName: { fontSize: fontSize.sm, fontWeight: '800' },
+  badgeIdPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
+  badgeIdPillText: { fontSize: 9, fontWeight: '800' },
+  profileHeaderRole: { fontSize: 11, fontWeight: '700' },
+  profileHeaderScope: { fontSize: 10 },
   headerCard: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, gap: spacing.xs },
   roleBadgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },

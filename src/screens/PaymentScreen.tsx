@@ -128,7 +128,7 @@ function InvoiceMetaRow({ icon, label, value }: { icon: keyof typeof Feather.gly
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.xs, paddingBottom: spacing.xxl + 60 },
+  content: { padding: spacing.lg, gap: spacing.xs, paddingBottom: spacing.xl },
   title: { fontSize: fontSize.xl, fontWeight: '800' },
   subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginBottom: spacing.xs },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
