@@ -6,6 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "updates": {
+      "checkAutomatically": "NEVER",
+      "enabled": false
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -20,6 +24,27 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Saksi 360 memerlukan akses kamera untuk foto selfie presensi dan pemindaian dokumen."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Saksi 360 memerlukan akses lokasi untuk memverifikasi titik presensi GPS di TPS."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Saksi 360 memerlukan akses galeri untuk mengunggah foto dokumen.",
+          "cameraPermission": "Saksi 360 memerlukan akses kamera untuk memotret dokumen."
+        }
+      ]
+    ]
   }
 }

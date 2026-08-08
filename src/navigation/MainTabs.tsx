@@ -1,0 +1,221 @@
+import React, { useEffect, useState } from 'react';
+import { Keyboard, StyleSheet, Text, View, Pressable } from 'react-native';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
+import { iconStrokeWidth, useTheme } from '../theme';
+import { buildDetailStack } from './DetailStack';
+
+import DashboardScreen from '../screens/DashboardScreen';
+import CommandCenterScreen from '../screens/CommandCenterScreen';
+import WitnessListScreen from '../screens/WitnessListScreen';
+import MoreMenuScreen from '../screens/MoreMenuScreen';
+import WitnessHomeScreen from '../screens/WitnessHomeScreen';
+import CheckInScreen from '../screens/CheckInScreen';
+import ReportFormScreen from '../screens/ReportFormScreen';
+
+import SupervisionScreen from '../screens/SupervisionScreen';
+
+const Tab = createBottomTabNavigator<any>();
+
+const DashboardStack = buildDetailStack('Dashboard', DashboardScreen, 'Dashboard');
+const SupervisionStack = buildDetailStack('Supervision', SupervisionScreen, 'Pengawasan TPS');
+const CommandCenterStack = buildDetailStack('CommandCenter', CommandCenterScreen, 'Command Center');
+const WitnessesStack = buildDetailStack('WitnessList', WitnessListScreen, 'Saksi');
+const MoreStack = buildDetailStack('MoreMenu', MoreMenuScreen, 'Lainnya');
+
+const WitnessHomeStack = buildDetailStack('WitnessHome', WitnessHomeScreen, 'Tugas Saya');
+const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Check-in');
+const ReportFormStack = buildDetailStack('ReportForm', ReportFormScreen, 'Lapor Hasil');
+
+const SUPERVISOR_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
+  { name: 'SupervisionTab', component: SupervisionStack, label: 'Pengawasan', icon: 'grid' as const },
+  { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
+  { name: 'ReportFormTab', component: ReportFormStack, label: 'Lapor C1', icon: 'edit-3' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+const WITNESS_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
+  { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
+  { name: 'ReportFormTab', component: ReportFormStack, label: 'Lapor C1', icon: 'edit-3' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  if (keyboardVisible) return null;
+
+  const bottomInset = Math.max(insets.bottom, 12);
+  const activeColor = '#FFFFFF'; // White text & icon inside red capsule
+  const inactiveColor = colors.textMuted;
+
+  return (
+    <View
+      style={[
+        styles.tabBarContainer,
+        {
+          bottom: bottomInset,
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
+        };
+
+        const label =
+          options.tabBarLabel !== undefined
+            ? (options.tabBarLabel as string)
+            : options.title !== undefined
+            ? options.title
+            : route.name;
+
+        const textColor = isFocused ? activeColor : inactiveColor;
+        const iconColor = isFocused ? activeColor : inactiveColor;
+
+        return (
+          <Pressable
+            key={route.key}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            accessibilityLabel={options.tabBarAccessibilityLabel}
+            testID={options.tabBarButtonTestID}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            style={({ pressed }) => [
+              styles.tabItem,
+              isFocused && styles.activeRedPillTab,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            {options.tabBarIcon ? (
+              options.tabBarIcon({ focused: isFocused, color: iconColor, size: 18 })
+            ) : null}
+            <Text
+              style={[
+                styles.tabLabel,
+                {
+                  color: textColor,
+                  fontWeight: isFocused ? '800' : '600',
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export default function MainTabs() {
+  const { role } = useApp();
+  const { colors } = useTheme();
+  const isWitness = role === 'TPS_WITNESS';
+  const tabs = isWitness ? WITNESS_TABS : SUPERVISOR_TABS;
+
+  return (
+    <Tab.Navigator
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { backgroundColor: colors.background },
+      }}
+    >
+      {tabs.map((tab) => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarLabel: tab.label,
+            tabBarIcon: ({ color }: { color: string }) => (
+              <Feather name={tab.icon} size={18} color={color} strokeWidth={iconStrokeWidth} />
+            ),
+          }}
+        />
+      ))}
+    </Tab.Navigator>
+  );
+}
+
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 40,
+    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 24,
+    gap: 3,
+  },
+  activeRedPillTab: {
+    backgroundColor: '#E60012', // Vibrant Red Capsule (SAKSI 360 brand)
+    borderRadius: 999, // 100% round sides (capsule pill)
+    paddingVertical: 8,
+    shadowColor: '#E60012',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  tabLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+});

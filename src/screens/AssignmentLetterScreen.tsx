@@ -1,0 +1,152 @@
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
+import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
+import QrPlaceholder from '../components/QrPlaceholder';
+import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
+
+export default function AssignmentLetterScreen({ route, navigation }: any) {
+  const { witnessId } = route.params;
+  const { witnesses, tps } = useApp();
+  const { colors } = useTheme();
+
+  const witness = witnesses.find((w) => w.id === witnessId);
+  const [downloading, setDownloading] = useState(false);
+
+  if (!witness) {
+    return <EmptyState title="Surat Tidak Ditemukan" body="Data penugasan ini tidak tersedia." icon="file-text" />;
+  }
+
+  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
+  const letterNo = `ST/${witness.id}/SAKSI360/2026`;
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const html = `
+        <html>
+          <head><meta charset="utf-8" /></head>
+          <body style="font-family: Helvetica, Arial, sans-serif; padding: 32px; color: #0A192F;">
+            <div style="text-align:center; border-bottom: 2px solid #E60012; padding-bottom: 16px; margin-bottom: 24px;">
+              <h2 style="margin: 0; letter-spacing: 1px;">SURAT TUGAS DIGITAL SAKSI</h2>
+              <p style="margin: 4px 0 0; color: #64748B; font-size: 13px;">${letterNo}</p>
+            </div>
+            <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="padding:6px 0; color:#64748B; width:180px;">Nama Saksi TPS</td><td style="padding:6px 0; font-weight:700;">${witness.name}</td></tr>
+              <tr><td style="padding:6px 0; color:#64748B;">NIK Terdaftar</td><td style="padding:6px 0; font-weight:700;">${witness.nik}</td></tr>
+              <tr><td style="padding:6px 0; color:#64748B;">Lokasi Penugasan TPS</td><td style="padding:6px 0; font-weight:700;">${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : ''}</td></tr>
+              <tr><td style="padding:6px 0; color:#64748B;">Wilayah Provinsi</td><td style="padding:6px 0; font-weight:700;">${assignedTps?.province ?? '-'}</td></tr>
+            </table>
+            <div style="margin-top: 32px; text-align:center;">
+              <p style="font-size:12px; color:#64748B;">Kode Otentikasi Digital</p>
+              <p style="font-weight:700;">${witness.id}-${letterNo.slice(-4)}</p>
+            </div>
+            <div style="margin-top: 40px; text-align:center;">
+              <p style="font-size:12px; color:#64748B;">Tanda Tangan Digital Pimpinan</p>
+              <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua Pengurus Pusat</p>
+              <p style="font-weight:700; font-size:13px;">Ketua Pengurus Pusat — SAKSI 360</p>
+            </div>
+          </body>
+        </html>
+      `;
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Simpan Surat Tugas PDF' });
+      } else {
+        Alert.alert('PDF Dibuat', `File tersimpan sementara di: ${uri}`);
+      }
+    } catch (err) {
+      Alert.alert('Gagal Membuat PDF', 'Terjadi kesalahan saat membuat dokumen PDF. Silakan coba lagi.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <Card style={{ gap: spacing.sm }}>
+        <View style={styles.headerBlock}>
+          <Text style={[styles.docTitle, { color: colors.text }]}>SURAT TUGAS DIGITAL SAKSI</Text>
+          <Text style={[styles.docSubtitle, { color: colors.textMuted }]}>{letterNo}</Text>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        <Field label="Nama Saksi TPS" value={witness.name} />
+        <Field label="NIK Terdaftar" value={witness.nik} />
+        <Field
+          label="Lokasi Penugasan TPS"
+          value={`${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : ''}`}
+        />
+        <Field label="Wilayah Provinsi" value={assignedTps?.province ?? '-'} />
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        <View style={styles.qrRow}>
+          <QrPlaceholder seed={witness.id} />
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={[styles.qrLabel, { color: colors.textMuted }]}>Kode Otentikasi Digital</Text>
+            <Text style={[styles.qrCode, { color: colors.text }]}>{witness.id}-{letterNo.slice(-4)}</Text>
+            <Pill label="Terverifikasi Resmi" tone="success" icon="check-circle" />
+          </View>
+        </View>
+
+        <View style={styles.signatureBlock}>
+          <Text style={[styles.qrLabel, { color: colors.textMuted }]}>Tanda Tangan Digital Pimpinan</Text>
+          <Svg width={160} height={50}>
+            <Path
+              d="M5 35 Q 25 5, 45 30 T 85 15 T 125 35 T 155 18"
+              stroke={colors.primary}
+              strokeWidth={2.5}
+              fill="none"
+            />
+          </Svg>
+          <Text style={[styles.signName, { color: colors.text }]}>Ketua Pengurus Pusat — SAKSI 360</Text>
+        </View>
+      </Card>
+
+      <View style={{ gap: spacing.sm }}>
+        <PrimaryButton label="Unduh PDF Surat Tugas" icon="download" onPress={handleDownload} loading={downloading} />
+        <PrimaryButton
+          label="Verifikasi Keaslian Surat"
+          icon="shield"
+          variant="secondary"
+          onPress={() => navigation.navigate('VerifyLetter', { witnessId: witness.id })}
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.field}>
+      <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.fieldValue, { color: colors.text }]}>{value}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  headerBlock: { alignItems: 'center', gap: 2 },
+  docTitle: { fontSize: fontSize.md, fontWeight: '800', textAlign: 'center', letterSpacing: 0.5 },
+  docSubtitle: { fontSize: fontSize.xs, textAlign: 'center' },
+  divider: { height: 1, marginVertical: spacing.xs },
+  field: { marginVertical: 2 },
+  fieldLabel: { fontSize: fontSize.xs },
+  fieldValue: { fontSize: fontSize.sm, fontWeight: '700', marginTop: 2 },
+  qrRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  qrLabel: { fontSize: fontSize.xs },
+  qrCode: { fontSize: fontSize.sm, fontWeight: '700' },
+  signatureBlock: { marginTop: spacing.md, alignItems: 'center', gap: 2 },
+  signName: { fontSize: fontSize.xs, fontWeight: '700' },
+});
+
