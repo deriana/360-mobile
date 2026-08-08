@@ -109,8 +109,8 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       {/* Perolehan Suara Paslon Pilpres */}
       {(activeCategory === 'pilpres' || activeCategory === 'all') && (
         <Card style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Paslon Pilpres</SectionTitle>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+            <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Paslon Pilpres</SectionTitle>
             <Pill label="Pilpres" tone="primary" />
           </View>
           {totalParty === 0 ? (
@@ -126,9 +126,9 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       {/* Perolehan Suara Caleg DPR RI */}
       {(activeCategory === 'dpr' || activeCategory === 'all') && (
         <Card style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Caleg DPR RI (Dapil Jabar I)</SectionTitle>
-            <Pill label="Caleg DPR RI" tone="info" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+            <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Caleg DPR RI</SectionTitle>
+            <Pill label="Dapil Jabar I" tone="info" />
           </View>
           {totalParty === 0 || !record.votes.dprCandidateVotes ? (
             <Text style={[styles.muted, { color: colors.textMuted }]}>Belum ada data suara masuk.</Text>
@@ -143,8 +143,8 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       {/* Perolehan Suara Partai */}
       {(activeCategory === 'partai' || activeCategory === 'all') && (
         <Card style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+            <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Partai Politik</SectionTitle>
             <Pill label="Partai" tone="neutral" />
           </View>
           {totalParty === 0 ? (

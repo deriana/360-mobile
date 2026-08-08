@@ -169,8 +169,8 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Pilpres Votes Card */}
         {(entryCategory === 'pilpres' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Pemilu Presiden & Wapres (Pilpres)</SectionTitle>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Pemilu Presiden & Wapres</SectionTitle>
               <Pill label="Pilpres" tone="primary" />
             </View>
             {candidateNames.map((c) => (
@@ -189,9 +189,9 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Caleg DPR RI Votes Card */}
         {(entryCategory === 'dpr' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Pemilihan Caleg DPR RI (Dapil Jabar I)</SectionTitle>
-              <Pill label="Caleg DPR RI" tone="info" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Caleg DPR RI</SectionTitle>
+              <Pill label="Dapil Jabar I" tone="info" />
             </View>
             {dprCandidates.map((c) => (
               <Input
@@ -209,8 +209,8 @@ export default function ReportFormScreen({ route, navigation }: any) {
         {/* Party Votes Card */}
         {(entryCategory === 'partai' || entryCategory === 'all') && (
           <Card style={{ gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Perolehan Suara Partai Politik</SectionTitle>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+              <SectionTitle style={{ marginBottom: 0, flex: 1 }}>Suara Partai Politik</SectionTitle>
               <Pill label="Partai" tone="neutral" />
             </View>
             {partyNames.map((p) => (
