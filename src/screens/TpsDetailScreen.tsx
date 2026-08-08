@@ -19,7 +19,7 @@ const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof
 export default function TpsDetailScreen({ route, navigation }: any) {
   const { tpsId } = route.params;
   const { tps, witnesses } = useApp();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
 
@@ -37,15 +37,15 @@ export default function TpsDetailScreen({ route, navigation }: any) {
       {/* TPS Photo Banner Header */}
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <ImageBackground source={getTpsPhoto(parseInt(record.id.replace('TPS-', '')) || 0)} style={styles.tpsBanner}>
-          <View style={styles.tpsOverlay}>
+          <View style={[styles.tpsOverlay, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(255, 255, 255, 0.94)' }]}>
             <View style={styles.headerRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.tpsIdBadge}>{record.id}</Text>
-                <Text style={styles.tpsTitle}>TPS {record.tpsNumber} — {record.village || record.district}</Text>
+                <Text style={[styles.tpsIdBadge, { color: colors.primary }]}>{record.id}</Text>
+                <Text style={[styles.tpsTitle, { color: colors.text }]}>TPS {record.tpsNumber} — {record.village || record.district}</Text>
               </View>
               <StatusBadge status={record.status} />
             </View>
-            <Text style={styles.locationText}>
+            <Text style={[styles.locationText, { color: colors.textMuted }]}>
               Kec. {record.district}, {record.regency}, {record.province}
             </Text>
           </View>

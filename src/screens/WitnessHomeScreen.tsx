@@ -40,9 +40,9 @@ export default function WitnessHomeScreen({ navigation }: any) {
       {/* Assigned TPS Photo Card */}
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <ImageBackground source={{ uri: IMAGES.tpsSchool }} style={styles.tpsPhotoHeader}>
-          <View style={styles.tpsPhotoOverlay}>
-            <Text style={styles.tpsTag}>LOKASI PENUGASAN SAKSI</Text>
-            <Text style={styles.tpsHeadline}>
+          <View style={[styles.tpsPhotoOverlay, { backgroundColor: isDark ? 'rgba(30, 41, 59, 0.94)' : 'rgba(255, 255, 255, 0.94)' }]}>
+            <Text style={[styles.tpsTag, { color: colors.primary }]}>LOKASI PENUGASAN SAKSI</Text>
+            <Text style={[styles.tpsHeadline, { color: colors.text }]}>
               TPS {assignedTps?.tpsNumber ?? '01'} — {assignedTps?.district ?? 'Kecamatan'}
             </Text>
           </View>
