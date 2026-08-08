@@ -103,7 +103,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             ? options.title
             : route.name;
 
-        const activeColor = colors.primary;
+        const activeColor = '#FFFFFF';
         const inactiveColor = colors.textMuted;
         const color = isFocused ? activeColor : inactiveColor;
 
@@ -118,25 +118,17 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onLongPress={onLongPress}
             style={({ pressed }) => [
               styles.tabItem,
-              pressed && { opacity: 0.7 },
+              isFocused && [styles.activeRedCapsule, { backgroundColor: colors.primary }],
+              pressed && { opacity: 0.8 },
             ]}
           >
-            {/* Top Indicator Line */}
-            {isFocused && (
-              <View style={[styles.activeIndicatorBar, { backgroundColor: activeColor }]} />
-            )}
-
-            {/* Icon Wrapper Pill */}
-            <View style={[styles.iconWrapper, isFocused && { backgroundColor: colors.primaryLight }]}>
-              {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color, size: 20 }) : null}
-            </View>
-
+            {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color, size: 18 }) : null}
             <Text
               style={[
                 styles.tabLabel,
                 {
                   color,
-                  fontWeight: isFocused ? '800' : '500',
+                  fontWeight: isFocused ? '700' : '500',
                 },
               ]}
               numberOfLines={1}
@@ -172,7 +164,7 @@ export default function MainTabs() {
           options={{
             tabBarLabel: tab.label,
             tabBarIcon: ({ color }: { color: string }) => (
-              <Feather name={tab.icon} size={20} color={color} strokeWidth={iconStrokeWidth} />
+              <Feather name={tab.icon} size={18} color={color} strokeWidth={iconStrokeWidth} />
             ),
           }}
         />
@@ -185,10 +177,10 @@ const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     borderTopWidth: 1,
-    paddingTop: 4,
-    paddingHorizontal: 4,
+    paddingTop: 6,
+    paddingHorizontal: 8,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.05,
@@ -197,26 +189,21 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     flex: 1,
-    position: 'relative',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 999, // Smooth fully-rounded capsule ends
     gap: 2,
   },
-  activeIndicatorBar: {
-    position: 'absolute',
-    top: -4,
-    width: 28,
-    height: 4,
-    borderRadius: 999, // Smooth fully-rounded capsule ends
-  },
-  iconWrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 999, // 100% round capsule ends on left & right
-    alignItems: 'center',
-    justifyContent: 'center',
+  activeRedCapsule: {
+    borderRadius: 999, // Smooth 100% round capsule ends on left & right
+    shadowColor: '#E60012',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   tabLabel: {
     fontSize: 11,
