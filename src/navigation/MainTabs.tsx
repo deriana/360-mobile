@@ -207,14 +207,14 @@ const styles = StyleSheet.create({
   activeIndicatorBar: {
     position: 'absolute',
     top: -4,
-    width: 26,
+    width: 28,
     height: 4,
     borderRadius: 999, // Smooth fully-rounded capsule ends
   },
   iconWrapper: {
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderRadius: 999, // 100% round capsule ends on left & right
     alignItems: 'center',
     justifyContent: 'center',
   },
