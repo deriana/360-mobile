@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Input, Pill } from '../components/ui';
 import { PartyBadge } from '../components/PartyBadge';
 import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
-import { NATIONAL_PARTIES, LEGISLATIVE_MEMBERS, COALITIONS } from '../data/legislative';
+import { NATIONAL_PARTIES, LEGISLATIVE_MEMBERS } from '../data/legislative';
 import { getStableAvatar } from '../data/images';
 
 type ElectFilter = 'all' | 'terpilih' | 'tidak';
@@ -16,13 +16,11 @@ export default function PartyRosterScreen({ route, navigation }: any) {
   const [query, setQuery] = useState('');
   const [electFilter, setElectFilter] = useState<ElectFilter>('all');
 
-  const coalition = COALITIONS.find((c) => c.parties.includes(party));
-  const rosterParties = coalition?.parties ?? [party];
-  const totalSeats = rosterParties.reduce((sum, p) => sum + (NATIONAL_PARTIES.find((np) => np.name === p)?.seats ?? 0), 0);
+  const totalSeats = NATIONAL_PARTIES.find((np) => np.name === party)?.seats ?? 0;
 
   const allMembers = useMemo(
-    () => LEGISLATIVE_MEMBERS.filter((m) => rosterParties.includes(m.party)),
-    [rosterParties.join('|')],
+    () => LEGISLATIVE_MEMBERS.filter((m) => m.party === party),
+    [party],
   );
 
   const filtered = allMembers.filter((m) => {
@@ -37,19 +35,8 @@ export default function PartyRosterScreen({ route, navigation }: any) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Card style={styles.headerCard}>
-        {coalition ? (
-          <View style={{ flexDirection: 'row', gap: -8 }}>
-            {rosterParties.map((p) => (
-              <PartyBadge key={p} party={p} size={40} />
-            ))}
-          </View>
-        ) : (
-          <PartyBadge party={party} size={56} />
-        )}
-        <Text style={[styles.partyName, { color: colors.text }]}>{coalition ? coalition.name : party}</Text>
-        {coalition && (
-          <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>{coalition.parties.join(', ')}</Text>
-        )}
+        <PartyBadge party={party} size={56} />
+        <Text style={[styles.partyName, { color: colors.text }]}>{party}</Text>
         <View style={{ flexDirection: 'row', gap: spacing.xs }}>
           <Pill label={`${totalSeats} Kursi DPR RI`} tone="primary" />
           <Pill label={`${electedCount}/${allMembers.length} Caleg Terpilih`} tone="info" />
@@ -101,10 +88,7 @@ export default function PartyRosterScreen({ route, navigation }: any) {
             >
               <Image source={getStableAvatar(item.id)} style={styles.avatar} />
               <View style={{ flex: 1, gap: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-                  {coalition && <PartyBadge party={item.party} size={16} />}
-                </View>
+                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
                 <Text style={{ fontSize: 11, color: colors.textMuted }}>
                   Dapil {item.province} • No. Urut {item.noUrut} • {item.votes.toLocaleString('id-ID')} suara
                 </Text>

@@ -29,6 +29,8 @@ export default function DashboardScreen({ navigation }: any) {
 
   const [tpsPage, setTpsPage] = useState(1);
   const [witnessPage, setWitnessPage] = useState(1);
+  const [attendancePage, setAttendancePage] = useState(1);
+  const [attendanceSort, setAttendanceSort] = useState<'best' | 'worst'>('best');
 
   const scopedTps = scopeTps(role, tps, witnesses);
   const scopedWitnesses = scopeWitnesses(role, witnesses, scopedTps);
@@ -42,6 +44,22 @@ export default function DashboardScreen({ navigation }: any) {
 
   const totalWitnessPages = Math.ceil(scopedWitnesses.length / ITEMS_PER_PAGE);
   const paginatedWitnesses = scopedWitnesses.slice((witnessPage - 1) * ITEMS_PER_PAGE, witnessPage * ITEMS_PER_PAGE);
+
+  // Per-TPS attendance breakdown, sortable best-first or worst-first.
+  const attendanceByTps = [...scopedTps]
+    .map((t) => {
+      const ws = scopedWitnesses.filter((w) => w.assignedTpsId === t.id);
+      const hadir = ws.filter((w) => w.status === 'checked_in').length;
+      const total = ws.length;
+      return { tps: t, hadir, total, pct: total > 0 ? Math.round((hadir / total) * 100) : 0 };
+    })
+    .sort((a, b) => (attendanceSort === 'best' ? b.pct - a.pct : a.pct - b.pct));
+  const fullyPresentTpsCount = attendanceByTps.filter((a) => a.pct === 100).length;
+  const totalAttendancePages = Math.ceil(attendanceByTps.length / ITEMS_PER_PAGE);
+  const paginatedAttendance = attendanceByTps.slice(
+    (attendancePage - 1) * ITEMS_PER_PAGE,
+    attendancePage * ITEMS_PER_PAGE,
+  );
 
   // -------------------------------------------------------------
   // VIEW FOR OPERATOR LAPANGAN (KOTA BANDUNG REGENCY SCOPE)
@@ -145,6 +163,28 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           </View>
         </View>
+
+        <AttendanceStatCard
+          witnesses={scopedWitnesses}
+          fullyPresentTpsCount={fullyPresentTpsCount}
+          totalTpsCount={scopedTps.length}
+          colors={colors}
+        />
+
+        <TpsAttendanceList
+          items={paginatedAttendance}
+          currentPage={attendancePage}
+          totalPages={totalAttendancePages}
+          onPrev={() => setAttendancePage((p) => Math.max(1, p - 1))}
+          onNext={() => setAttendancePage((p) => Math.min(totalAttendancePages, p + 1))}
+          sort={attendanceSort}
+          onToggleSort={() => {
+            setAttendanceSort((s) => (s === 'best' ? 'worst' : 'best'));
+            setAttendancePage(1);
+          }}
+          navigation={navigation}
+          colors={colors}
+        />
 
         {/* Bento Grid Shortcut for Operator */}
         <View style={{ gap: spacing.xs }}>
@@ -311,6 +351,28 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         </View>
 
+        <AttendanceStatCard
+          witnesses={scopedWitnesses}
+          fullyPresentTpsCount={fullyPresentTpsCount}
+          totalTpsCount={scopedTps.length}
+          colors={colors}
+        />
+
+        <TpsAttendanceList
+          items={paginatedAttendance}
+          currentPage={attendancePage}
+          totalPages={totalAttendancePages}
+          onPrev={() => setAttendancePage((p) => Math.max(1, p - 1))}
+          onNext={() => setAttendancePage((p) => Math.min(totalAttendancePages, p + 1))}
+          sort={attendanceSort}
+          onToggleSort={() => {
+            setAttendanceSort((s) => (s === 'best' ? 'worst' : 'best'));
+            setAttendancePage(1);
+          }}
+          navigation={navigation}
+          colors={colors}
+        />
+
         {/* Bento Grid Shortcut for Koordinator */}
         <View style={{ gap: spacing.xs }}>
           <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi Koordinator TPS</SectionTitle>
@@ -416,6 +478,14 @@ export default function DashboardScreen({ navigation }: any) {
       subtitle: 'Status Laporan Anda & TPS',
       tone: 'warning',
       onPress: () => navigation.navigate('EmergencyList'),
+    },
+    {
+      id: 'quickcount',
+      icon: 'zap',
+      title: 'Hitung Cepat Suara',
+      subtitle: 'Tally Manual, Sinkron ke C1',
+      badge: 'Baru',
+      onPress: () => navigation.navigate('QuickCountGame'),
     },
   ];
 
@@ -536,6 +606,103 @@ function BentoGridShortcut({ items }: { items: BentoItem[] }) {
         );
       })}
     </View>
+  );
+}
+
+function AttendanceStatCard({
+  witnesses,
+  fullyPresentTpsCount,
+  totalTpsCount,
+  colors,
+}: {
+  witnesses: { status: string }[];
+  fullyPresentTpsCount: number;
+  totalTpsCount: number;
+  colors: any;
+}) {
+  const total = witnesses.length;
+  const hadir = witnesses.filter((w) => w.status === 'checked_in').length;
+  const tidakHadir = total - hadir;
+  const pctHadir = total > 0 ? Math.round((hadir / total) * 100) : 0;
+
+  return (
+    <Card style={{ gap: spacing.sm }}>
+      <SectionTitle style={{ marginBottom: 0 }}>Kehadiran Saksi</SectionTitle>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <Text style={{ fontSize: fontSize.xxl, fontWeight: '800', color: colors.success }}>{pctHadir}%</Text>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>Persentase Saksi Hadir dari {total} Saksi</Text>
+          <View style={[styles.attendanceBarTrack, { backgroundColor: colors.dangerBg }]}>
+            <View style={[styles.attendanceBarFill, { width: `${pctHadir}%`, backgroundColor: colors.success }]} />
+          </View>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
+        <Pill label={`${hadir} Hadir`} tone="success" />
+        <Pill label={`${tidakHadir} Tidak Hadir`} tone="danger" />
+        <Pill label={`${fullyPresentTpsCount}/${totalTpsCount} TPS 100% Hadir`} tone="info" />
+      </View>
+    </Card>
+  );
+}
+
+function TpsAttendanceList({
+  items,
+  currentPage,
+  totalPages,
+  onPrev,
+  onNext,
+  sort,
+  onToggleSort,
+  navigation,
+  colors,
+}: {
+  items: Array<{ tps: { id: string; tpsNumber: number; district: string; village?: string }; hadir: number; total: number; pct: number }>;
+  currentPage: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+  sort: 'best' | 'worst';
+  onToggleSort: () => void;
+  navigation: any;
+  colors: any;
+}) {
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <SectionTitle
+        style={{ marginBottom: 0 }}
+        action={
+          <Pressable
+            onPress={onToggleSort}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            <Feather name={sort === 'best' ? 'arrow-down' : 'arrow-up'} size={13} color={colors.primary} />
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>
+              {sort === 'best' ? 'Terbaik Dulu' : 'Terburuk Dulu'}
+            </Text>
+          </Pressable>
+        }
+      >
+        Rekap Kehadiran per TPS
+      </SectionTitle>
+      {items.map(({ tps: t, hadir, total, pct }) => (
+        <Pressable
+          key={t.id}
+          onPress={() => navigation.navigate('TpsDetail', { tpsId: t.id })}
+          style={({ pressed }) => [styles.witnessRowItem, { borderBottomColor: colors.border }, pressed && { opacity: 0.8 }]}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.witnessName, { color: colors.text }]}>TPS {t.tpsNumber} — Kec. {t.district}</Text>
+            <Text style={[styles.witnessSub, { color: colors.textMuted }]}>Kel. {t.village || 'Dago'} • {hadir}/{total} Saksi Hadir</Text>
+          </View>
+          <Pill
+            label={pct === 100 ? '100% Hadir' : `${pct}% Hadir`}
+            tone={pct === 100 ? 'success' : pct >= 50 ? 'warning' : 'danger'}
+          />
+        </Pressable>
+      ))}
+      <PaginationBar currentPage={currentPage} totalPages={totalPages} onPrev={onPrev} onNext={onNext} />
+    </Card>
   );
 }
 
@@ -742,4 +909,6 @@ const styles = StyleSheet.create({
   },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statGridItem: { minWidth: '46%' },
+  attendanceBarTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  attendanceBarFill: { height: '100%', borderRadius: 4 },
 });

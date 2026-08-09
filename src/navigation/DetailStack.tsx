@@ -31,6 +31,7 @@ import InsightsScreen from '../screens/InsightsScreen';
 import SecurityScreen from '../screens/SecurityScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import HelpCenterScreen from '../screens/HelpCenterScreen';
+import QuickCountGameScreen from '../screens/QuickCountGameScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -61,6 +62,7 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Insights', component: InsightsScreen, title: 'Pemantauan TPS' },
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
   { name: 'HelpCenter', component: HelpCenterScreen, title: 'Pusat Bantuan' },
+  { name: 'QuickCountGame', component: QuickCountGameScreen, title: 'Hitung Cepat Suara' },
 ];
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {

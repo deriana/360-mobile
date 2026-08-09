@@ -42,13 +42,17 @@ export default function ReportFormScreen({ route, navigation }: any) {
   const activeRecord = selectedTpsId ? tps.find((t) => t.id === selectedTpsId) ?? null : null;
 
   const [entryCategory, setEntryCategory] = useState<EntryTab>('pilpres');
+  const prefillInvalidVotes: number | undefined = route?.params?.prefillInvalidVotes;
   const [votersPresent, setVotersPresent] = useState(String(activeRecord?.votersPresent || ''));
-  const [invalidVotes, setInvalidVotes] = useState(String(activeRecord?.votes.invalidVotes || ''));
+  const [invalidVotes, setInvalidVotes] = useState(String(prefillInvalidVotes ?? activeRecord?.votes.invalidVotes ?? ''));
   const [partyValues, setPartyValues] = useState<Record<string, string>>(
     Object.fromEntries(partyNames.map((p) => [p, String(activeRecord?.votes.partyVotes[p] || '')])),
   );
+  const prefillCandidateVotes: Record<string, number> | undefined = route?.params?.prefillCandidateVotes;
   const [candidateValues, setCandidateValues] = useState<Record<string, string>>(
-    Object.fromEntries(candidateNames.map((c) => [c, String(activeRecord?.votes.candidateVotes[c] || '')])),
+    Object.fromEntries(
+      candidateNames.map((c) => [c, String(prefillCandidateVotes?.[c] ?? activeRecord?.votes.candidateVotes[c] ?? '')]),
+    ),
   );
   const [dprCandidateValues, setDprCandidateValues] = useState<Record<string, string>>(
     Object.fromEntries(dprCandidates.map((c) => [c, String(activeRecord?.votes.dprCandidateVotes?.[c] || '')])),
