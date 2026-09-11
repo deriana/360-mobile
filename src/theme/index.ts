@@ -1,55 +1,55 @@
-// SAKSI 360 Official Brand Color Tokens & Dynamic Theme Specification
+// SAKSI PAN 360 — Partai Amanat Nasional Official Brand Color Tokens & Dynamic Theme Specification
 
 export const lightColors = {
-  primary: '#E60012', // Vibrant Red (SAKSI 360 Primary Accent)
-  primaryDark: '#99000B', // Dark Red Shading
-  primaryLight: '#FEF2F2', // Soft Red Light Tint
+  primary: '#0066B3', // PAN Royal Blue (Partai Amanat Nasional Primary)
+  primaryDark: '#004F8A', // PAN Dark Blue Shading
+  primaryLight: '#EBF4FF', // PAN Soft Blue Light Tint
   background: '#F8FAFC', // Slate/Light Gray Background
   surface: '#FFFFFF', // Pure White Surface
   border: '#E2E8F0', // Light Gray Border
   borderStrong: '#CBD5E1', // Slate-300
-  text: '#0A192F', // Dark Navy Text
+  text: '#003366', // PAN Deep Navy Blue Text
   textMuted: '#64748B', // Slate Muted Text
   textInverse: '#FFFFFF', // Pure White Text
-  navy: '#0A192F', // Dark Navy Brand
+  navy: '#003366', // PAN Deep Navy Brand
   darkRed: '#99000B',
   vibrantRed: '#E60012',
   success: '#10B981', // Emerald 500
   successBg: '#ECFDF5', // Emerald 50
   warning: '#F59E0B', // Amber 500
   warningBg: '#FFFBEB', // Amber 50
-  danger: '#E60012', // Red 500
+  danger: '#DC2626', // Red 600
   dangerBg: '#FEF2F2', // Red 50
   problem: '#475569', // Slate 600
   problemBg: '#F1F5F9', // Slate 100
-  info: '#3B82F6', // Blue 500
-  infoBg: '#EFF6FF', // Blue 50
+  info: '#0066B3', // PAN Blue
+  infoBg: '#EBF4FF', // PAN Blue 50
 } as const;
 
 export const darkColors = {
-  primary: '#E60012', // Vibrant Red Accent
-  primaryDark: '#99000B', // Dark Red Shading
-  primaryLight: 'rgba(230, 0, 18, 0.18)', // Transparent Red Tint
-  background: '#0A192F', // Dark Navy (SAKSI 360 Main Background)
-  surface: '#112240', // Deep Navy Surface
-  border: '#233554', // Navy Border
-  borderStrong: '#3A506B', // Navy Strong Border
+  primary: '#3B9EE0', // PAN Blue Accent (lighter for dark bg)
+  primaryDark: '#0066B3', // PAN Standard Blue
+  primaryLight: 'rgba(0, 102, 179, 0.20)', // Transparent PAN Blue Tint
+  background: '#001A33', // PAN Ultra Dark Navy Background
+  surface: '#002B52', // PAN Deep Navy Surface
+  border: '#0A3D6B', // PAN Navy Border
+  borderStrong: '#1A5490', // PAN Navy Strong Border
   text: '#FFFFFF', // Pure White Text
-  textMuted: '#8892B0', // Soft Blue Slate Muted Text
-  textInverse: '#0A192F',
-  navy: '#0A192F',
+  textMuted: '#93C5FD', // PAN Light Blue Muted Text
+  textInverse: '#001A33',
+  navy: '#001A33',
   darkRed: '#99000B',
   vibrantRed: '#E60012',
   success: '#10B981', // Emerald 500
   successBg: 'rgba(16, 185, 129, 0.18)',
   warning: '#F59E0B', // Amber 500
   warningBg: 'rgba(245, 158, 11, 0.18)',
-  danger: '#E60012', // Vibrant Red
-  dangerBg: 'rgba(230, 0, 18, 0.18)',
-  problem: '#8892B0', // Slate 400
-  problemBg: 'rgba(136, 146, 176, 0.18)',
-  info: '#60A5FA', // Blue 400
-  infoBg: 'rgba(96, 165, 250, 0.18)',
+  danger: '#F87171', // Red 400
+  dangerBg: 'rgba(248, 113, 113, 0.18)',
+  problem: '#93C5FD', // Blue 300
+  problemBg: 'rgba(147, 197, 253, 0.18)',
+  info: '#3B9EE0', // PAN Blue Light
+  infoBg: 'rgba(59, 158, 224, 0.18)',
 } as const;
 
 export type ColorPalette = typeof lightColors;
@@ -125,28 +125,28 @@ export const fontSize = {
 // Elevation via a hairline border + shadow for iOS & Android
 export const shadowLight = {
   sm: {
-    shadowColor: '#0A192F',
+    shadowColor: '#003366',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   card: {
-    shadowColor: '#0A192F',
+    shadowColor: '#003366',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
   md: {
-    shadowColor: '#0A192F',
+    shadowColor: '#003366',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
   },
   lg: {
-    shadowColor: '#0A192F',
+    shadowColor: '#003366',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,

@@ -48,7 +48,7 @@ export function Screen({
 
   return (
     <Container style={[styles.screenContainer, { backgroundColor: bg }, style]}>
-      <StatusBar style={barStyle} backgroundColor={bg} animated />
+      <StatusBar style={barStyle} animated />
       {children}
     </Container>
   );

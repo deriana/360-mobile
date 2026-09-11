@@ -2,6 +2,8 @@ export type Role =
   | 'TPS_WITNESS'
   | 'OPERATOR'
   | 'TPS_COORDINATOR'
+  | 'CALEG'
+  | 'KADER_ANGGOTA'
   | 'PAC'
   | 'DPC'
   | 'DPD'

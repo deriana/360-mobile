@@ -8,7 +8,7 @@ import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 
 export default function CoordinatorDetailScreen({ route, navigation }: any) {
-  const { coordinatorId } = route.params;
+  const coordinatorId = route?.params?.coordinatorId || 'COORD-1';
   const { coordinators, witnesses, tps } = useApp();
   const { colors } = useTheme();
 

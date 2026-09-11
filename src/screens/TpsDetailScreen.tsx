@@ -20,7 +20,7 @@ const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof
 ];
 
 export default function TpsDetailScreen({ route, navigation }: any) {
-  const { tpsId } = route.params;
+  const tpsId = route?.params?.tpsId || 'TPS-001';
   const { tps, witnesses, emergencyReports, getDocumentation } = useApp();
   const { colors, isDark } = useTheme();
 

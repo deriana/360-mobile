@@ -14,8 +14,11 @@ import MoreMenuScreen from '../screens/MoreMenuScreen';
 import WitnessHomeScreen from '../screens/WitnessHomeScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import ReportFormScreen from '../screens/ReportFormScreen';
-
 import SupervisionScreen from '../screens/SupervisionScreen';
+import SimpanKtaScreen from '../screens/SimpanKtaScreen';
+import SimpanNewsScreen from '../screens/SimpanNewsScreen';
+import SimpanOfficesScreen from '../screens/SimpanOfficesScreen';
+import { Role } from '../types';
 
 const Tab = createBottomTabNavigator<any>();
 
@@ -25,24 +28,74 @@ const CommandCenterStack = buildDetailStack('CommandCenter', CommandCenterScreen
 const WitnessesStack = buildDetailStack('WitnessList', WitnessListScreen, 'Saksi');
 const MoreStack = buildDetailStack('MoreMenu', MoreMenuScreen, 'Lainnya');
 
-const WitnessHomeStack = buildDetailStack('WitnessHome', WitnessHomeScreen, 'Tugas Saya');
 const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Check-in');
-const ReportFormStack = buildDetailStack('ReportForm', ReportFormScreen, 'Lapor Hasil');
+const ReportFormStack = buildDetailStack('ReportForm', ReportFormScreen, 'Lapor C1');
 
-const SUPERVISOR_TABS = [
-  { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
-  { name: 'SupervisionTab', component: SupervisionStack, label: 'Pengawasan', icon: 'grid' as const },
-  { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
-  { name: 'ReportFormTab', component: ReportFormStack, label: 'Lapor C1', icon: 'edit-3' as const },
-  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
-];
+const SimpanKtaStack = buildDetailStack('SimpanKta', SimpanKtaScreen, 'e-KTA Digital');
+const SimpanNewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta DPP');
+const SimpanOfficesStack = buildDetailStack('SimpanOffices', SimpanOfficesScreen, 'Kantor Sekretariat');
 
+// 1. Saksi TPS Lapangan (Petugas resmi TPS yang bertugas hadir presensi & input C1)
 const WITNESS_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
   { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
   { name: 'ReportFormTab', component: ReportFormStack, label: 'Lapor C1', icon: 'edit-3' as const },
   { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
 ];
+
+// 2. Koordinator Lapangan & Operator (Supervisi lapangan & pendamping saksi TPS)
+const FIELD_COORDINATOR_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Kluster', icon: 'home' as const },
+  { name: 'SupervisionTab', component: SupervisionStack, label: 'Pengawasan', icon: 'grid' as const },
+  { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
+  { name: 'ReportFormTab', component: ReportFormStack, label: 'Input C1', icon: 'edit-3' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+// 3. Pengurus Struktural Partai: DPP, DPW, DPD, DPC, PAC (Non-Lapangan / Eksekutif)
+// TIDAK ADA Check-in atau Lapor C1, fokus pada monitoring tabulasi suara, daftar saksi, & kantor sekretariat.
+const EXECUTIVE_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
+  { name: 'SupervisionTab', component: SupervisionStack, label: 'Tabulasi', icon: 'grid' as const },
+  { name: 'WitnessesTab', component: WitnessesStack, label: 'Saksi BSN', icon: 'users' as const },
+  { name: 'OfficesTab', component: SimpanOfficesStack, label: 'Sekretariat', icon: 'map-pin' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+// 4. Calon Legislatif DPR-RI (Parlemen)
+// TIDAK ADA Check-in atau Lapor C1, fokus pada suara caleg, kawal TPS dapil, & saksi pengawal suara.
+const CALEG_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Suara Caleg', icon: 'bar-chart-2' as const },
+  { name: 'SupervisionTab', component: SupervisionStack, label: 'Kawal TPS', icon: 'grid' as const },
+  { name: 'WitnessesTab', component: WitnessesStack, label: 'Saksi Dapil', icon: 'users' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+// 5. Kader / Anggota simPAN & Calon Parlemen (Kader Mandiri)
+// TIDAK ADA Check-in atau Lapor C1, fokus pada suara pribadi masuk, e-KTA digital, kantor/konter, & warta DPP.
+const KADER_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
+  { name: 'KtaTab', component: SimpanKtaStack, label: 'e-KTA', icon: 'credit-card' as const },
+  { name: 'OfficesTab', component: SimpanOfficesStack, label: 'Sekretariat', icon: 'map-pin' as const },
+  { name: 'NewsTab', component: SimpanNewsStack, label: 'Warta DPP', icon: 'file-text' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
+function getTabsForRole(role: Role) {
+  if (role === 'TPS_WITNESS') {
+    return WITNESS_TABS;
+  }
+  if (role === 'TPS_COORDINATOR' || role === 'OPERATOR') {
+    return FIELD_COORDINATOR_TABS;
+  }
+  if (role === 'KADER_ANGGOTA') {
+    return KADER_TABS;
+  }
+  if (role === 'CALEG') {
+    return CALEG_TABS;
+  }
+  return EXECUTIVE_TABS;
+}
 
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -145,11 +198,11 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export default function MainTabs() {
   const { role } = useApp();
   const { colors } = useTheme();
-  const isWitness = role === 'TPS_WITNESS';
-  const tabs = isWitness ? WITNESS_TABS : SUPERVISOR_TABS;
+  const tabs = getTabsForRole(role);
 
   return (
     <Tab.Navigator
+      key={role}
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -199,7 +252,7 @@ const styles = StyleSheet.create({
   },
   activeRedCapsule: {
     borderRadius: 999, // Smooth 100% round capsule ends on left & right
-    shadowColor: '#E60012',
+    shadowColor: '#0066B3',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,

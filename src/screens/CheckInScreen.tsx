@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Modal as RNModal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Modal as RNModal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { WebView } from 'react-native-webview';
@@ -75,29 +75,43 @@ function StepProgress({ activeIndex }: { activeIndex: number }) {
   );
 }
 
-// ponytail: map is always centered on the device's own live GPS location
-// (not the mock TPS coordinates) — TPS coords are randomly generated across
-// all of Indonesia, so anchoring the map there would put the user's own
-// position off-screen and confuse the view.
+// Map renders OpenStreetMap via Leaflet with an automatic graceful offline radar fallback
 function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | null) {
   return `<!DOCTYPE html>
 <html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" onerror="this.onerror=null;document.body.classList.add('no-cdn')" />
 <style>
-  html,body,#map{height:100%;margin:0;padding:0;background:#e2e8f0;}
-  .pulse-dot{width:16px;height:16px;border-radius:50%;background:#E60012;border:2px solid #fff;box-shadow:0 0 0 0 rgba(230,0,18,0.7);animation:pulse 2s infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(230,0,18,0.6);}70%{box-shadow:0 0 0 16px rgba(230,0,18,0);}100%{box-shadow:0 0 0 0 rgba(230,0,18,0);}}
+  html,body,#map{height:100%;margin:0;padding:0;background:#0F172A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;}
+  .pulse-dot{width:18px;height:18px;border-radius:50%;background:#0066B3;border:3px solid #fff;box-shadow:0 0 0 0 rgba(0,102,179,0.7);animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,102,179,0.6);}70%{box-shadow:0 0 0 20px rgba(0,102,179,0);}100%{box-shadow:0 0 0 0 rgba(0,102,179,0);}}
+  .offline-grid{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#0F172A;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+  .no-cdn .offline-grid{display:flex;}
+  .radar-ring{width:110px;height:110px;border-radius:55px;border:2px dashed #0066B3;display:flex;align-items:center;justify-content:center;margin-bottom:6px;}
 </style>
 </head><body>
 <div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="offline-grid" id="fallbackGrid">
+  <div class="radar-ring"><div class="pulse-dot"></div></div>
+  <div style="font-weight:800;font-size:13px;color:#38BDF8;letter-spacing:0.5px;">KOORDINAT GPS TERKUNCI</div>
+  <div style="font-size:12px;color:#E2E8F0;font-family:monospace;">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+  <div style="font-size:10px;color:#94A3B8;">Akurasi Presisi: &plusmn;${Math.round(accuracy || 15)} meter</div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="document.body.classList.add('no-cdn')"></script>
 <script>
-  var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${lat}, ${lng}], 17);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-  L.circle([${lat}, ${lng}], { radius: ${accuracy || 25}, color: '#E60012', fillColor: '#E60012', fillOpacity: 0.12 }).addTo(map);
-  var userIcon = L.divIcon({ className: '', html: '<div class="pulse-dot"></div>', iconSize: [16, 16] });
-  L.marker([${lat}, ${lng}], { icon: userIcon }).addTo(map);
+  try {
+    if (typeof L !== 'undefined') {
+      var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${lat}, ${lng}], 17);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      L.circle([${lat}, ${lng}], { radius: ${accuracy || 25}, color: '#0066B3', fillColor: '#0066B3', fillOpacity: 0.15 }).addTo(map);
+      var userIcon = L.divIcon({ className: '', html: '<div class="pulse-dot"></div>', iconSize: [18, 18] });
+      L.marker([${lat}, ${lng}], { icon: userIcon }).addTo(map);
+    } else {
+      document.body.classList.add('no-cdn');
+    }
+  } catch(e) {
+    document.body.classList.add('no-cdn');
+  }
 </script>
 </body></html>`;
 }
@@ -150,18 +164,106 @@ export default function CheckInScreen() {
     : null;
   const insideGeofence = distanceToTps !== null && distanceToTps <= GEOFENCE_RADIUS_M;
 
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   const fetchLocation = async () => {
     setLocating(true);
-    const perm = await Location.requestForegroundPermissionsAsync();
-    if (perm.status === 'granted') {
-      const pos = await Location.getCurrentPositionAsync({});
-      if (!tpsAnchorRef.current) {
-        tpsAnchorRef.current = { lat: pos.coords.latitude + 0.0004, lng: pos.coords.longitude + 0.0003 };
+    setLocationError(null);
+    try {
+      // 1. Periksa izin lokasi
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        finalStatus = status;
       }
-      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
-      setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+
+      if (finalStatus !== 'granted') {
+        setLocationError('Izin lokasi belum aktif. Buka Pengaturan HP → Aplikasi → SAKSI PAN 360 → Izin → Lokasi → Izinkan.');
+        setLocating(false);
+        return;
+      }
+
+      // 2. Periksa apakah GPS / Location Services aktif di perangkat
+      try {
+        const providerStatus = await Location.getProviderStatusAsync();
+        if (!providerStatus.locationServicesEnabled && Platform.OS === 'android') {
+          await Location.enableNetworkProviderAsync();
+        }
+      } catch (e) {
+        // Abaikan jika ditutup user
+      }
+
+      // 3. FAST PATH: Ambil posisi terakhir yang tersimpan di Google Play Services / GPS cache
+      try {
+        const lastKnown = await Location.getLastKnownPositionAsync({});
+        if (lastKnown) {
+          if (!tpsAnchorRef.current) {
+            tpsAnchorRef.current = { lat: lastKnown.coords.latitude + 0.0004, lng: lastKnown.coords.longitude + 0.0003 };
+          }
+          setLocation({
+            lat: lastKnown.coords.latitude,
+            lng: lastKnown.coords.longitude,
+            accuracy: lastKnown.coords.accuracy,
+          });
+          setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+        }
+      } catch (e) {
+        // Lanjutkan ke pembacaan langsung
+      }
+
+      // 4. Pembacaan satelit GPS aktif dengan batas waktu 7 detik agar tidak hang
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('GPS timeout')), 7000)
+        );
+        const positionPromise = Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const pos = await Promise.race([positionPromise, timeoutPromise]);
+        if (!tpsAnchorRef.current) {
+          tpsAnchorRef.current = { lat: pos.coords.latitude + 0.0004, lng: pos.coords.longitude + 0.0003 };
+        }
+        setLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        });
+        setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+        setLocationError(null);
+      } catch (posErr) {
+        // Jika pembacaan baru gagal tapi sudah ada lokasi dari cache, pertahankan
+        setLocation((prev) => {
+          if (!prev) {
+            setLocationError('Sinyal satelit GPS belum terkunci. Pastikan Anda berada di luar ruangan atau gunakan opsi Simulasi TPS.');
+          }
+          return prev;
+        });
+      }
+    } catch (err: any) {
+      setLocation((prev) => {
+        if (!prev) {
+          setLocationError('Gagal mengambil titik GPS. Pastikan GPS HP aktif.');
+        }
+        return prev;
+      });
+    } finally {
+      setLocating(false);
     }
-    setLocating(false);
+  };
+
+  const useTpsSimulatedLocation = () => {
+    const lat = assignedTps?.lat ?? -6.8833;
+    const lng = assignedTps?.lng ?? 107.6167;
+    tpsAnchorRef.current = { lat, lng };
+    setLocation({
+      lat: lat + 0.0002, // ~25 meter dalam radius TPS
+      lng: lng + 0.0001,
+      accuracy: 15,
+    });
+    setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+    setLocationError(null);
   };
 
   useEffect(() => {
@@ -299,26 +401,71 @@ export default function CheckInScreen() {
         </View>
 
         {location ? (
-          <WebView
-            source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
-            style={styles.largeMapCanvas}
-            originWhitelist={['*']}
-          />
+          <>
+            <WebView
+              source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
+              style={styles.largeMapCanvas}
+              originWhitelist={['*']}
+            />
+            <View style={styles.chipsRow}>
+              <Pill icon="map-pin" label={`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`} tone="neutral" />
+              <Pill icon="crosshair" label={location.accuracy ? `± ${Math.round(location.accuracy)}m` : '—'} tone="neutral" />
+              {assignedTps && <Pill icon="home" label={`TPS ${assignedTps.tpsNumber} — ${assignedTps.district}`} tone="primary" />}
+              <Pressable
+                onPress={fetchLocation}
+                disabled={locating}
+                style={({ pressed }) => [
+                  styles.refreshGpsBtn,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Feather name="refresh-cw" size={12} color={colors.primary} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>Segarkan</Text>
+              </Pressable>
+            </View>
+          </>
         ) : (
-          <View style={[styles.largeMapCanvas, styles.centered]}>
+          <View style={[styles.largeMapCanvas, styles.centered, { padding: spacing.lg }]}>
             {locating ? (
-              <ActivityIndicator color={colors.primary} />
+              <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.text }}>
+                  Menghubungkan ke Sinyal GPS...
+                </Text>
+                <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center' }}>
+                  Sedang mengambil koordinat satelit terkini untuk TPS Anda.
+                </Text>
+              </View>
             ) : (
-              <PrimaryButton label="Coba Ambil Lokasi Lagi" icon="map-pin" variant="secondary" onPress={fetchLocation} fullWidth={false} />
+              <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 330 }}>
+                <View style={[styles.gpsErrorIconWrap, { backgroundColor: colors.warningBg }]}>
+                  <Feather name="map-pin" size={24} color={colors.warning} />
+                </View>
+                <Text style={{ fontSize: fontSize.sm, fontWeight: '800', color: colors.text, textAlign: 'center' }}>
+                  GPS Belum Terdeteksi
+                </Text>
+                <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center', lineHeight: 16 }}>
+                  {locationError || 'Pastikan GPS pada HP Anda sudah aktif dalam mode Akurasi Tinggi dan izin lokasi telah disetujui.'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <PrimaryButton
+                    label="Ambil GPS Ulang"
+                    icon="refresh-cw"
+                    variant="primary"
+                    onPress={fetchLocation}
+                    fullWidth={false}
+                  />
+                  <PrimaryButton
+                    label="Gunakan Titik TPS (Simulasi)"
+                    icon="check-circle"
+                    variant="secondary"
+                    onPress={useTpsSimulatedLocation}
+                    fullWidth={false}
+                  />
+                </View>
+              </View>
             )}
-          </View>
-        )}
-
-        {location && (
-          <View style={styles.chipsRow}>
-            <Pill icon="map-pin" label={`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`} tone="neutral" />
-            <Pill icon="crosshair" label={location.accuracy ? `± ${Math.round(location.accuracy)}m` : '—'} tone="neutral" />
-            {assignedTps && <Pill icon="home" label={`TPS ${assignedTps.tpsNumber} — ${assignedTps.district}`} tone="primary" />}
           </View>
         )}
 
@@ -485,7 +632,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeftRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  avatarImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#E60012' },
+  avatarImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#0066B3' },
   greetingText: { fontSize: fontSize.md, fontWeight: '800' },
   roleText: { fontSize: 11 },
   clockBox: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.md, alignItems: 'flex-end' },
@@ -511,7 +658,7 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   cameraGridOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   faceTargetBox: { width: 160, height: 160, position: 'relative' },
-  cornerMark: { position: 'absolute', width: 24, height: 24, borderColor: '#E60012', borderWidth: 3 },
+  cornerMark: { position: 'absolute', width: 24, height: 24, borderColor: '#0066B3', borderWidth: 3 },
   cornerTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
   cornerTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
   cornerBL: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
@@ -525,7 +672,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shutterInnerRing: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E60012' },
+  shutterInnerRing: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#0066B3' },
   shutterHint: { fontSize: 12, color: '#FFFFFF', fontWeight: '600', marginTop: spacing.sm },
   permissionHint: { fontSize: fontSize.xs, color: '#94A3B8', textAlign: 'center', paddingHorizontal: spacing.lg, marginTop: spacing.sm },
   fullscreenRoot: { flex: 1, backgroundColor: '#000000' },
@@ -556,7 +703,9 @@ const styles = StyleSheet.create({
   geofenceDot: { width: 6, height: 6, borderRadius: 3 },
   geofenceText: { fontSize: 10, fontWeight: '700' },
   largeMapCanvas: { width: '100%', height: 210 },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, padding: spacing.sm, paddingBottom: 0 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, padding: spacing.sm, paddingBottom: 0 },
+  refreshGpsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, borderWidth: 1 },
+  gpsErrorIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   geofenceWarnText: { fontSize: fontSize.xs, lineHeight: 16, marginBottom: spacing.xs },
   infoFooterBlock: { padding: spacing.md, gap: spacing.xs },
   infoHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },

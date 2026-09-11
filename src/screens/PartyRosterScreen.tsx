@@ -11,7 +11,7 @@ import { getStableAvatar } from '../data/images';
 type ElectFilter = 'all' | 'terpilih' | 'tidak';
 
 export default function PartyRosterScreen({ route, navigation }: any) {
-  const { party } = route.params;
+  const party = route?.params?.party || 'PAN';
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [electFilter, setElectFilter] = useState<ElectFilter>('all');

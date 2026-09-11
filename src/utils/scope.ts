@@ -13,28 +13,34 @@ export const ROLE_HOME: Record<Role, { province?: string; regency?: string; dist
   TPS_COORDINATOR: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong', coordinatorId: 'COORD-1' },
   OPERATOR: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   TPS_WITNESS: {},
+  CALEG: { province: 'Jawa Barat', regency: 'Kota Bandung' },
+  KADER_ANGGOTA: { province: 'Jawa Barat', regency: 'Kota Bandung' },
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
-  DPP: 'DPP — Tingkat Nasional',
-  DPW: 'DPW — Provinsi Jawa Barat',
-  DPD: 'DPD — Kota Bandung',
-  DPC: 'DPC — Kecamatan Coblong',
-  PAC: 'PAC — Ranting Coblong',
-  TPS_COORDINATOR: 'Koordinator TPS Lapangan (6 TPS)',
-  OPERATOR: 'Operator Lapangan (Kota Bandung)',
-  TPS_WITNESS: 'Saksi Resmi TPS',
+  DPP: 'DPP PAN — Tingkat Nasional',
+  DPW: 'DPW PAN — Provinsi Jawa Barat',
+  DPD: 'DPD PAN — Kota Bandung',
+  DPC: 'DPC PAN — Kecamatan Coblong',
+  PAC: 'PAC PAN — Ranting Coblong',
+  TPS_COORDINATOR: 'Koordinator TPS PAN Lapangan (6 TPS)',
+  OPERATOR: 'Operator Lapangan PAN (Kota Bandung)',
+  TPS_WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
+  CALEG: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
+  KADER_ANGGOTA: 'Kader & Calon Parlemen DPR-RI — Partai Amanat Nasional',
 };
 
 export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
-  DPP: 'Cakupan Nasional — Memantau seluruh TPS di 38 Provinsi',
-  DPW: 'Cakupan DPW — Memantau TPS di wilayah Provinsi Jawa Barat',
-  DPD: 'Cakupan DPD — Memantau TPS di Kabupaten/Kota Bandung',
-  DPC: 'Cakupan DPC — Memantau TPS di Kecamatan Coblong',
-  PAC: 'Cakupan PAC — Memantau TPS di Kelurahan & Ranting',
-  TPS_COORDINATOR: 'Cakupan Kluster TPS — Supervisi 6 TPS di wilayah Kelurahan Dago',
-  OPERATOR: 'Cakupan Operator Lapangan — Memantau & Mendampingi Saksi se-Kota Bandung',
-  TPS_WITNESS: 'Cakupan Saksi — TPS 001 Kel. Dago, Kec. Coblong',
+  DPP: 'Cakupan Nasional — DPP PAN memantau seluruh TPS di 38 Provinsi',
+  DPW: 'Cakupan DPW PAN — Memantau TPS di wilayah Provinsi Jawa Barat',
+  DPD: 'Cakupan DPD PAN — Memantau TPS di Kabupaten/Kota Bandung',
+  DPC: 'Cakupan DPC PAN — Memantau TPS di Kecamatan Coblong',
+  PAC: 'Cakupan PAC PAN — Memantau TPS di Kelurahan & Ranting',
+  TPS_COORDINATOR: 'Cakupan Kluster TPS PAN — Supervisi 6 TPS di wilayah Kelurahan Dago',
+  OPERATOR: 'Cakupan Operator PAN — Memantau & Mendampingi Saksi se-Kota Bandung',
+  TPS_WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
+  CALEG: 'Cakupan Dapil Jabar I — Monitoring Suara Caleg, Perolehan Partai & Rekap C1',
+  KADER_ANGGOTA: 'Cakupan Calon Parlemen — Monitoring Suara Pribadi Masuk, Suara Partai & e-KTA',
 };
 
 export interface UserProfile {
@@ -50,14 +56,91 @@ export interface UserProfile {
 
 export function getUserProfile(role: Role): UserProfile {
   switch (role) {
+    case 'CALEG':
+      return {
+        name: 'Dr. H. Ahmad Fauzi, M.Si.',
+        nik: '3273010505780004',
+        phone: '0812-9988-7766',
+        email: 'caleg@pan.go.id',
+        badgeId: 'CALEG-PAN-JBR1-01',
+        roleLabel: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
+        scopeLocation: 'Dapil Jabar I (Kota Bandung & Cimahi)',
+        avatarIndex: 2,
+      };
+    case 'KADER_ANGGOTA':
+      return {
+        name: 'Fajar Pratama Nugraha, S.T.',
+        nik: '3273011508920005',
+        phone: '0813-2211-4433',
+        email: 'kader@pan.go.id',
+        badgeId: 'KTA-PAN-3273-08912',
+        roleLabel: 'Kader & Calon Parlemen DPR-RI Dapil Jabar 1 (No. Urut 2)',
+        scopeLocation: 'Dapil Jabar I (Kota Bandung & Cimahi)',
+        avatarIndex: 1,
+      };
+    case 'DPD':
+      return {
+        name: 'H. Rasyid Rajasa, B.Bus.',
+        nik: '3273010101700001',
+        phone: '0811-9988-1234',
+        email: 'dpd@pan.go.id',
+        badgeId: 'DPD-PAN-BDG-01',
+        roleLabel: 'Ketua DPD PAN Kota Bandung',
+        scopeLocation: 'DPD Kota Bandung, Jawa Barat',
+        avatarIndex: 5,
+      };
+    case 'DPC':
+      return {
+        name: 'Ir. Hendra Gunawan',
+        nik: '3273010303820003',
+        phone: '0812-9900-1122',
+        email: 'dpc@pan.go.id',
+        badgeId: 'DPC-PAN-CBL-01',
+        roleLabel: 'Ketua DPC PAN Coblong',
+        scopeLocation: 'Kec. Coblong, Kota Bandung',
+        avatarIndex: 7,
+      };
+    case 'DPW':
+      return {
+        name: 'H. M. Hasbullah Rahmad, M.Hum.',
+        nik: '3273010202750002',
+        phone: '0812-2345-6789',
+        email: 'dpw@pan.go.id',
+        badgeId: 'DPW-PAN-JBR-01',
+        roleLabel: 'Ketua DPW PAN Jawa Barat',
+        scopeLocation: 'Jawa Barat (27 Kab/Kota)',
+        avatarIndex: 3,
+      };
+    case 'DPP':
+      return {
+        name: 'Dr. (H.C.) Zulkifli Hasan, S.E., M.M.',
+        nik: '3171010101620001',
+        phone: '0811-1000-2000',
+        email: 'dpp@pan.go.id',
+        badgeId: 'DPP-PAN-001',
+        roleLabel: 'Ketua Umum DPP PAN',
+        scopeLocation: 'Tingkat Nasional (38 Provinsi)',
+        avatarIndex: 0,
+      };
+    case 'PAC':
+      return {
+        name: 'Cecep Kusnadi',
+        nik: '3273010404880004',
+        phone: '0813-4567-8901',
+        email: 'pac@pan.go.id',
+        badgeId: 'PAC-PAN-DGO-01',
+        roleLabel: 'Pengurus Ranting PAN Dago',
+        scopeLocation: 'Kel. Dago, Kec. Coblong',
+        avatarIndex: 8,
+      };
     case 'OPERATOR':
       return {
         name: 'Budi Pratama',
         nik: '3273012508880003',
         phone: '0813-8899-7711',
-        email: 'operator@saksi360.demo',
-        badgeId: 'OPS-360-BANDUNG-01',
-        roleLabel: 'Operator Lapangan (Kota Bandung)',
+        email: 'operator@pan.go.id',
+        badgeId: 'OPS-PAN-BANDUNG-01',
+        roleLabel: 'Operator Lapangan PAN (Kota Bandung)',
         scopeLocation: 'Kota Bandung, Jawa Barat',
         avatarIndex: 1,
       };
@@ -66,9 +149,9 @@ export function getUserProfile(role: Role): UserProfile {
         name: 'Asep Ridwan',
         nik: '3273011503850002',
         phone: '0811-2233-4455',
-        email: 'korlap@saksi360.demo',
-        badgeId: 'KORLAP-360-DAGO-01',
-        roleLabel: 'Koordinator TPS Lapangan (Kluster 6)',
+        email: 'korlap@pan.go.id',
+        badgeId: 'KORLAP-PAN-DAGO-01',
+        roleLabel: 'Koordinator TPS PAN (Kluster 6)',
         scopeLocation: 'Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 3,
       };
@@ -78,9 +161,9 @@ export function getUserProfile(role: Role): UserProfile {
         name: 'Rudi Saputra',
         nik: '3273011204920001',
         phone: '0812-3456-7890',
-        email: 'saksi@saksi360.demo',
-        badgeId: 'SAKSI-360-001',
-        roleLabel: 'Saksi Resmi TPS Mandiri',
+        email: 'saksi@pan.go.id',
+        badgeId: 'SAKSI-PAN-001',
+        roleLabel: 'Saksi Resmi TPS — Partai Amanat Nasional',
         scopeLocation: 'TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 0,
       };
@@ -141,6 +224,24 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
     canAccessInsights: false,
     canAccessEmergencyList: true,
     canAccessAllPayments: true,
+    canMarkPayments: false,
+  },
+  CALEG: {
+    canAccessLeadership: true,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: true,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
+  KADER_ANGGOTA: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: false,
+    canAccessEmergencyList: false,
+    canAccessAllPayments: false,
     canMarkPayments: false,
   },
   TPS_COORDINATOR: {

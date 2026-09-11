@@ -3,10 +3,13 @@
 // network calls needed at runtime.
 
 export const BRAND_ASSETS = {
-  emblem: require('../../assets/brand/saksi360_emblem.png'),
-  fullLogo: require('../../assets/brand/saksi360_full_logo.png'),
-  logoText: require('../../assets/brand/saksi360_text.png'),
+  emblem: require('../../assets/brand/pan_emblem.png'),
+  fullLogo: require('../../assets/brand/pan_full_logo.png'),
+  logoText: require('../../assets/brand/pan_text.png'),
+  sunWhite: require('../../assets/brand/pan_sun_white.png'),
+  official: require('../../assets/brand/pan_logo_official.png'),
 };
+
 
 export const TPS_LOCAL_IMAGES = [
   require('../../assets/tps/tps_petanggan.jpg'),

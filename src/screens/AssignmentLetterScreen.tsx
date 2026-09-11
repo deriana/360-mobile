@@ -11,7 +11,7 @@ import QrPlaceholder from '../components/QrPlaceholder';
 import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 
 export default function AssignmentLetterScreen({ route, navigation }: any) {
-  const { witnessId } = route.params;
+  const witnessId = route?.params?.witnessId || 'SAKSI-001';
   const { witnesses, tps } = useApp();
   const { colors } = useTheme();
 
@@ -23,7 +23,7 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
   }
 
   const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
-  const letterNo = `ST/${witness.id}/SAKSI360/2026`;
+  const letterNo = `ST/${witness.id}/PAN/2026`;
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -31,16 +31,17 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
       const html = `
         <html>
           <head><meta charset="utf-8" /></head>
-          <body style="font-family: Helvetica, Arial, sans-serif; padding: 32px; color: #0A192F;">
-            <div style="text-align:center; border-bottom: 2px solid #E60012; padding-bottom: 16px; margin-bottom: 24px;">
-              <h2 style="margin: 0; letter-spacing: 1px;">SURAT TUGAS DIGITAL SAKSI</h2>
-              <p style="margin: 4px 0 0; color: #64748B; font-size: 13px;">${letterNo}</p>
+          <body style="font-family: Helvetica, Arial, sans-serif; padding: 32px; color: #003366;">
+            <div style="text-align:center; border-bottom: 2px solid #0066B3; padding-bottom: 16px; margin-bottom: 24px;">
+              <h2 style="margin: 0; letter-spacing: 1px; color: #0066B3;">SURAT TUGAS DIGITAL SAKSI</h2>
+              <p style="margin: 4px 0 0; color: #6B7280; font-size: 13px;">Partai Amanat Nasional — ${letterNo}</p>
             </div>
             <table style="width:100%; border-collapse: collapse; font-size: 14px;">
               <tr><td style="padding:6px 0; color:#64748B; width:180px;">Nama Saksi TPS</td><td style="padding:6px 0; font-weight:700;">${witness.name}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">NIK Terdaftar</td><td style="padding:6px 0; font-weight:700;">${witness.nik}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">Lokasi Penugasan TPS</td><td style="padding:6px 0; font-weight:700;">${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : ''}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">Wilayah Provinsi</td><td style="padding:6px 0; font-weight:700;">${assignedTps?.province ?? '-'}</td></tr>
+              <tr><td style="padding:6px 0; color:#64748B;">Partai</td><td style="padding:6px 0; font-weight:700; color:#0066B3;">Partai Amanat Nasional (PAN)</td></tr>
             </table>
             <div style="margin-top: 32px; text-align:center;">
               <p style="font-size:12px; color:#64748B;">Kode Otentikasi Digital</p>
@@ -48,8 +49,8 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             </div>
             <div style="margin-top: 40px; text-align:center;">
               <p style="font-size:12px; color:#64748B;">Tanda Tangan Digital Pimpinan</p>
-              <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua Pengurus Pusat</p>
-              <p style="font-weight:700; font-size:13px;">Ketua Pengurus Pusat — SAKSI 360</p>
+              <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua DPP PAN</p>
+              <p style="font-weight:700; font-size:13px;">Ketua DPP — Partai Amanat Nasional</p>
             </div>
           </body>
         </html>
@@ -106,7 +107,7 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
               fill="none"
             />
           </Svg>
-          <Text style={[styles.signName, { color: colors.text }]}>Ketua Pengurus Pusat — SAKSI 360</Text>
+          <Text style={[styles.signName, { color: colors.text }]}>Ketua DPP — Partai Amanat Nasional</Text>
         </View>
       </Card>
 

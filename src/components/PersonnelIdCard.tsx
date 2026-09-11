@@ -27,8 +27,8 @@ export function PersonnelIdCard({ name, roleLabel, badgeId, avatarSource, rows, 
 
   return (
     <Card style={[styles.idCardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.cardHeader, { backgroundColor: '#0A192F' }]}>
-        <Image source={BRAND_ASSETS.fullLogo} style={styles.cardLogo} resizeMode="contain" />
+      <View style={[styles.cardHeader, { backgroundColor: '#0066B3' }]}>
+        <Image source={BRAND_ASSETS.official} style={{ width: 48, height: 48 }} resizeMode="contain" />
         <View style={styles.cardHeaderBadge}>
           <Text style={styles.cardHeaderText}>KARTU PETUGAS</Text>
         </View>
@@ -91,11 +91,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardLogo: { width: 140, height: 36 },
-  cardHeaderBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: '#E60012' },
+  cardHeaderBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: '#004F8A' },
   cardHeaderText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
   cardBody: { padding: spacing.lg, gap: spacing.md },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  profileAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#E60012' },
+  profileAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#0066B3' },
   profileName: { fontSize: fontSize.lg, fontWeight: '800' },
   badgeIdText: { fontSize: 11, fontWeight: '700' },
   divider: { height: 1, width: '100%' },

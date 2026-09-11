@@ -198,6 +198,54 @@ export default function MoreMenuScreen({ navigation }: any) {
       ];
     }
 
+    if (role === 'CALEG') {
+      return [
+        profileItem,
+        {
+          key: 'PartyLeaderboard',
+          icon: 'bar-chart-2',
+          label: 'Perolehan Suara & Kursi Parlemen',
+          desc: 'Simulasi Sainte-Laguë perolehan kursi DPR-RI di Dapil Jabar 1',
+        },
+        {
+          key: 'PartyRoster',
+          icon: 'users',
+          label: 'Daftar Caleg PAN Dapil Jabar 1',
+          desc: 'Peringkat suara internal caleg PAN di Kota Bandung & Cimahi',
+          params: { party: 'PAN' },
+        },
+        {
+          key: 'Supervision',
+          icon: 'grid',
+          label: 'Pengawalan TPS Dapil Jabar 1',
+          desc: 'Monitoring formulir C1 Plano & kehadiran saksi di 7.240 TPS',
+        },
+        {
+          key: 'SimpanBacaleg',
+          icon: 'award',
+          label: 'Verifikasi Berkas Caleg',
+          desc: 'Status 7 dokumen persyaratan calon anggota legislatif KPU',
+        },
+        {
+          key: 'EmergencyList',
+          icon: 'alert-triangle',
+          label: 'Laporan Kendala Lapangan Saksi',
+          desc: 'Pantau dugaan kecurangan & kendala saksi di TPS Dapil',
+        },
+        candidateExplorerItem,
+        helpCenterItem,
+      ];
+    }
+
+    if (role === 'KADER_ANGGOTA') {
+      return [
+        profileItem,
+        partyLeaderboardItem,
+        candidateExplorerItem,
+        helpCenterItem,
+      ];
+    }
+
     const items: MenuItem[] = [profileItem, partyLeaderboardItem, helpCenterItem];
 
     if (permissions.canAccessEmergencyList) {
@@ -230,24 +278,75 @@ export default function MoreMenuScreen({ navigation }: any) {
     return items;
   };
 
+  const ORGANISASI_ITEMS: MenuItem[] = [
+    {
+      key: 'SimpanKta',
+      icon: 'credit-card',
+      label: 'e-KTA Digital simPAN',
+      desc: 'Kartu Tanda Anggota elektronik resmi dengan QR autentikasi',
+      badge: 'RESMI',
+    },
+    {
+      key: 'RegisterMember',
+      icon: 'camera',
+      label: 'Pendaftaran Anggota (AI Scan KTP)',
+      desc: 'Perekrutan kader baru & terbitkan e-KTA instan dengan AI OCR',
+      badge: 'AI SCAN',
+    },
+    {
+      key: 'SimpanStructure',
+      icon: 'users',
+      label: 'Struktur Pengurus Organisasi',
+      desc: 'Direktori kepengurusan berjenjang DPP, DPW, DPD, DPC, & DPRt',
+    },
+    {
+      key: 'SimpanOffices',
+      icon: 'map-pin',
+      label: 'Kantor & Konter Sekretariat',
+      desc: 'Alamat, peta arah & layanan konter terpadu kantor PAN',
+    },
+    {
+      key: 'SimpanBacaleg',
+      icon: 'award',
+      label: 'Pendaftaran Bacaleg simPAN',
+      desc: 'Portal pendaftaran caleg DPR RI & DPRD serta verifikasi berkas',
+    },
+    {
+      key: 'SimpanNews',
+      icon: 'file-text',
+      label: 'Warta & Instruksi DPP PAN',
+      desc: 'Instruksi resmi Ketua Umum, siaran pers, & maklumat BSN PAN',
+      badge: 'TERBARU',
+    },
+  ];
+
   const menuItems = getRoleMenuItems();
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Brand Logo Banner */}
       <View style={[styles.brandBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
-            <Image source={BRAND_ASSETS.emblem} style={{ width: 22, height: 22 }} resizeMode="contain" />
+        <Image source={BRAND_ASSETS.official} style={{ width: 42, height: 42 }} resizeMode="contain" />
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: fontSize.md, fontWeight: '900', color: colors.text }}>
+              sim<Text style={{ color: colors.primary }}>PAN</Text>
+            </Text>
+            <View style={[styles.appVersionTag, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.appVersionText, { color: colors.primary }]}>v1.0</Text>
+            </View>
           </View>
-          <Image
-            source={BRAND_ASSETS.logoText}
-            style={{ width: 95, height: 20, tintColor: colors.text }}
-            resizeMode="contain"
-          />
-        </View>
-        <View style={[styles.appVersionTag, { backgroundColor: colors.primaryLight }]}>
-          <Text style={[styles.appVersionText, { color: colors.primary }]}>v1.0.0</Text>
+          <Text style={{ fontSize: 10, color: colors.textMuted }}>
+            Sistem Informasi Manajemen Data Partai Amanat Nasional
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 4, marginTop: 2 }}>
+            <View style={[styles.pillarBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.pillarBadgeText, { color: colors.primary }]}>Pengawalan Suara BSN</Text>
+            </View>
+            <View style={[styles.pillarBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.pillarBadgeText, { color: colors.primary }]}>Kader & Organisasi</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -296,9 +395,8 @@ export default function MoreMenuScreen({ navigation }: any) {
         </Text>
       </View>
 
-      <Text style={[styles.menuTitle, { color: colors.text }]}>Menu & Fitur Peran</Text>
-
-      {/* Main Navigation Items Filtered by Role */}
+      {/* Layanan Saksi & Kawal Pemilu BSN */}
+      <Text style={[styles.menuTitle, { color: colors.text }]}>Layanan Pengawalan Suara & Saksi BSN</Text>
       {menuItems.map((item) => (
         <Pressable
           key={item.key}
@@ -315,6 +413,37 @@ export default function MoreMenuScreen({ navigation }: any) {
               navigation.navigate(item.key, item.params);
             }
           }}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: colors.primaryLight }]}>
+            <Feather name={item.icon} size={iconSize.md} color={colors.primary} strokeWidth={iconStrokeWidth} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.rowTitle, { color: colors.text }]}>{item.label}</Text>
+              {item.badge && (
+                <View style={[styles.itemBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.itemBadgeText}>{item.badge}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.rowDesc, { color: colors.textMuted }]}>{item.desc}</Text>
+          </View>
+          <Feather name="chevron-right" size={iconSize.md} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
+        </Pressable>
+      ))}
+
+      {/* Layanan Keanggotaan & Organisasi simPAN */}
+      <Text style={[styles.menuTitle, { color: colors.text, marginTop: spacing.md }]}>Layanan Keanggotaan & Organisasi simPAN</Text>
+      {ORGANISASI_ITEMS.map((item) => (
+        <Pressable
+          key={item.key}
+          hitSlop={4}
+          style={({ pressed }) => [
+            styles.row,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+          ]}
+          onPress={() => navigation.navigate(item.key, item.params)}
         >
           <View style={[styles.iconWrap, { backgroundColor: colors.primaryLight }]}>
             <Feather name={item.icon} size={iconSize.md} color={colors.primary} strokeWidth={iconStrokeWidth} />
@@ -400,6 +529,8 @@ const styles = StyleSheet.create({
   brandLogoImg: { width: 120, height: 32 },
   appVersionTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
   appVersionText: { fontSize: 10, fontWeight: '800' },
+  pillarBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
+  pillarBadgeText: { fontSize: 9, fontWeight: '800' },
   profileHeaderCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -410,7 +541,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   profileAvatarWrapper: { position: 'relative' },
-  profileHeaderAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#E60012' },
+  profileHeaderAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#0066B3' },
   onlineDot: { width: 12, height: 12, borderRadius: 6, position: 'absolute', bottom: 0, right: 0, borderWidth: 2, borderColor: '#FFFFFF' },
   profileHeaderTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   profileHeaderName: { fontSize: fontSize.sm, fontWeight: '800' },

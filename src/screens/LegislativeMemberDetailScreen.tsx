@@ -8,7 +8,7 @@ import { LEGISLATIVE_MEMBERS, getLegislativePosition } from '../data/legislative
 import { getStableAvatar } from '../data/images';
 
 export default function LegislativeMemberDetailScreen({ route }: any) {
-  const { memberId } = route.params;
+  const memberId = route?.params?.memberId;
   const { colors } = useTheme();
 
   const member = LEGISLATIVE_MEMBERS.find((m) => m.id === memberId);

@@ -32,6 +32,13 @@ import SecurityScreen from '../screens/SecurityScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import HelpCenterScreen from '../screens/HelpCenterScreen';
 import QuickCountGameScreen from '../screens/QuickCountGameScreen';
+import SimpanKtaScreen from '../screens/SimpanKtaScreen';
+import SimpanStructureScreen from '../screens/SimpanStructureScreen';
+import SimpanOfficesScreen from '../screens/SimpanOfficesScreen';
+import SimpanBacalegScreen from '../screens/SimpanBacalegScreen';
+import SimpanNewsScreen from '../screens/SimpanNewsScreen';
+import SimpanOfficeDetailScreen from '../screens/SimpanOfficeDetailScreen';
+import RegisterMemberScreen from '../screens/RegisterMemberScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -63,6 +70,13 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
   { name: 'HelpCenter', component: HelpCenterScreen, title: 'Pusat Bantuan' },
   { name: 'QuickCountGame', component: QuickCountGameScreen, title: 'Hitung Cepat Suara' },
+  { name: 'SimpanKta', component: SimpanKtaScreen, title: 'e-KTA Digital simPAN' },
+  { name: 'SimpanStructure', component: SimpanStructureScreen, title: 'Struktur Pengurus simPAN' },
+  { name: 'SimpanOffices', component: SimpanOfficesScreen, title: 'Kantor Sekretariat simPAN' },
+  { name: 'SimpanOfficeDetail', component: SimpanOfficeDetailScreen, title: 'Detail Sekretariat simPAN' },
+  { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
+  { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
+  { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
 ];
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {
@@ -96,16 +110,7 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
           component={HomeComponent}
           options={{
             headerTitle: () => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
-                  <Image source={BRAND_ASSETS.emblem} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                </View>
-                <Image
-                  source={BRAND_ASSETS.logoText}
-                  style={{ width: 92, height: 18, tintColor: colors.text }}
-                  resizeMode="contain"
-                />
-              </View>
+              <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
             ),
           }}
         />

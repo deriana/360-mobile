@@ -6,7 +6,7 @@ import { Card, EmptyState, Pill, PrimaryButton, SectionTitle } from '../componen
 import { fontSize, radius, spacing } from '../theme';
 
 export default function WitnessDetailScreen({ route, navigation }: any) {
-  const { witnessId } = route.params;
+  const witnessId = route?.params?.witnessId || 'SAKSI-001';
   const { witnesses, tps, checkInWitness } = useApp();
   const { colors } = useTheme();
 

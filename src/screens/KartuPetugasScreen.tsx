@@ -10,7 +10,7 @@ import { getWitnessAvatar } from '../data/images';
 type PersonType = 'witness' | 'coordinator';
 
 export default function KartuPetugasScreen({ route }: any) {
-  const { personType, personId }: { personType: PersonType; personId: string } = route.params;
+  const { personType = 'witness', personId = 'SAKSI-001' }: { personType?: PersonType; personId?: string } = route?.params || {};
   const { witnesses, coordinators, tps } = useApp();
   const { colors } = useTheme();
 
@@ -24,14 +24,14 @@ export default function KartuPetugasScreen({ route }: any) {
         <PersonnelIdCard
           name={coordinator.name}
           roleLabel="Koordinator TPS Lapangan"
-          badgeId={`KORLAP-360-${coordinator.id}`}
+          badgeId={`KORLAP-PAN-${coordinator.id}`}
           avatarSource={getWitnessAvatar(coordinator.avatarIndex)}
           rows={[
             { icon: 'credit-card', label: 'NIK', value: coordinator.nik },
             { icon: 'phone', label: 'No. WhatsApp / HP', value: coordinator.phone },
             { icon: 'map-pin', label: 'Alamat Domisili', value: coordinator.address },
             { icon: 'grid', label: 'Kluster Binaan', value: `Kec. ${coordinator.district}, ${coordinator.regency}` },
-            { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI KOORDINATOR 360', isSuccess: true },
+            { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI KOORDINATOR PAN', isSuccess: true },
           ]}
           footerNote="Pindai QR Code ini oleh Pengawas untuk memvalidasi identitas koordinator."
         />
@@ -51,7 +51,7 @@ export default function KartuPetugasScreen({ route }: any) {
       <PersonnelIdCard
         name={witness.name}
         roleLabel="Saksi Resmi TPS"
-        badgeId={`SAKSI-360-${witness.id}`}
+        badgeId={`SAKSI-PAN-${witness.id}`}
         avatarSource={getWitnessAvatar(witnessIndex)}
         rows={[
           { icon: 'credit-card', label: 'NIK', value: witness.nik },
@@ -62,7 +62,7 @@ export default function KartuPetugasScreen({ route }: any) {
             label: 'TPS Penugasan',
             value: assignedTps ? `${witness.assignedTpsId} — Kec. ${assignedTps.district}, ${assignedTps.regency}` : witness.assignedTpsId,
           },
-          { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI SAKSI 360', isSuccess: true },
+          { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI SAKSI PAN', isSuccess: true },
         ]}
         footerNote="Pindai QR Code ini oleh Pengawas / KPPS untuk memvalidasi identitas saksi."
       />

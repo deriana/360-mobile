@@ -7,7 +7,7 @@ import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import { fontSize, spacing, iconStrokeWidth } from '../theme';
 
 export default function VerifyLetterScreen({ route }: any) {
-  const { witnessId } = route.params;
+  const witnessId = route?.params?.witnessId || 'SAKSI-001';
   const { witnesses } = useApp();
   const { colors } = useTheme();
 

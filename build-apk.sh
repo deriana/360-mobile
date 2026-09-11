@@ -23,14 +23,37 @@ cd android
 cd ..
 
 # 4. Salin APK ke root proyek
-OUTPUT_APK="android/app/build/outputs/apk/release/app-release.apk"
-TARGET_APK="360-saksi.apk"
+RELEASE_DIR="android/app/build/outputs/apk/release"
+FOUND=0
 
-if [ -f "$OUTPUT_APK" ]; then
-  cp "$OUTPUT_APK" "$TARGET_APK"
+if [ -f "$RELEASE_DIR/app-arm64-v8a-release.apk" ]; then
+  cp "$RELEASE_DIR/app-arm64-v8a-release.apk" "360-saksi-arm64.apk"
+  cp "$RELEASE_DIR/app-arm64-v8a-release.apk" "360-saksi.apk"
+  echo "📱 APK arm64 (Utama, ~33MB): $(pwd)/360-saksi-arm64.apk (juga sebagai 360-saksi.apk)"
+  FOUND=1
+fi
+
+if [ -f "$RELEASE_DIR/app-universal-release.apk" ]; then
+  cp "$RELEASE_DIR/app-universal-release.apk" "360-saksi-universal.apk"
+  echo "📱 APK Universal (~84MB): $(pwd)/360-saksi-universal.apk"
+  FOUND=1
+fi
+
+if [ -f "$RELEASE_DIR/app-armeabi-v7a-release.apk" ]; then
+  cp "$RELEASE_DIR/app-armeabi-v7a-release.apk" "360-saksi-armv7.apk"
+  echo "📱 APK armv7 (32-bit): $(pwd)/360-saksi-armv7.apk"
+  FOUND=1
+fi
+
+if [ -f "$RELEASE_DIR/app-release.apk" ]; then
+  cp "$RELEASE_DIR/app-release.apk" "360-saksi.apk"
+  echo "📱 APK Release: $(pwd)/360-saksi.apk"
+  FOUND=1
+fi
+
+if [ "$FOUND" -eq 1 ]; then
   echo "✅ BUILD BERHASIL!"
-  echo "📱 File APK tersimpan di: $(pwd)/$TARGET_APK"
 else
-  echo "❌ Error: File APK tidak ditemukan di $OUTPUT_APK"
+  echo "❌ Error: File APK tidak ditemukan di $RELEASE_DIR"
   exit 1
 fi

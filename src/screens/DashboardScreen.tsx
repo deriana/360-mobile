@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, KpiCard, Pill, SectionTitle, StatusBadge } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
-import { CURRENT_WITNESS_ID, ROLE_LABEL, getUserProfile, scopeTps, scopeWitnesses } from '../utils/scope';
+import { CURRENT_WITNESS_ID, ROLE_LABEL, ROLE_SCOPE_DESCRIPTION, getUserProfile, scopeTps, scopeWitnesses } from '../utils/scope';
 import { BRAND_ASSETS, IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
 
 const ITEMS_PER_PAGE = 5;
@@ -62,6 +62,453 @@ export default function DashboardScreen({ navigation }: any) {
   );
 
   // -------------------------------------------------------------
+  // VIEW FOR CALEG (DAPIL JABAR I — SUARA PRIBADI & PROGRESS DAPIL)
+  // -------------------------------------------------------------
+  if (role === 'CALEG') {
+    const calegBentoItems: BentoItem[] = [
+      {
+        id: 'suara',
+        icon: 'bar-chart-2',
+        title: 'Hitung Suara Parpol',
+        subtitle: 'Perolehan PAN & Ambang Batas',
+        badge: '7.24% Nasional',
+        onPress: () => navigation.navigate('PartyLeaderboard'),
+      },
+      {
+        id: 'roster',
+        icon: 'users',
+        title: 'Caleg PAN Dapil Jabar I',
+        subtitle: 'Daftar Caleg DPR RI & Suara',
+        onPress: () => navigation.navigate('PartyRoster', { party: 'PAN' }),
+      },
+      {
+        id: 'kawal',
+        icon: 'grid',
+        title: 'Status Kawal C1 TPS',
+        subtitle: 'Monitoring Saksi TPS di Dapil',
+        onPress: () => navigation.navigate('Supervision'),
+      },
+      {
+        id: 'darurat',
+        icon: 'alert-triangle',
+        title: 'Laporan Saksi Lapangan',
+        subtitle: 'Cek Kendala & Dugaan Curang',
+        tone: 'danger',
+        onPress: () => navigation.navigate('EmergencyList'),
+      },
+      {
+        id: 'bacaleg',
+        icon: 'award',
+        title: 'Syarat & Berkas Caleg',
+        subtitle: 'Status Verifikasi KPU & Partai',
+        onPress: () => navigation.navigate('SimpanBacaleg'),
+      },
+      {
+        id: 'news',
+        icon: 'file-text',
+        title: 'Instruksi DPP & BSN',
+        subtitle: 'Warta Pengawalan Suara',
+        onPress: () => navigation.navigate('SimpanNews'),
+      },
+    ];
+
+    return (
+      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <PersonnelHeaderCard role={role} navigation={navigation} />
+        <SimpanEcosystemHubCard navigation={navigation} />
+        <BroadcastQuickButton navigation={navigation} />
+
+        {/* Hero Suara Caleg */}
+        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.heroHeaderRow}>
+            <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
+            <Pill label="Dapil Jawa Barat I" tone="primary" />
+          </View>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Monitoring Suara Caleg</Text>
+          <Text style={[styles.heroSub, { color: colors.textMuted }]}>
+            Dr. H. Ahmad Fauzi, M.Si. — Caleg DPR-RI PAN Nomor Urut 1 (Kota Bandung & Kota Cimahi)
+          </Text>
+
+          <View style={[styles.statRow, { borderTopColor: colors.border }]}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>48.210</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara Caleg Masuk</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>112.450</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara PAN Dapil</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.text }]}>56,9%</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>TPS Terhimpun</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Proyeksi Kursi Card */}
+        <Card style={{ gap: spacing.xs, backgroundColor: '#002B49', borderColor: '#0066B3' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Feather name="award" size={18} color="#60A5FA" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>
+                Proyeksi Kursi Parlemen
+              </Text>
+            </View>
+            <Pill label="Aman Terpilih" tone="success" />
+          </View>
+          <Text style={{ fontSize: fontSize.xs, color: '#93C5FD', lineHeight: 18 }}>
+            Berdasarkan simulasi Sainte-Laguë perolehan suara 112.450 (14,8%), Partai Amanat Nasional mengamankan Kursi Ke-3 dari total 7 Kursi DPR-RI di Dapil Jabar 1.
+          </Text>
+        </Card>
+
+        {/* Breakdown Suara Internal PAN Dapil */}
+        <Card style={{ gap: spacing.sm }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Peringkat Suara Internal Caleg PAN di Dapil Jabar I</SectionTitle>
+          <Text style={[styles.subHint, { color: colors.textMuted }]}>
+            Akumulasi formulir C1 Plano dari 4.120 TPS se-Kota Bandung & Cimahi:
+          </Text>
+
+          {[
+            { no: '1', nama: 'Dr. H. Ahmad Fauzi, M.Si.', suara: '48.210', pct: '42.9%', isMe: true },
+            { no: '2', nama: 'Hj. Rina Marlina, S.H.', suara: '26.430', pct: '23.5%', isMe: false },
+            { no: '3', nama: 'M. Irfan Pratama, M.B.A.', suara: '18.910', pct: '16.8%', isMe: false },
+            { no: '-', nama: 'Suara Coblos Lambang PAN Saja', suara: '18.900', pct: '16.8%', isMe: false },
+          ].map((c, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.witnessRowItem,
+                { borderBottomColor: colors.border },
+                c.isMe && { backgroundColor: colors.primaryLight, paddingHorizontal: 8, borderRadius: radius.md },
+              ]}
+            >
+              <View style={[styles.headerNumBadge, { backgroundColor: c.isMe ? colors.primary : colors.border }]}>
+                <Text style={[styles.headerNumBadgeText, { color: c.isMe ? '#FFFFFF' : colors.text }]}>{c.no}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[styles.witnessName, { color: colors.text, fontWeight: c.isMe ? '900' : '700' }]}>
+                  {c.nama} {c.isMe ? '★ (Akun Anda)' : ''}
+                </Text>
+                <Text style={[styles.witnessSub, { color: colors.textMuted }]}>Porsi Suara: {c.pct}</Text>
+              </View>
+              <Text style={{ fontSize: fontSize.sm, fontWeight: '900', color: c.isMe ? colors.primary : colors.text }}>
+                {c.suara}
+              </Text>
+            </View>
+          ))}
+        </Card>
+
+        {/* Bento Grid Shortcut Caleg */}
+        <View style={{ gap: spacing.xs }}>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi & Pengawalan Caleg</SectionTitle>
+          <BentoGridShortcut items={calegBentoItems} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VIEW FOR KADER / ANGGOTA PARTAI PAN (PENGUSUL PARLEMEN DPR)
+  // -------------------------------------------------------------
+  if (role === 'KADER_ANGGOTA') {
+    const kaderBentoItems: BentoItem[] = [
+      {
+        id: 'suara',
+        icon: 'bar-chart-2',
+        title: 'Suara & Parlemen',
+        subtitle: 'Simulasi Sainte-Laguë DPR-RI',
+        badge: '7.24%',
+        onPress: () => navigation.navigate('PartyLeaderboard'),
+      },
+      {
+        id: 'bacaleg',
+        icon: 'award',
+        title: 'Berkas Calon DPR',
+        subtitle: '7 Dokumen Terverifikasi KPU',
+        badge: 'Lengkap',
+        onPress: () => navigation.navigate('SimpanBacaleg'),
+      },
+      {
+        id: 'kta',
+        icon: 'credit-card',
+        title: 'e-KTA Digital',
+        subtitle: 'Kartu Anggota & Barcode QR',
+        onPress: () => navigation.navigate('SimpanKta'),
+      },
+      {
+        id: 'kawal',
+        icon: 'grid',
+        title: 'Kawal TPS Dapil',
+        subtitle: 'Monitoring Saksi C1 BSN',
+        onPress: () => navigation.navigate('Supervision'),
+      },
+      {
+        id: 'kantor',
+        icon: 'map-pin',
+        title: 'Kantor & Konter',
+        subtitle: 'Pelayanan Sekretariat',
+        onPress: () => navigation.navigate('SimpanOffices'),
+      },
+      {
+        id: 'warta',
+        icon: 'file-text',
+        title: 'Warta DPP Terkini',
+        subtitle: 'Maklumat & Arahan Resmi',
+        onPress: () => navigation.navigate('SimpanNews'),
+      },
+    ];
+
+    return (
+      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <PersonnelHeaderCard role={role} navigation={navigation} />
+        <SimpanEcosystemHubCard navigation={navigation} />
+        <BroadcastQuickButton navigation={navigation} />
+
+        {/* Hero Suara Pribadi Calon Parlemen DPR */}
+        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.heroHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Image source={BRAND_ASSETS.official} style={{ width: 34, height: 34 }} resizeMode="contain" />
+              <View>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: colors.primary }}>CALON ANGGOTA DPR-RI PARLEMEN</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted }}>Dapil Jabar I (No. Urut 2)</Text>
+              </View>
+            </View>
+            <Pill label="Target Tercapai" tone="success" />
+          </View>
+
+          <Text style={[styles.heroTitle, { color: colors.text, marginTop: 4 }]}>Suara Pribadi Anda Masuk</Text>
+          <Text style={[styles.heroSub, { color: colors.textMuted }]}>
+            Fajar Pratama Nugraha, S.T. — Akumulasi suara pribadi calon parlemen dari data C1 Plano TPS masuk.
+          </Text>
+
+          <View style={[styles.statRow, { borderTopColor: colors.border }]}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>32.840</Text>
+              <Text style={[styles.statSub, { color: colors.primary, fontWeight: '800' }]}>Suara Pribadi Anda</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>109,4%</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Target (30.000)</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.text }]}>Peringkat #2</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Internal PAN Dapil</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Perolehan Suara Partai PAN (Dapil & Nasional) */}
+        <Card style={{ gap: spacing.xs, backgroundColor: colors.surface, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>
+              Perolehan Suara Partai PAN (Dapil & Nasional)
+            </Text>
+            <Pill label="Lolos Parlemen" tone="success" />
+          </View>
+
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
+            Kawal suara partai dan akumulasi kursi DPR-RI di tingkat nasional dan daerah pemilihan:
+          </Text>
+
+          <View style={[styles.statRow, { borderTopColor: colors.border, marginTop: spacing.xs, paddingTop: spacing.xs }]}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.text }]}>112.450</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara PAN Dapil Jabar 1</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>10.984.003</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Total Nasional (7,24%)</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>48 Kursi</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>DPR-RI Senayan</Text>
+            </View>
+          </View>
+        </Card>
+
+        {/* Sebaran Suara Pribadi Masuk per Kecamatan Basis Calon */}
+        <Card style={{ gap: spacing.sm }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Sebaran Suara Pribadi Masuk per Kecamatan (Basis Anda)</SectionTitle>
+          <Text style={[styles.subHint, { color: colors.textMuted }]}>
+            Hasil penghitungan C1 Plano suara pribadi Fajar Pratama Nugraha di TPS:
+          </Text>
+
+          {[
+            { kec: 'Kecamatan Coblong (Basis Utama)', suara: '8.420', pct: '25,6%' },
+            { kec: 'Kecamatan Cimahi Selatan', suara: '7.880', pct: '24,0%' },
+            { kec: 'Kecamatan Antapani', suara: '6.250', pct: '19,0%' },
+            { kec: 'Kecamatan Sukasari', suara: '5.910', pct: '18,0%' },
+            { kec: 'Kecamatan Cidadap & Lainnya', suara: '4.380', pct: '13,4%' },
+          ].map((item, idx) => (
+            <View key={idx} style={[styles.witnessRowItem, { borderBottomColor: colors.border }]}>
+              <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>{idx + 1}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[styles.witnessName, { color: colors.text }]}>{item.kec}</Text>
+                <Text style={[styles.witnessSub, { color: colors.textMuted }]}>Kontribusi: {item.pct}</Text>
+              </View>
+              <Text style={{ fontSize: fontSize.sm, fontWeight: '900', color: colors.primary }}>
+                {item.suara}
+              </Text>
+            </View>
+          ))}
+        </Card>
+
+        {/* Quick KTA Widget */}
+        <Pressable
+          onPress={() => navigation.navigate('SimpanKta')}
+          style={({ pressed }) => [
+            styles.heroCard,
+            { backgroundColor: '#002B49', borderColor: '#0066B3' },
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <View style={styles.heroHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Image source={BRAND_ASSETS.official} style={{ width: 28, height: 28 }} resizeMode="contain" />
+              <Text style={{ fontSize: 12, fontWeight: '900', color: '#FFFFFF' }}>KARTU TANDA ANGGOTA RESMI</Text>
+            </View>
+            <Pill label="Kader Aktif" tone="success" />
+          </View>
+          <Text style={{ fontSize: 11, color: '#93C5FD' }}>No. KTA: 32.73.01.2024.08912</Text>
+          <Text style={{ fontSize: fontSize.md, fontWeight: '900', color: '#FFFFFF', marginTop: 2 }}>
+            FAJAR PRATAMA NUGRAHA, S.T.
+          </Text>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+            DPD PAN Kota Bandung • Calon DPR-RI No. Urut 2
+          </Text>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)', paddingTop: 8, marginTop: 6 }}>
+            <Text style={{ fontSize: 11, color: '#60A5FA', fontWeight: '700' }}>Ketuk untuk lihat kartu penuh & QR Code</Text>
+            <Feather name="arrow-right" size={14} color="#60A5FA" />
+          </View>
+        </Pressable>
+
+        {/* Bento Grid Shortcut Kader */}
+        <View style={{ gap: spacing.xs }}>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Layanan Kader & Calon Parlemen</SectionTitle>
+          <BentoGridShortcut items={kaderBentoItems} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VIEW FOR PENGURUS WILAYAH (DPD / DPC / DPW / DPP / PAC)
+  // -------------------------------------------------------------
+  if (role === 'DPD' || role === 'DPC' || role === 'DPW' || role === 'DPP' || role === 'PAC') {
+    const pengurusBentoItems: BentoItem[] = [
+      {
+        id: 'struktur',
+        icon: 'users',
+        title: 'Struktur Organisasi',
+        subtitle: 'Direktori Kepengurusan',
+        badge: 'Pengurus',
+        onPress: () => navigation.navigate('SimpanStructure'),
+      },
+      {
+        id: 'kantor',
+        icon: 'map-pin',
+        title: 'Kantor & Konter',
+        subtitle: 'Layanan Sekretariat Wilayah',
+        onPress: () => navigation.navigate('SimpanOffices'),
+      },
+      {
+        id: 'supervision',
+        icon: 'grid',
+        title: 'Pengawasan TPS',
+        subtitle: 'Monitoring Teritorial',
+        onPress: () => navigation.navigate('Supervision'),
+      },
+      {
+        id: 'witnesses',
+        icon: 'user-check',
+        title: 'Daftar Saksi BSN',
+        subtitle: 'Cek Kesiapan Saksi TPS',
+        onPress: () => navigation.navigate('WitnessList'),
+      },
+      {
+        id: 'pimpinan',
+        icon: 'trending-up',
+        title: 'Dashboard Pimpinan',
+        subtitle: 'Analisis Suara & Ranking',
+        onPress: () => navigation.navigate('Leadership'),
+      },
+      {
+        id: 'broadcast',
+        icon: 'radio',
+        title: 'Kirim Broadcast',
+        subtitle: 'Instruksi Langsung ke Saksi',
+        onPress: () => navigation.navigate('Broadcast'),
+      },
+      {
+        id: 'register',
+        icon: 'camera',
+        title: 'Rekrutmen Kader',
+        subtitle: 'Daftar Anggota AI Scan KTP',
+        badge: 'AI Scan',
+        onPress: () => navigation.navigate('RegisterMember'),
+      },
+      {
+        id: 'news',
+        icon: 'file-text',
+        title: 'Warta Resmi DPP',
+        subtitle: 'Rilis Pers & Instruksi',
+        onPress: () => navigation.navigate('SimpanNews'),
+      },
+    ];
+
+    return (
+      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <PersonnelHeaderCard role={role} navigation={navigation} />
+        <SimpanEcosystemHubCard navigation={navigation} />
+        <BroadcastQuickButton navigation={navigation} />
+
+        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.heroHeaderRow}>
+            <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
+            <Pill label={ROLE_LABEL[role].split('—')[0].trim()} tone="primary" />
+          </View>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Pusat Kendali Pengurus</Text>
+          <Text style={[styles.heroSub, { color: colors.textMuted }]}>
+            {ROLE_SCOPE_DESCRIPTION[role]}
+          </Text>
+
+          <View style={[styles.statRow, { borderTopColor: colors.border }]}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{scopedTps.length}</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Total TPS Wilayah</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>{checkedInCount} / {scopedWitnesses.length}</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Saksi Hadir GPS</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>{reportedCount}</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>C1 Terkumpul</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi Kepengurusan & Wilayah</SectionTitle>
+          <BentoGridShortcut items={pengurusBentoItems} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // -------------------------------------------------------------
   // VIEW FOR OPERATOR LAPANGAN (KOTA BANDUNG REGENCY SCOPE)
   // -------------------------------------------------------------
   if (isOperator) {
@@ -86,7 +533,7 @@ export default function DashboardScreen({ navigation }: any) {
         icon: 'camera',
         title: 'Foto Lapangan',
         subtitle: 'Upload Dokumentasi',
-        onPress: () => navigation.navigate('Documentation'),
+        onPress: () => navigation.navigate('Documentation', { tpsId: 'TPS-001' }),
       },
       {
         id: 'checkin',
@@ -125,20 +572,13 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Personnel Profile Header Card */}
         <PersonnelHeaderCard role={role} navigation={navigation} />
 
+        <SimpanEcosystemHubCard navigation={navigation} />
+
         <BroadcastQuickButton navigation={navigation} />
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
-                <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
-              </View>
-              <Image
-                source={BRAND_ASSETS.logoText}
-                style={{ width: 75, height: 15, tintColor: colors.text }}
-                resizeMode="contain"
-              />
-            </View>
+            <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
             <Pill label="Kota Bandung" tone="primary" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Dashboard Operator Lapangan</Text>
@@ -292,7 +732,7 @@ export default function DashboardScreen({ navigation }: any) {
         icon: 'camera',
         title: 'Foto Supervisi',
         subtitle: 'Upload Bukti Lapangan',
-        onPress: () => navigation.navigate('Documentation'),
+        onPress: () => navigation.navigate('Documentation', { tpsId: 'TPS-001' }),
       },
       {
         id: 'emergencies',
@@ -317,20 +757,13 @@ export default function DashboardScreen({ navigation }: any) {
         {/* Personnel Profile Header Card */}
         <PersonnelHeaderCard role={role} navigation={navigation} />
 
+        <SimpanEcosystemHubCard navigation={navigation} />
+
         <BroadcastQuickButton navigation={navigation} />
 
         <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.heroHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
-                <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
-              </View>
-              <Image
-                source={BRAND_ASSETS.logoText}
-                style={{ width: 75, height: 15, tintColor: colors.text }}
-                resizeMode="contain"
-              />
-            </View>
+            <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
             <Pill label="Kluster COORD-1" tone="primary" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Pemantauan Kluster TPS</Text>
@@ -460,7 +893,7 @@ export default function DashboardScreen({ navigation }: any) {
       title: 'Dokumentasi',
       subtitle: 'Foto Kegiatan TPS',
       badge: 'Step 4',
-      onPress: () => navigation.navigate('Documentation'),
+      onPress: () => navigation.navigate('Documentation', { tpsId: 'TPS-001' }),
     },
     {
       id: 'emergency',
@@ -494,20 +927,13 @@ export default function DashboardScreen({ navigation }: any) {
       {/* Personnel Profile Header Card */}
       <PersonnelHeaderCard role={role} navigation={navigation} />
 
+      <SimpanEcosystemHubCard navigation={navigation} />
+
       <BroadcastQuickButton navigation={navigation} />
 
       <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.heroHeaderRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: '#0A192F', alignItems: 'center', justifyContent: 'center' }}>
-              <Image source={BRAND_ASSETS.emblem} style={{ width: 18, height: 18 }} resizeMode="contain" />
-            </View>
-            <Image
-              source={BRAND_ASSETS.logoText}
-              style={{ width: 75, height: 15, tintColor: colors.text }}
-              resizeMode="contain"
-            />
-          </View>
+          <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
           <Pill label="TPS 001 Dago" tone="primary" />
         </View>
         <Text style={[styles.heroTitle, { color: colors.text }]}>Tugas Operasional Saksi TPS</Text>
@@ -746,6 +1172,90 @@ function PaginationBar({ currentPage, totalPages, onPrev, onNext }: { currentPag
   );
 }
 
+function SimpanEcosystemHubCard({ navigation }: { navigation: any }) {
+  const { colors } = useTheme();
+
+  return (
+    <Card style={{ gap: spacing.xs, backgroundColor: colors.surface, borderColor: colors.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ fontSize: 13, fontWeight: '900', color: colors.text }}>
+            sim<Text style={{ color: colors.primary }}>PAN</Text> Ekosistem
+          </Text>
+          <Pill label="Sistem Terpadu" tone="primary" />
+        </View>
+        <Text style={{ fontSize: 10, color: colors.textMuted }}>Partai Amanat Nasional</Text>
+      </View>
+
+      <Text style={{ fontSize: 11, color: colors.textMuted }}>
+        Pengawalan Suara Saksi BSN & Layanan Keanggotaan Terpadu
+      </Text>
+
+      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+        <Pressable
+          onPress={() => navigation.navigate('SimpanKta')}
+          style={({ pressed }) => [
+            styles.hubQuickBtn,
+            { backgroundColor: colors.primaryLight },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Feather name="credit-card" size={12} color={colors.primary} />
+          <Text style={[styles.hubQuickBtnText, { color: colors.primary }]}>e-KTA Digital</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate('RegisterMember')}
+          style={({ pressed }) => [
+            styles.hubQuickBtn,
+            { backgroundColor: colors.primaryLight },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Feather name="camera" size={12} color={colors.primary} />
+          <Text style={[styles.hubQuickBtnText, { color: colors.primary }]}>Scan KTP AI</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate('SimpanStructure')}
+          style={({ pressed }) => [
+            styles.hubQuickBtn,
+            { backgroundColor: colors.primaryLight },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Feather name="users" size={12} color={colors.primary} />
+          <Text style={[styles.hubQuickBtnText, { color: colors.primary }]}>Struktur</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate('SimpanOffices')}
+          style={({ pressed }) => [
+            styles.hubQuickBtn,
+            { backgroundColor: colors.primaryLight },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Feather name="map-pin" size={12} color={colors.primary} />
+          <Text style={[styles.hubQuickBtnText, { color: colors.primary }]}>Kantor & Konter</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate('SimpanNews')}
+          style={({ pressed }) => [
+            styles.hubQuickBtn,
+            { backgroundColor: colors.primaryLight },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Feather name="file-text" size={12} color={colors.primary} />
+          <Text style={[styles.hubQuickBtnText, { color: colors.primary }]}>Warta DPP</Text>
+        </Pressable>
+      </View>
+    </Card>
+  );
+}
+
 function BroadcastQuickButton({ navigation }: { navigation: any }) {
   const { colors } = useTheme();
   const { broadcasts } = useApp();
@@ -827,7 +1337,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   profileAvatarWrapper: { position: 'relative' },
-  profileHeaderAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#E60012' },
+  profileHeaderAvatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: '#0066B3' },
   onlineDot: { width: 12, height: 12, borderRadius: 6, position: 'absolute', bottom: 0, right: 0, borderWidth: 2, borderColor: '#FFFFFF' },
   profileHeaderTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   profileHeaderName: { fontSize: fontSize.sm, fontWeight: '800' },
@@ -911,4 +1421,27 @@ const styles = StyleSheet.create({
   statGridItem: { minWidth: '46%' },
   attendanceBarTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
   attendanceBarFill: { height: '100%', borderRadius: 4 },
+  hubQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  hubQuickBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  headerNumBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerNumBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
 });

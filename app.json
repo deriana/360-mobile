@@ -1,26 +1,27 @@
 {
   "expo": {
-    "name": "360-saksi",
-    "slug": "360-saksi",
+    "name": "simPAN",
+    "slug": "simpan",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/saksi360_emblem.png",
+    "icon": "./assets/brand/pan_emblem.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "updates": {
       "checkAutomatically": "NEVER",
       "enabled": false
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pan.saksi360"
     },
     "android": {
-      "package": "com.saksi360.app",
+      "package": "com.pan.saksi360",
       "adaptiveIcon": {
-        "backgroundColor": "#1E293B",
-        "foregroundImage": "./assets/brand/saksi360_emblem.png",
+        "backgroundColor": "#0066B3",
+        "foregroundImage": "./assets/brand/pan_emblem.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/brand/saksi360_emblem.png"
+        "monochromeImage": "./assets/brand/pan_emblem.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -31,23 +32,25 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Saksi 360 memerlukan akses kamera untuk foto selfie presensi dan pemindaian dokumen."
+          "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk foto selfie presensi dan pemindaian dokumen."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Saksi 360 memerlukan akses lokasi untuk memverifikasi titik presensi GPS di TPS."
+          "locationWhenInUsePermission": "SAKSI PAN 360 memerlukan akses lokasi untuk memverifikasi titik presensi GPS di TPS."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Saksi 360 memerlukan akses galeri untuk mengunggah foto dokumen.",
-          "cameraPermission": "Saksi 360 memerlukan akses kamera untuk memotret dokumen."
+          "photosPermission": "SAKSI PAN 360 memerlukan akses galeri untuk mengunggah foto dokumen.",
+          "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk memotret dokumen."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar"
     ]
   }
 }

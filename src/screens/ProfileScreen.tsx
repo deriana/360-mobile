@@ -26,7 +26,7 @@ export default function ProfileScreen({ navigation }: any) {
           { icon: 'phone', label: 'No. WhatsApp / HP', value: profile.phone },
           { icon: 'mail', label: 'Email Akun', value: profile.email },
           { icon: 'map-pin', label: 'Lokasi Penugasan', value: profile.scopeLocation },
-          { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI SAKSI 360', isSuccess: true },
+          { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI SAKSI PAN 360', isSuccess: true },
         ]}
         footerNote="Pindai QR Code ini oleh Pengawas / KPPS untuk memvalidasi identitas saksi."
       />

@@ -1,0 +1,569 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
+import { Card, Input, Pill, PrimaryButton, SectionTitle } from '../components/ui';
+import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
+import { pickImage } from '../utils/pickImage';
+
+type RegisterStep = 'scan' | 'verify' | 'completed';
+
+const OCR_STEPS = ['Pindai KTP', 'Validasi Data', 'e-KTA Terbit'];
+
+export default function RegisterMemberScreen({ navigation }: any) {
+  const { colors } = useTheme();
+  const { login } = useApp();
+
+  const [step, setStep] = useState<RegisterStep>('scan');
+  const [isScanning, setIsScanning] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+  // Form states extracted via AI OCR
+  const [nik, setNik] = useState('');
+  const [nama, setNama] = useState('');
+  const [tempatLahir, setTempatLahir] = useState('');
+  const [tglLahir, setTglLahir] = useState('');
+  const [jenisKelamin, setJenisKelamin] = useState('Laki-Laki');
+  const [alamat, setAlamat] = useState('');
+  const [rtRw, setRtRw] = useState('');
+  const [kelurahan, setKelurahan] = useState('');
+  const [kecamatan, setKecamatan] = useState('');
+  const [kota, setKota] = useState('Kota Bandung');
+  const [provinsi, setProvinsi] = useState('Jawa Barat');
+  const [agama, setAgama] = useState('Islam');
+  const [pekerjaan, setPekerjaan] = useState('Wiraswasta');
+
+  // Additional Member Information
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [dpd, setDpd] = useState('DPD PAN Kota Bandung');
+  const [dpc, setDpc] = useState('DPC PAN Coblong');
+  const [sayapPartai, setSayapPartai] = useState('BSN PAN (Badan Saksi Nasional)');
+
+  // Generated KTA Data
+  const [noKta, setNoKta] = useState('');
+
+  // Scanning animation
+  const scanAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isScanning) return;
+    scanAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(scanAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isScanning, scanAnim]);
+
+  const handlePickPhoto = async (source: 'camera' | 'library') => {
+    const uri = await pickImage(source);
+    if (uri) {
+      setPhotoUri(uri);
+      startOcrScan();
+    }
+  };
+
+  const handleSimulateSample = () => {
+    setPhotoUri('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80');
+    startOcrScan();
+  };
+
+  const startOcrScan = () => {
+    setIsScanning(true);
+    setTimeout(() => {
+      // AI OCR extraction simulation
+      setNik('3273011508920005');
+      setNama('FAJAR PRATAMA NUGRAHA');
+      setTempatLahir('Bandung');
+      setTglLahir('15/08/1992');
+      setJenisKelamin('Laki-Laki');
+      setAlamat('Jl. Cisitu Indah No. 28');
+      setRtRw('004 / 008');
+      setKelurahan('Dago');
+      setKecamatan('Coblong');
+      setKota('Kota Bandung');
+      setProvinsi('Jawa Barat');
+      setAgama('Islam');
+      setPekerjaan('Wiraswasta / Profesional');
+      setPhone('0812-3456-7890');
+      setEmail('fajar.pratama@pan.or.id');
+
+      setIsScanning(false);
+      setStep('verify');
+    }, 1800);
+  };
+
+  const handleIssueKta = () => {
+    if (!nik || !nama) {
+      Alert.alert('Data Belum Lengkap', 'Mohon lengkapi NIK dan Nama sebelum menerbitkan e-KTA.');
+      return;
+    }
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const generatedKta = `32.73.01.2024.${randomSuffix}`;
+    setNoKta(generatedKta);
+    setStep('completed');
+  };
+
+  const handleLoginAsMember = () => {
+    login('KADER_ANGGOTA');
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.screen, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* Header Title */}
+        <View style={styles.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Image source={BRAND_ASSETS.official} style={{ width: 34, height: 34 }} resizeMode="contain" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.title, { color: colors.text }]}>Registrasi Anggota simPAN</Text>
+              <Text style={[styles.subTitle, { color: colors.textMuted }]}>
+                Pindai e-KTP dengan AI OCR untuk verifikasi instan & penerbitan e-KTA Partai Amanat Nasional.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Step Indicator */}
+        <View style={styles.stepIndicatorRow}>
+          {OCR_STEPS.map((stepLabel, idx) => {
+            const currentIdx = step === 'scan' ? 0 : step === 'verify' ? 1 : 2;
+            const isDone = idx < currentIdx;
+            const isCurrent = idx === currentIdx;
+            return (
+              <React.Fragment key={stepLabel}>
+                <View style={styles.stepItem}>
+                  <View
+                    style={[
+                      styles.stepCircle,
+                      {
+                        backgroundColor: isDone || isCurrent ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    {isDone ? (
+                      <Feather name="check" size={12} color="#FFFFFF" strokeWidth={iconStrokeWidth} />
+                    ) : (
+                      <Text style={[styles.stepNum, { color: isCurrent ? '#FFFFFF' : colors.textMuted }]}>
+                        {idx + 1}
+                      </Text>
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.stepLabel,
+                      { color: isCurrent || isDone ? colors.text : colors.textMuted, fontWeight: isCurrent ? '800' : '600' },
+                    ]}
+                  >
+                    {stepLabel}
+                  </Text>
+                </View>
+                {idx < OCR_STEPS.length - 1 && (
+                  <View
+                    style={[
+                      styles.stepLine,
+                      { backgroundColor: idx < currentIdx ? colors.primary : colors.border },
+                    ]}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </View>
+
+        {/* ------------------------------------------------------------- */}
+        {/* STEP 1: SCAN KTP AI OCR */}
+        {/* ------------------------------------------------------------- */}
+        {step === 'scan' && (
+          <View style={{ gap: spacing.md }}>
+            <Card style={{ padding: 0, overflow: 'hidden', borderRadius: radius.xl }}>
+              <View style={[styles.viewfinderHeader, { backgroundColor: '#0A192F' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={styles.aiDot} />
+                  <Text style={styles.viewfinderTitle}>AI KTP Scanner Engine v2.4</Text>
+                </View>
+                <Pill label={isScanning ? 'Memindai...' : 'Siap Pindai'} tone={isScanning ? 'warning' : 'primary'} />
+              </View>
+
+              {photoUri ? (
+                <ImageBackground source={{ uri: photoUri }} style={styles.viewfinderBox}>
+                  <View style={styles.viewfinderOverlay}>
+                    <View style={[styles.scanFrame, { borderColor: colors.primary }]}>
+                      {isScanning && (
+                        <Animated.View
+                          style={[
+                            styles.laserLine,
+                            {
+                              backgroundColor: '#00D2FF',
+                              transform: [
+                                {
+                                  translateY: scanAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-90, 90],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      )}
+                    </View>
+                  </View>
+                </ImageBackground>
+              ) : (
+                <View style={[styles.viewfinderBox, { backgroundColor: '#0F172A' }]}>
+                  <View style={styles.viewfinderOverlay}>
+                    <View style={[styles.scanFrame, { borderColor: 'rgba(255,255,255,0.4)' }]}>
+                      <Feather name="credit-card" size={38} color="rgba(255,255,255,0.7)" />
+                      <Text style={styles.frameHint}>Posisikan e-KTP di dalam bingkai</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              <View style={[styles.viewfinderFooter, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+                {isScanning ? (
+                  <View style={styles.scanningStatusWrap}>
+                    <Feather name="cpu" size={16} color={colors.primary} />
+                    <Text style={[styles.scanningStatusText, { color: colors.primary }]}>
+                      AI mengekstrak NIK, Nama, & Alamat Dukcapil...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: spacing.xs }}>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                      <PrimaryButton
+                        label="Ambil Foto KTP"
+                        icon="camera"
+                        onPress={() => handlePickPhoto('camera')}
+                        style={{ flex: 1 }}
+                      />
+                      <PrimaryButton
+                        label="Pilih Galeri"
+                        icon="upload"
+                        variant="secondary"
+                        onPress={() => handlePickPhoto('library')}
+                        style={{ flex: 1 }}
+                      />
+                    </View>
+                    <Pressable
+                      onPress={handleSimulateSample}
+                      style={({ pressed }) => [
+                        styles.sampleBtn,
+                        { backgroundColor: colors.primaryLight },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <Feather name="zap" size={14} color={colors.primary} />
+                      <Text style={[styles.sampleBtnText, { color: colors.primary }]}>
+                        Uji Coba dengan Sampel e-KTP Demo (Instan)
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            </Card>
+
+            {/* Keunggulan Pendaftaran via simPAN */}
+            <Card style={{ gap: spacing.sm }}>
+              <SectionTitle style={{ marginBottom: 0 }}>Keunggulan Pendaftaran Digital simPAN</SectionTitle>
+              {[
+                'Verifikasi identitas otomatis berbasis AI OCR mengurangi kesalahan ketik.',
+                'Terhubung langsung dengan basis data keanggotaan DPP PAN.',
+                'Penerbitan kartu tanda anggota digital (e-KTA) resmi instan dengan QR Code.',
+                'Dapat langsung digunakan untuk penugasan saksi BSN di TPS.',
+              ].map((text, idx) => (
+                <View key={idx} style={styles.benefitRow}>
+                  <Feather name="check-circle" size={14} color={colors.primary} style={{ marginTop: 2 }} />
+                  <Text style={[styles.benefitText, { color: colors.textMuted }]}>{text}</Text>
+                </View>
+              ))}
+            </Card>
+          </View>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* STEP 2: VERIFIKASI & FORM DATA KADER */}
+        {/* ------------------------------------------------------------- */}
+        {step === 'verify' && (
+          <View style={{ gap: spacing.md }}>
+            <Card style={{ gap: spacing.sm }}>
+              <View style={styles.verifyHeaderRow}>
+                <View style={[styles.verifyIconWrap, { backgroundColor: colors.successBg }]}>
+                  <Feather name="check-circle" size={20} color={colors.success} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.verifyTitle, { color: colors.text }]}>Data e-KTP Berhasil Diekstrak AI</Text>
+                  <Text style={[styles.verifySub, { color: colors.textMuted }]}>
+                    Periksa kembali data diri dan lengkapi informasi kepengurusan di bawah ini.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+              <Input label="NIK (Nomor Induk Kependudukan)" icon="credit-card" value={nik} onChangeText={setNik} keyboardType="numeric" />
+              <Input label="Nama Lengkap (Sesuai e-KTP)" icon="user" value={nama} onChangeText={setNama} autoCapitalize="characters" />
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Input label="Tempat Lahir" value={tempatLahir} onChangeText={setTempatLahir} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Input label="Tanggal Lahir" value={tglLahir} onChangeText={setTglLahir} />
+                </View>
+              </View>
+
+              <Input label="Jenis Kelamin" icon="users" value={jenisKelamin} onChangeText={setJenisKelamin} />
+              <Input label="Alamat Domisili KTP" icon="map-pin" value={alamat} onChangeText={setAlamat} />
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Input label="RT / RW" value={rtRw} onChangeText={setRtRw} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Input label="Kelurahan / Desa" value={kelurahan} onChangeText={setKelurahan} />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Input label="Kecamatan" value={kecamatan} onChangeText={setKecamatan} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Input label="Kota / Kabupaten" value={kota} onChangeText={setKota} />
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.subSectionTitle, { color: colors.text }]}>Informasi Kontak & Keanggotaan PAN</Text>
+
+              <Input label="Nomor WhatsApp / Handphone" icon="phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+              <Input label="Alamat Email" icon="mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+
+              <Input label="Penempatan DPD" icon="shield" value={dpd} onChangeText={setDpd} />
+              <Input label="Penempatan DPC" icon="map" value={dpc} onChangeText={setDpc} />
+              <Input label="Minat Organisasi / Sayap Partai" icon="award" value={sayapPartai} onChangeText={setSayapPartai} />
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+                <PrimaryButton label="Pindai Ulang" icon="rotate-ccw" variant="secondary" onPress={() => setStep('scan')} style={{ flex: 1 }} />
+                <PrimaryButton label="Terbitkan e-KTA" icon="check" onPress={handleIssueKta} style={{ flex: 1.6 }} />
+              </View>
+            </Card>
+          </View>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* STEP 3: E-KTA RESMI TERBIT */}
+        {/* ------------------------------------------------------------- */}
+        {step === 'completed' && (
+          <View style={{ gap: spacing.md }}>
+            <View style={[styles.successCelebrationCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.celebrationIcon, { backgroundColor: '#DCFCE7' }]}>
+                <Feather name="award" size={28} color="#15803D" />
+              </View>
+              <Text style={[styles.celebrationTitle, { color: colors.text }]}>Pendaftaran Kader Berhasil!</Text>
+              <Text style={[styles.celebrationSub, { color: colors.textMuted }]}>
+                e-KTA resmi telah berhasil diterbitkan dan terdaftar dalam sistem simPAN DPP PAN.
+              </Text>
+            </View>
+
+            {/* Kartu e-KTA Fisik-Digital PAN */}
+            <View style={styles.ktaPhysicalCard}>
+              <View style={styles.ktaHeaderLine}>
+                <Image source={BRAND_ASSETS.official} style={{ width: 42, height: 42 }} resizeMode="contain" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.ktaPartyTitle}>PARTAI AMANAT NASIONAL</Text>
+                  <Text style={styles.ktaPartySub}>KARTU TANDA ANGGOTA ELEKTRONIK (e-KTA)</Text>
+                </View>
+                <View style={styles.ktaChip}>
+                  <Text style={styles.ktaChipText}>simPAN</Text>
+                </View>
+              </View>
+
+              <View style={styles.ktaBody}>
+                <View style={styles.ktaAvatarWrap}>
+                  {photoUri ? (
+                    <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%', borderRadius: radius.sm }} />
+                  ) : (
+                    <Image source={getWitnessAvatar(1)} style={{ width: '100%', height: '100%', borderRadius: radius.sm }} />
+                  )}
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.ktaKtaNum}>{noKta || '32.73.01.2024.08912'}</Text>
+                  <Text style={styles.ktaHolderName}>{nama || 'FAJAR PRATAMA NUGRAHA'}</Text>
+                  <Text style={styles.ktaMetaText}>NIK: {nik || '3273011508920005'}</Text>
+                  <Text style={styles.ktaMetaText}>TTL: {tempatLahir || 'Bandung'}, {tglLahir || '15/08/1992'}</Text>
+                  <Text style={styles.ktaMetaText}>Wilayah: {dpd}</Text>
+                </View>
+              </View>
+
+              <View style={styles.ktaFooter}>
+                <View style={styles.ktaQrPlaceholder}>
+                  <Feather name="grid" size={32} color="#0F172A" />
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end', gap: 1 }}>
+                  <Text style={styles.ktaSigRole}>Ketua Umum DPP PAN</Text>
+                  <Text style={styles.ktaSigName}>Dr. (H.C.) Zulkifli Hasan</Text>
+                  <Text style={styles.ktaSigSec}>Sekjen: Eddy Soeparno</Text>
+                </View>
+              </View>
+            </View>
+
+            <Card style={{ gap: spacing.sm }}>
+              <PrimaryButton
+                label="Unduh / Simpan e-KTA (PDF)"
+                icon="download"
+                onPress={() => Alert.alert('e-KTA Diunduh', `e-KTA dengan No. ${noKta} berhasil disimpan ke memori perangkat.`)}
+              />
+
+              <PrimaryButton
+                label="Masuk ke Akun Kader simPAN"
+                icon="log-in"
+                variant="secondary"
+                onPress={handleLoginAsMember}
+              />
+
+              <Pressable
+                onPress={() => {
+                  setStep('scan');
+                  setPhotoUri(null);
+                }}
+                style={({ pressed }) => [
+                  styles.registerOtherBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={[styles.registerOtherText, { color: colors.primary }]}>Daftarkan Anggota Baru Lainnya</Text>
+              </Pressable>
+            </Card>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  header: { gap: 4 },
+  title: { fontSize: fontSize.lg, fontWeight: '900' },
+  subTitle: { fontSize: fontSize.xs, lineHeight: 17 },
+  stepIndicatorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xs },
+  stepItem: { alignItems: 'center', gap: 4, width: 84 },
+  stepCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  stepNum: { fontSize: 11, fontWeight: '800' },
+  stepLabel: { fontSize: 10, textAlign: 'center' },
+  stepLine: { flex: 1, height: 2, marginBottom: 16, marginHorizontal: -10 },
+  viewfinderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  aiDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00D2FF' },
+  viewfinderTitle: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
+  viewfinderBox: { width: '100%', height: 220, justifyContent: 'center', alignItems: 'center' },
+  viewfinderOverlay: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', padding: spacing.md },
+  scanFrame: {
+    width: '84%',
+    height: 150,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    gap: 6,
+  },
+  frameHint: { fontSize: 11, color: '#FFFFFF', fontWeight: '700' },
+  laserLine: { position: 'absolute', left: 0, right: 0, height: 3, shadowColor: '#00D2FF', shadowOpacity: 0.8, shadowRadius: 6 },
+  viewfinderFooter: { padding: spacing.md, borderTopWidth: 1 },
+  scanningStatusWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8 },
+  scanningStatusText: { fontSize: fontSize.xs, fontWeight: '700' },
+  sampleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    marginTop: 4,
+  },
+  sampleBtnText: { fontSize: 11, fontWeight: '800' },
+  benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  benefitText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  verifyHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  verifyIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  verifyTitle: { fontSize: fontSize.sm, fontWeight: '800' },
+  verifySub: { fontSize: 11, marginTop: 2, lineHeight: 16 },
+  divider: { height: 1, marginVertical: spacing.xs },
+  subSectionTitle: { fontSize: fontSize.xs, fontWeight: '800', marginBottom: 2 },
+  successCelebrationCard: {
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    gap: 6,
+  },
+  celebrationIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  celebrationTitle: { fontSize: fontSize.lg, fontWeight: '900' },
+  celebrationSub: { fontSize: fontSize.xs, textAlign: 'center', lineHeight: 17, maxWidth: 280 },
+  ktaPhysicalCard: {
+    backgroundColor: '#002B49',
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: '#0066B3',
+    ...shadow.card,
+  },
+  ktaHeaderLine: { flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.15)', paddingBottom: 8 },
+  ktaPartyTitle: { fontSize: 12, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
+  ktaPartySub: { fontSize: 8.5, color: '#93C5FD', fontWeight: '700' },
+  ktaChip: { backgroundColor: '#0066B3', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  ktaChipText: { fontSize: 9, fontWeight: '900', color: '#FFFFFF' },
+  ktaBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
+  ktaAvatarWrap: { width: 56, height: 68, borderRadius: radius.sm, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  ktaKtaNum: { fontSize: 12, fontWeight: '900', color: '#60A5FA', letterSpacing: 0.5 },
+  ktaHolderName: { fontSize: 13, fontWeight: '900', color: '#FFFFFF' },
+  ktaMetaText: { fontSize: 9.5, color: 'rgba(255,255,255,0.8)' },
+  ktaFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.15)',
+    paddingTop: 8,
+  },
+  ktaQrPlaceholder: { width: 44, height: 44, borderRadius: 4, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  ktaSigRole: { fontSize: 8, color: '#93C5FD' },
+  ktaSigName: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
+  ktaSigSec: { fontSize: 8, color: 'rgba(255,255,255,0.7)' },
+  registerOtherBtn: { alignItems: 'center', paddingVertical: 8 },
+  registerOtherText: { fontSize: fontSize.xs, fontWeight: '800' },
+});
