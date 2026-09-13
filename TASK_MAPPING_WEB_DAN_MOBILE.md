@@ -40,7 +40,48 @@ Setiap aksi transaksi di lapangan (Mobile) bermuara pada layar pemantauan dan ke
 
 ---
 
-### 3. Task List Sisi Mobile (`360-saksi`) — [BUAT TRANSAKSI]
+### 3. Modul Khusus: Peta Interaktif Command Center
+*(Mengadopsi Pola Arsitektur `g-emas-internal-fe` dengan Transformasi Pin Point: TPS & Saksi Relawan)*
+
+Berdasarkan benchmark pada `g-emas-internal-fe/src/features/dashboard/components/command-center-map.tsx`, arsitektur peta Command Center Web diadaptasi dengan penyesuaian data fundamental:
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        KOMPARASI DATA PIN POINT PETA INTERAKTIF                        │
+├───────────────────────────────────┬────────────────────────────────────────────────────┤
+│ g-emas-internal-fe                │ PAN 360 / simPAN (SAKSI 360)                       │
+│ (Entitas Organisasi & Keuangan)   │ (Entitas Teritorial TPS & Saksi / Relawan Lapangan)│
+├───────────────────────────────────┼────────────────────────────────────────────────────┤
+│ • Pin: Kantor DPD, DPC, PAC       │ • Pin: Titik TPS Pemilu (Nomor TPS & Kelurahan)   │
+│ • Profil Pengurus: KSB (Ketua,    │ • Profil Saksi Lapangan: Saksi Inti & Cadangan     │
+│   Sekretaris, Bendahara)          │   (Nama, NIK Masked, Foto Selfie Presensi GPS)     │
+│ • Data Keuangan: Kas Masuk/Keluar │ • Data Suara: DPT, Pemilih Hadir, Suara PAN, Suara │
+│   Bulanan, Skor Kepatuhan         │   Caleg DPR RI, Suara Tidak Sah, Status C1 Masuk   │
+│ • UMKM Binaan                     │ • Dokumentasi Fisik: Thumbnail Foto C1 Plano &     │
+│                                   │   Papan Hitung (Bisa diklik Zoom / Preview)        │
+│ • Tombol Aksi: Ekspor Laporan     │ • Tombol Aksi: Chat WA Saksi, Verifikasi C1,       │
+│   Keuangan Organisasi             │   Eskalasi Insiden Tim Hukum, Ekspor Bukti PHPU    │
+└───────────────────────────────────┴────────────────────────────────────────────────────┘
+```
+
+#### Komponen UI & Fitur Peta yang Diadopsi dari `g-emas-internal-fe`:
+1. **Map Engine & Tile Layer**:
+   - Leaflet + `react-leaflet` dengan dukungan responsif Dark Mode (`CartoDB Dark All`) dan Light Mode (`OpenStreetMap`).
+   - Kontrol Peta: Fullscreen Toggle (`Maximize` / `Minimize`), Reset Zoom, Zoom Control kustom.
+2. **Collapsible Floating Sidebar Drawer**:
+   - Sidebar samping yang dapat dibuka-tutup (`PanelLeftClose` / `PanelLeftOpen`) tanpa mengganggu interaksi peta.
+   - Input pencarian cepat (`searchQuery`): Cari berdasarkan Nomor TPS, Nama Saksi, Kelurahan, atau Kecamatan.
+3. **Animasi Drill-Down Bertingkat (*FlyTo*)**:
+   - `Nasional` &rarr; Klik Provinsi (Zoom ke DPW/Dapil) &rarr; Klik Kab/Kota (Zoom ke DPD) &rarr; Klik Kecamatan (Zoom ke DPC) &rarr; **Munculkan Kluster Titik Pin TPS**.
+4. **Indikator Pin Dinamis & Status Layer Toggle**:
+   - 🟢 **Hijau (C1 Selesai & Terverifikasi)**: Saksi hadir GPS, C1 Plano tervalidasi.
+   - 🟡 **Kuning (Dalam Proses Penghitungan)**: Saksi hadir di TPS, proses hitung sedang berlangsung.
+   - 🔴 **Merah Berkedip (Anomali / Insiden Darurat)**: Saksi lapor intimidasi, kecurangan, atau suara > DPT.
+   - ⚪/⚫ **Abu-abu (TPS Rawan / Kosong)**: Belum ada saksi BSN yang check-in pada hari-H.
+
+---
+
+### 4. Task List Sisi Mobile (`360-saksi`) — [BUAT TRANSAKSI]
 
 #### Kelompok A: Pembersihan Layar Monitoring (Uncluttering & Simplifikasi)
 - [ ] **Task M-01**: Hapus / Alihkan [`CommandCenterScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/CommandCenterScreen.tsx) dan [`LeadershipScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/LeadershipScreen.tsx) dari stack navigasi saksi lapangan.
@@ -75,7 +116,7 @@ Setiap aksi transaksi di lapangan (Mobile) bermuara pada layar pemantauan dan ke
 
 ---
 
-### 4. Task List Sisi Web (`Saksi360-Admin`) — [MURNI MONITORING]
+### 5. Task List Sisi Web (`Saksi360-Admin`) — [MURNI MONITORING]
 
 #### Kelompok A: Redesain Meja Verifikasi & Audit Suara
 - [ ] **Task W-01**: **Redesain `/input-hasil-tps` Menjadi Meja Validasi & Adjudikasi C1**.
@@ -88,16 +129,22 @@ Setiap aksi transaksi di lapangan (Mobile) bermuara pada layar pemantauan dan ke
     2. `[Tandai Anomali]` (Minta verifikasi ulang koordinator lapangan).
     3. `[Ajukan Sengketa / PHPU]` (Eskalasi ke tim advokasi hukum BSN).
 
-#### Kelompok B: National Command Center & GIS Live Map
-- [ ] **Task W-02**: **Live Telemetry Dashboard** ([`src/features/command-center/index.tsx`](file:///home/deryana/coding/admin-pak-andri/Saksi360-Admin/src/features/command-center/index.tsx)).
-  - Tampilkan metrik kecepatan pelaporan: *Kecepatan TPS Masuk/Menit*, *Persentase TPS Terkumpul*, *Estimasi Suara Masuk Terakhir*.
-  - Sediakan filter bertingkat: **Nasional &rarr; DPW (38 Provinsi) &rarr; DPD (514 Kab/Kota) &rarr; DPC (Kecamatan) &rarr; TPS**.
+#### Kelompok B: National Command Center & GIS Live Map (Gaya `g-emas-internal-fe`)
+- [ ] **Task W-02.1**: **Implementasi Peta Interaktif Command Center (Benchmark `g-emas-internal-fe`)**.
+  - Pasang komponen peta Leaflet interaktif dengan layout fullscreen dan dark/light mode tile.
+  - Sediakan **Collapsible Floating Sidebar Drawer** yang menampilkan detail TPS saat pin diklik.
+  - Sediakan tombol **Floating Layer Toggles** untuk memfilter pin: *TPS Selesai*, *TPS Proses*, *TPS Bermasalah*, *TPS Kosong*.
+  - Buat animasi **Drill-Down FlyTo**: Nasional &rarr; Provinsi (DPW) &rarr; Kab/Kota (DPD) &rarr; Kecamatan (DPC) &rarr; Pin TPS.
+- [ ] **Task W-02.2**: **Transformasi Data Pin Point & Detail Drawer (TPS & Saksi Relawan)**.
+  - Tampilkan data titik: Nomor TPS, Nama Kelurahan, DPT, Suara Masuk, Status Kehadiran.
+  - Pada drawer samping saat pin diklik, tampilkan:
+    * **Kartu Saksi Bertugas**: Foto selfie presensi GPS saksi, Nama, NIK (Masked), Jam check-in, dan tombol WhatsApp instan.
+    * **Mini Bar Chart Hasil Suara TPS** (menggunakan Recharts seperti di `g-emas`).
+    * **Dokumentasi C1**: Preview foto C1 Plano yang dikirim dari HP saksi.
+    * **Tombol Cepat**: *"Hubungi Saksi"*, *"Verifikasi C1"*, *"Eskalasi Tim Hukum"*.
 - [ ] **Task W-03**: **Live Coverage & Heatmap Presensi TPS** ([`src/features/check-in/index.tsx`](file:///home/deryana/coding/admin-pak-andri/Saksi360-Admin/src/features/check-in/index.tsx)).
-  - Tampilkan peta GIS sebaran saksi se-Indonesia:
-    * Titik Hijau: Saksi hadir tepat waktu (sebelum 07:00 WIB).
-    * Titik Kuning: Saksi hadir terlambat.
-    * Titik Merah Berkedip: TPS kosong belum ada saksi check-in.
-  - Tambahkan tombol aksi: *"Kirim Peringatan WhatsApp Massal"* ke saksi yang belum hadir.
+  - Tampilkan peta GIS sebaran kehadiran saksi se-Indonesia (Hijau = Hadir, Kuning = Telat, Merah = Kosong).
+  - Tambahkan tombol aksi: *"Kirim Peringatan WhatsApp Massal"* ke saksi yang belum hadir pada pukul 07:00 WIB.
 
 #### Kelompok C: Intelligence & Deteksi Kecurangan (Fraud Engine)
 - [ ] **Task W-04**: **Engine Deteksi Anomali Suara Otomatis**.
@@ -121,26 +168,27 @@ Setiap aksi transaksi di lapangan (Mobile) bermuara pada layar pemantauan dan ke
 
 ---
 
-### 5. Roadmap Eksekusi per Sprint
+### 6. Roadmap Eksekusi per Sprint
 
 ```text
-SPRINT 1: Fondasi Pemisahan Peran (Pembersihan Kamar)
-├── [Mobile] Task M-01: Bersihkan CommandCenter & Leadership dari tab saksi.
-├── [Mobile] Task M-04: Migrasikan offlineQueue.ts ke AsyncStorage / SQLite.
-├── [Mobile] Task M-05: Pasang strict geofencing 100m pada presensi GPS.
-└── [Web]    Task W-01: Redesain /input-hasil-tps jadi Meja Validasi C1 Dual-View.
+SPRINT 1: Fondasi Pemisahan Peran & Peta Command Center
+├── [Web]    Task W-02.1: Pasang Peta Interaktif bergaya g-emas-internal-fe (Fullscreen, Dark/Light, Collapsible Drawer).
+├── [Web]    Task W-02.2: Implementasikan Pin Point berbasis TPS & Saksi Relawan (bukan organisasi).
+├── [Web]    Task W-01:   Redesain /input-hasil-tps jadi Meja Validasi C1 Dual-View.
+├── [Mobile] Task M-01:   Bersihkan CommandCenter & Leadership dari tab saksi.
+└── [Mobile] Task M-04:   Migrasikan offlineQueue.ts ke AsyncStorage / SQLite.
 
 SPRINT 2: Keandalan Transaksi Bilik TPS & Live Telemetry
-├── [Mobile] Task M-06: Hubungkan Tally Counter langsung ke pengisian C1.
-├── [Mobile] Task M-07: Pasang validasi matematika suara C1.
-├── [Mobile] Task M-09: Buat cache offline surat mandat digital.
-├── [Web]    Task W-02: Pasang Live Telemetry kecepatan suara masuk per menit.
-└── [Web]    Task W-03: Peta sebaran kehadiran saksi & blast WA saksi terlambat.
+├── [Mobile] Task M-05:   Pasang strict geofencing 100m & kompresi swafoto di CheckInScreen.
+├── [Mobile] Task M-06:   Hubungkan Tally Counter langsung ke pengisian C1.
+├── [Mobile] Task M-07:   Pasang validasi matematika suara C1 di ReportFormScreen.
+├── [Mobile] Task M-09:   Buat cache offline surat mandat digital.
+└── [Web]    Task W-03:   Peta sebaran kehadiran saksi & blast WA saksi terlambat.
 
 SPRINT 3: AI Intelligence, Deteksi Kecurangan & Finansial
-├── [Mobile] Task M-08: Otomasi watermark digital pada foto C1 saksi.
-├── [Mobile] Task M-10: Integrasikan API real AI OCR untuk KTP & C1 Plano.
-├── [Web]    Task W-04: Implementasikan rule engine anomali & kecurangan suara.
-├── [Web]    Task W-05: Pasang kalkulator kursi Sainte-Laguë & PT 4% tracker.
-└── [Web]    Task W-06: Pasang batch export payroll honorarium perbankan.
+├── [Mobile] Task M-08:   Otomasi watermark digital pada foto C1 saksi.
+├── [Mobile] Task M-10:   Integrasikan API real AI OCR untuk KTP & C1 Plano.
+├── [Web]    Task W-04:   Implementasikan rule engine anomali & kecurangan suara.
+├── [Web]    Task W-05:   Pasang kalkulator kursi Sainte-Laguë & PT 4% tracker.
+└── [Web]    Task W-06:   Pasang batch export payroll honorarium perbankan.
 ```
