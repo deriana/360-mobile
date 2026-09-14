@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
@@ -21,8 +21,9 @@ interface BentoItem {
 }
 
 export default function DashboardScreen({ navigation }: any) {
-  const { role, tps, witnesses } = useApp();
+  const { role, tps, witnesses, payments, isOnline, unsyncedQueueCount, flushQueueNow } = useApp();
   const { colors } = useTheme();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const isCoordinator = role === 'TPS_COORDINATOR';
   const isOperator = role === 'OPERATOR';
@@ -860,95 +861,343 @@ export default function DashboardScreen({ navigation }: any) {
   }
 
   // -------------------------------------------------------------
-  // VIEW FOR SAKSI TPS MANDIRI (1 TPS SCOPE)
+  // VIEW FOR SAKSI TPS MANDIRI (CHECKLIST HARI-H: ABSEN -> MANDAT -> TALLY -> C1 -> HONOR)
   // -------------------------------------------------------------
-  const witnessBentoItems: BentoItem[] = [
+  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
+  const currentPayment = payments?.find((p) => p.witnessId === CURRENT_WITNESS_ID);
+  const currentTps = scopedTps[0] || tps.find((t) => t.id === currentWitness?.assignedTpsId);
+
+  // Status evaluasi 5 Langkah Kerja Hari-H
+  const step1Done = currentWitness?.status === 'checked_in';
+  const step2Done = Boolean(currentWitness); // Surat mandat digital resmi selalu aktif
+  const step3Done = Boolean(currentTps?.status === 'in_progress' || currentTps?.status === 'done');
+  const step4Done = currentTps?.status === 'done';
+  const step5Done = currentPayment?.status === 'paid';
+
+  const completedStepsCount = [step1Done, step2Done, step3Done, step4Done, step5Done].filter(Boolean).length;
+  const progressPercent = Math.round((completedStepsCount / 5) * 100);
+
+  const checklistSteps = [
     {
-      id: 'checkin',
-      icon: 'map-pin',
-      title: 'Absen GPS',
-      subtitle: 'Presensi Swafoto',
-      badge: 'Step 1',
+      stepNumber: 1,
+      title: 'Absensi Masuk TPS (GPS & Swafoto)',
+      desc: 'Wajib hadir di radius 100 meter dari titik TPS sebelum pukul 07:00 WIB.',
+      icon: 'map-pin' as const,
+      done: step1Done,
+      statusLabel: step1Done ? `Hadir (${currentWitness?.checkInTime || '07:15'} WIB)` : 'Wajib Absen (< 07:00)',
+      actionLabel: step1Done ? 'Lihat Bukti Presensi' : 'Mulai Presensi GPS',
       onPress: () => navigation.navigate('CheckIn'),
+      badgeTone: (step1Done ? 'success' : 'warning') as 'success' | 'warning',
     },
     {
-      id: 'mandate',
-      icon: 'file-text',
-      title: 'E-Mandat',
-      subtitle: 'Surat Tugas Digital',
-      badge: 'Step 2',
+      stepNumber: 2,
+      title: 'Tunjukkan Surat Mandat Resmi',
+      desc: 'Bawa & perlihatkan e-Mandat QR resmi berstempel DPP ke petugas KPPS & Panwaslu.',
+      icon: 'file-text' as const,
+      done: step2Done,
+      statusLabel: 'Mandat Sah (DPP PAN)',
+      actionLabel: 'Tampilkan Surat Tugas & QR',
       onPress: () => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID }),
+      badgeTone: 'success' as const,
     },
     {
-      id: 'c1',
-      icon: 'edit-3',
-      title: 'Formulir C1',
-      subtitle: 'Foto & Entri Suara',
-      badge: 'Step 3',
-      onPress: () => navigation.navigate('ReportForm', { tpsId: 'TPS-001' }),
-    },
-    {
-      id: 'doc',
-      icon: 'camera',
-      title: 'Dokumentasi',
-      subtitle: 'Foto Kegiatan TPS',
-      badge: 'Step 4',
-      onPress: () => navigation.navigate('Documentation', { tpsId: 'TPS-001' }),
-    },
-    {
-      id: 'emergency',
-      icon: 'alert-triangle',
-      title: 'Lapor Darurat',
-      subtitle: 'Kirim Insiden TPS',
-      tone: 'danger',
-      badge: 'Step 5',
-      onPress: () => navigation.navigate('EmergencyForm'),
-    },
-    {
-      id: 'emergencies',
-      icon: 'alert-circle',
-      title: 'Cek Kendala TPS',
-      subtitle: 'Status Laporan Anda & TPS',
-      tone: 'warning',
-      onPress: () => navigation.navigate('EmergencyList'),
-    },
-    {
-      id: 'quickcount',
-      icon: 'zap',
-      title: 'Hitung Cepat Suara',
-      subtitle: 'Tally Manual, Sinkron ke C1',
-      badge: 'Baru',
+      stepNumber: 3,
+      title: 'Tally Hitung Cepat Bilik TPS',
+      desc: 'Hitung dan rekam suara per detik saat penghitungan suara terbuka dimulai oleh KPPS.',
+      icon: 'zap' as const,
+      done: step3Done,
+      statusLabel: step3Done ? 'Hitung Cepat Terisi' : 'Siap Saat Sidang Hitung',
+      actionLabel: 'Buka Tally Counter',
       onPress: () => navigation.navigate('QuickCountGame'),
+      badgeTone: (step3Done ? 'success' : 'info') as 'success' | 'info',
+    },
+    {
+      stepNumber: 4,
+      title: 'Foto Lembar C1 Plano & Entri Suara',
+      desc: 'Pindai kotak angka plano dengan Vision AI dan kirim hasil perolehan suara TPS.',
+      icon: 'edit-3' as const,
+      done: step4Done,
+      statusLabel: step4Done ? 'C1 Selesai & Terkirim' : 'Wajib Unggah Plano C1',
+      actionLabel: step4Done ? 'Tinjau Rincian C1' : 'Foto C1 & Scan AI',
+      onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
+      badgeTone: (step4Done ? 'success' : 'warning') as 'success' | 'warning',
+    },
+    {
+      stepNumber: 5,
+      title: 'Otorisasi & Pencairan Honorarium',
+      desc: 'Pencairan honor saksi Rp 350.000 ditransfer langsung ke rekening Mandiri / BCA.',
+      icon: 'dollar-sign' as const,
+      done: step5Done,
+      statusLabel: step5Done ? 'Lunas (Rp 350.000)' : 'Menunggu Validasi C1',
+      actionLabel: 'Cek Rekening & Status Honor',
+      onPress: () => navigation.navigate('Payment'),
+      badgeTone: (step5Done ? 'success' : 'warning') as 'success' | 'warning',
     },
   ];
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      const synced = await flushQueueNow();
+      if (synced > 0) {
+        Alert.alert('Sinkronisasi Sukses', `${synced} transaksi offline berhasil disinkronkan ke server.`);
+      } else {
+        Alert.alert('Antrean Bersih', 'Semua transaksi lapangan telah tersinkronisasi.');
+      }
+    } catch (e) {
+      Alert.alert('Gagal Sinkron', 'Pastikan sinyal internet stabil.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Personnel Profile Header Card */}
       <PersonnelHeaderCard role={role} navigation={navigation} />
 
+      {/* Offline Sync Banner jika ada antrean atau sedang offline */}
+      {(!isOnline || unsyncedQueueCount > 0) && (
+        <View
+          style={[
+            styles.syncBannerCard,
+            {
+              backgroundColor: !isOnline ? colors.warningBg : colors.primaryLight,
+              borderColor: !isOnline ? colors.warning : colors.primary,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+            <Feather
+              name={!isOnline ? 'wifi-off' : 'cloud-off'}
+              size={18}
+              color={!isOnline ? colors.warning : colors.primary}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>
+                {!isOnline ? 'Koneksi Lapangan Terputus' : `${unsyncedQueueCount} Transaksi Menunggu Sinyal`}
+              </Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                {!isOnline
+                  ? 'Data tetap tersimpan aman di HP & otomatis dikirim saat online.'
+                  : 'Data tersimpan di penyimpanan offline HP.'}
+              </Text>
+            </View>
+          </View>
+          {isOnline && (
+            <Pressable
+              onPress={handleManualSync}
+              disabled={isSyncing}
+              style={({ pressed }) => [
+                styles.syncBannerBtn,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="refresh-cw" size={12} color="#FFFFFF" />
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFFFFF' }}>Sinkron</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+        </View>
+      )}
+
       <SimpanEcosystemHubCard navigation={navigation} />
 
       <BroadcastQuickButton navigation={navigation} />
 
+      {/* Hero Card Hari-H */}
       <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.heroHeaderRow}>
           <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
-          <Pill label="TPS 001 Dago" tone="primary" />
+          <Pill label={currentTps ? `TPS ${currentTps.tpsNumber} ${currentTps.district}` : 'TPS 001 Dago'} tone="primary" />
         </View>
-        <Text style={[styles.heroTitle, { color: colors.text }]}>Tugas Operasional Saksi TPS</Text>
+        <Text style={[styles.heroTitle, { color: colors.text }]}>Checklist Tugas Hari-H Saksi TPS</Text>
         <Text style={[styles.heroSub, { color: colors.textMuted }]}>
-          TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung
+          Alur kerja resmi saksi Partai Amanat Nasional di Tempat Pemungutan Suara
         </Text>
+
+        {/* Progress Bar */}
+        <View style={{ marginTop: spacing.sm, gap: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Progres Hari-H</Text>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: colors.primary }}>
+              {completedStepsCount} dari 5 Selesai ({progressPercent}%)
+            </Text>
+          </View>
+          <View style={[styles.checklistProgressTrack, { backgroundColor: colors.border }]}>
+            <View
+              style={[
+                styles.checklistProgressFill,
+                {
+                  width: `${progressPercent}%`,
+                  backgroundColor: progressPercent === 100 ? colors.success : colors.primary,
+                },
+              ]}
+            />
+          </View>
+        </View>
       </View>
 
+      {/* Checklist Utama Hari-H (Absen -> Mandat -> Tally -> C1 -> Honor) */}
+      <View style={{ gap: spacing.sm }}>
+        <SectionTitle style={{ marginBottom: 0 }}>Alur Transaksi Hari-H (Wajib Dijalankan)</SectionTitle>
+        <Text style={[styles.subHint, { color: colors.textMuted }]}>
+          Selesaikan 5 langkah kerja berurutan mulai dari presensi pagi hingga pencairan honor:
+        </Text>
+
+        {checklistSteps.map((item) => (
+          <View
+            key={item.stepNumber}
+            style={[
+              styles.stepCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: item.done ? colors.success : colors.border,
+              },
+            ]}
+          >
+            <View style={styles.stepHeaderRow}>
+              <View
+                style={[
+                  styles.stepBadgeCircle,
+                  { backgroundColor: item.done ? colors.success : colors.primaryLight },
+                ]}
+              >
+                {item.done ? (
+                  <Feather name="check" size={14} color="#FFFFFF" strokeWidth={2.5} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.stepBadgeCircleText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    {item.stepNumber}
+                  </Text>
+                )}
+              </View>
+
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.stepTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[styles.stepDesc, { color: colors.textMuted }]}>{item.desc}</Text>
+              </View>
+
+              <Pill label={item.statusLabel} tone={item.badgeTone} />
+            </View>
+
+            <View style={[styles.stepFooterRow, { borderTopColor: colors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name={item.icon} size={14} color={item.done ? colors.success : colors.primary} />
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                  Langkah {item.stepNumber} dari 5
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={item.onPress}
+                style={({ pressed }) => [
+                  styles.stepActionBtn,
+                  { backgroundColor: item.done ? colors.surface : colors.primary },
+                  item.done && { borderWidth: 1, borderColor: colors.border },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.stepActionBtnText,
+                    { color: item.done ? colors.text : '#FFFFFF' },
+                  ]}
+                >
+                  {item.actionLabel}
+                </Text>
+                <Feather
+                  name="chevron-right"
+                  size={14}
+                  color={item.done ? colors.text : '#FFFFFF'}
+                />
+              </Pressable>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Tombol Cepat Darurat SOS Lapangan */}
+      <Pressable
+        onPress={() => navigation.navigate('EmergencyForm')}
+        style={({ pressed }) => [
+          styles.sosCard,
+          { backgroundColor: colors.dangerBg, borderColor: colors.danger },
+          pressed && { opacity: 0.9 },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: colors.danger,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Feather name="alert-triangle" size={18} color="#FFFFFF" strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '900', color: colors.danger }}>
+              Tombol Darurat SOS TPS
+            </Text>
+            <Text style={{ fontSize: 11, color: colors.text }}>
+              Lapor kecurangan, intimidasi saksi, atau kendala logistik bilik suara.
+            </Text>
+          </View>
+        </View>
+        <Feather name="arrow-right" size={16} color={colors.danger} />
+      </Pressable>
+
+      {/* Menu Bantuan Pendukung Saksi */}
+      <Card style={{ gap: spacing.sm }}>
+        <SectionTitle style={{ marginBottom: 0 }}>Layanan & Pendukung Saksi</SectionTitle>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Pressable
+            onPress={() => navigation.navigate('EmergencyList')}
+            style={({ pressed }) => [
+              styles.stepActionBtn,
+              { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 10, justifyContent: 'center' },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Feather name="alert-circle" size={14} color={colors.warning} />
+            <Text style={[styles.stepActionBtnText, { color: colors.text }]}>Status Laporan</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate('Documentation', { tpsId: currentTps?.id || 'TPS-001' })}
+            style={({ pressed }) => [
+              styles.stepActionBtn,
+              { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 10, justifyContent: 'center' },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Feather name="camera" size={14} color={colors.primary} />
+            <Text style={[styles.stepActionBtnText, { color: colors.text }]}>Dokumentasi</Text>
+          </Pressable>
+        </View>
+      </Card>
+
       {/* Statistik TPS Saya */}
-      {scopedTps[0] && (
+      {currentTps && (
         <View style={{ gap: spacing.xs }}>
           <SectionTitle
             style={{ marginBottom: spacing.xs }}
             action={
-              <Pressable onPress={() => navigation.navigate('TpsDetail', { tpsId: scopedTps[0].id })}>
+              <Pressable onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps.id })}>
                 <Text style={[styles.roleBadgeText, { color: colors.primary }]}>Lihat Detail</Text>
               </Pressable>
             }
@@ -956,24 +1205,18 @@ export default function DashboardScreen({ navigation }: any) {
             Statistik TPS Saya
           </SectionTitle>
           <View style={styles.statGrid}>
-            <KpiCard label="DPT Terdaftar" value={scopedTps[0].dpt} icon="users" style={styles.statGridItem} />
-            <KpiCard label="Pemilih Hadir" value={scopedTps[0].votersPresent} tone={colors.success} icon="check-circle" style={styles.statGridItem} />
-            <KpiCard label="Suara Tidak Sah" value={scopedTps[0].votes.invalidVotes} tone={colors.danger} icon="x-circle" style={styles.statGridItem} />
+            <KpiCard label="DPT Terdaftar" value={currentTps.dpt} icon="users" style={styles.statGridItem} />
+            <KpiCard label="Pemilih Hadir" value={currentTps.votersPresent} tone={colors.success} icon="check-circle" style={styles.statGridItem} />
+            <KpiCard label="Suara Tidak Sah" value={currentTps.votes.invalidVotes} tone={colors.danger} icon="x-circle" style={styles.statGridItem} />
             <KpiCard
               label="Total Suara Masuk"
-              value={Object.values(scopedTps[0].votes.partyVotes).reduce((a, b) => a + b, 0)}
+              value={Object.values(currentTps.votes.partyVotes).reduce((a, b) => a + b, 0)}
               icon="bar-chart-2"
               style={styles.statGridItem}
             />
           </View>
         </View>
       )}
-
-      {/* Bento Grid Shortcut for Saksi */}
-      <View style={{ gap: spacing.xs }}>
-        <SectionTitle style={{ marginBottom: spacing.xs }}>Langkah Kerja Hari-H</SectionTitle>
-        <BentoGridShortcut items={witnessBentoItems} />
-      </View>
     </ScrollView>
   );
 }
@@ -1443,5 +1686,100 @@ const styles = StyleSheet.create({
   headerNumBadgeText: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  checklistCard: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.md,
+    ...shadow.card,
+  },
+  checklistHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  checklistProgressTrack: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: spacing.xs,
+  },
+  checklistProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  stepCard: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  stepHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stepBadgeCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeCircleText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  stepTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '800',
+  },
+  stepDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  stepFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  stepActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  stepActionBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  syncBannerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  syncBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  sosCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
   },
 });

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import NetInfo from '@react-native-community/netinfo';
 import {
   tpsList as initialTps,
   witnesses as initialWitnesses,
@@ -20,6 +21,13 @@ import {
   VoteCounts,
   Witness,
 } from '../types';
+import {
+  addToOfflineQueue,
+  checkNetworkIsOnline,
+  getUnsyncedQueueCount,
+  initNetInfoAutoFlush,
+  syncOfflineQueue,
+} from '../utils/offlineQueue';
 
 const SEED_DOCUMENTATION: Record<string, TpsDocPhoto[]> = {
   'TPS-001': [
@@ -53,6 +61,9 @@ interface AppContextValue {
   addEmergencyReport: (report: Omit<EmergencyReport, 'id' | 'createdAt' | 'status'>) => void;
   addBroadcast: (broadcast: Omit<Broadcast, 'id' | 'sentAt'>) => void;
   markPaymentPaid: (witnessId: string) => void;
+  isOnline: boolean;
+  unsyncedQueueCount: number;
+  flushQueueNow: () => Promise<number>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -67,6 +78,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>(initialBroadcasts);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [documentation, setDocumentation] = useState<Record<string, TpsDocPhoto[]>>(SEED_DOCUMENTATION);
+  const [isOnline, setIsOnline] = useState(true);
+  const [unsyncedQueueCount, setUnsyncedQueueCount] = useState(0);
+
+  // Monitor network connectivity & auto-flush offline transactions
+  useEffect(() => {
+    checkNetworkIsOnline().then(setIsOnline);
+    getUnsyncedQueueCount().then(setUnsyncedQueueCount);
+
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      const online = Boolean(state.isConnected && state.isInternetReachable !== false);
+      setIsOnline(online);
+    });
+
+    const unsubscribeAutoFlush = initNetInfoAutoFlush((syncedCount) => {
+      if (syncedCount > 0) {
+        getUnsyncedQueueCount().then(setUnsyncedQueueCount);
+      }
+    });
+
+    return () => {
+      unsubscribeNetInfo();
+      unsubscribeAutoFlush();
+    };
+  }, []);
 
   const getDocumentation = (tpsId: string) => documentation[tpsId] ?? [];
 
@@ -101,6 +136,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       }),
     );
+
+    // Persist to offline queue
+    addToOfflineQueue('check_in', { witnessId, override, timestamp: new Date().toISOString() })
+      .then(() => getUnsyncedQueueCount().then(setUnsyncedQueueCount))
+      .catch((err) => console.warn('[AppContext] Failed to queue check-in:', err));
   };
 
   const submitTpsReport: AppContextValue['submitTpsReport'] = (tpsId, payload) => {
@@ -111,14 +151,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : t,
       ),
     );
+
+    // Persist to offline queue
+    addToOfflineQueue('c1_report', { tpsId, payload, timestamp: new Date().toISOString() })
+      .then(() => getUnsyncedQueueCount().then(setUnsyncedQueueCount))
+      .catch((err) => console.warn('[AppContext] Failed to queue c1 report:', err));
   };
 
   const addEmergencyReport: AppContextValue['addEmergencyReport'] = (report) => {
     const id = `EMG-${String(emergencyReports.length + 1).padStart(3, '0')}`;
-    setEmergencyReports((prev) => [
-      { ...report, id, status: 'open', createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ') },
-      ...prev,
-    ]);
+    const newReport: EmergencyReport = {
+      ...report,
+      id,
+      status: 'open',
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+    };
+    setEmergencyReports((prev) => [newReport, ...prev]);
+
+    // Persist to offline queue
+    addToOfflineQueue('emergency_report', { ...newReport, timestamp: new Date().toISOString() })
+      .then(() => getUnsyncedQueueCount().then(setUnsyncedQueueCount))
+      .catch((err) => console.warn('[AppContext] Failed to queue emergency report:', err));
   };
 
   const addBroadcast: AppContextValue['addBroadcast'] = (broadcast) => {
@@ -133,6 +186,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPayments((prev) =>
       prev.map((p) => (p.witnessId === witnessId ? { ...p, status: 'paid', proofRef: `PROOF-${witnessId}` } : p)),
     );
+  };
+
+  const flushQueueNow = async () => {
+    const syncedCount = await syncOfflineQueue();
+    const remaining = await getUnsyncedQueueCount();
+    setUnsyncedQueueCount(remaining);
+    return syncedCount;
   };
 
   const login = (nextRole: Role) => {
@@ -163,8 +223,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addEmergencyReport,
       addBroadcast,
       markPaymentPaid,
+      isOnline,
+      unsyncedQueueCount,
+      flushQueueNow,
     }),
-    [role, loggedIn, tps, witnesses, coordinators, emergencyReports, broadcasts, payments, documentation],
+    [
+      role,
+      loggedIn,
+      tps,
+      witnesses,
+      coordinators,
+      emergencyReports,
+      broadcasts,
+      payments,
+      documentation,
+      isOnline,
+      unsyncedQueueCount,
+    ],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -19,6 +19,7 @@ import { Card, Input, Pill, PrimaryButton, SectionTitle } from '../components/ui
 import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
+import { scanKtpWithVisionAi } from '../utils/ocrApi';
 
 type RegisterStep = 'scan' | 'verify' | 'completed';
 
@@ -77,38 +78,42 @@ export default function RegisterMemberScreen({ navigation }: any) {
     const uri = await pickImage(source);
     if (uri) {
       setPhotoUri(uri);
-      startOcrScan();
+      startOcrScan(uri);
     }
   };
 
   const handleSimulateSample = () => {
-    setPhotoUri('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80');
-    startOcrScan();
+    const sampleUri = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80';
+    setPhotoUri(sampleUri);
+    startOcrScan(sampleUri);
   };
 
-  const startOcrScan = () => {
+  const startOcrScan = async (targetUri?: string) => {
+    const uri = targetUri || photoUri;
     setIsScanning(true);
-    setTimeout(() => {
-      // AI OCR extraction simulation
-      setNik('3273011508920005');
-      setNama('FAJAR PRATAMA NUGRAHA');
-      setTempatLahir('Bandung');
-      setTglLahir('15/08/1992');
-      setJenisKelamin('Laki-Laki');
-      setAlamat('Jl. Cisitu Indah No. 28');
-      setRtRw('004 / 008');
-      setKelurahan('Dago');
-      setKecamatan('Coblong');
-      setKota('Kota Bandung');
-      setProvinsi('Jawa Barat');
-      setAgama('Islam');
-      setPekerjaan('Wiraswasta / Profesional');
-      setPhone('0812-3456-7890');
-      setEmail('fajar.pratama@pan.or.id');
-
+    try {
+      const result = await scanKtpWithVisionAi(uri || 'sample_ktp.jpg');
+      if (result.nik) setNik(result.nik);
+      if (result.nama) setNama(result.nama);
+      if (result.tempatLahir) setTempatLahir(result.tempatLahir);
+      if (result.tglLahir) setTglLahir(result.tglLahir);
+      if (result.jenisKelamin) setJenisKelamin(result.jenisKelamin);
+      if (result.alamat) setAlamat(result.alamat);
+      if (result.rtRw) setRtRw(result.rtRw);
+      if (result.kelurahan) setKelurahan(result.kelurahan);
+      if (result.kecamatan) setKecamatan(result.kecamatan);
+      if (result.kota) setKota(result.kota);
+      if (result.provinsi) setProvinsi(result.provinsi);
+      if (result.agama) setAgama(result.agama);
+      if (result.pekerjaan) setPekerjaan(result.pekerjaan);
+      if (result.phone) setPhone(result.phone);
+      if (result.email) setEmail(result.email);
+    } catch (err) {
+      console.warn('[RegisterMemberScreen] Error scanning KTP:', err);
+    } finally {
       setIsScanning(false);
       setStep('verify');
-    }, 1800);
+    }
   };
 
   const handleIssueKta = () => {

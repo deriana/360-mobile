@@ -7,6 +7,7 @@ import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../c
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { pickImage } from '../utils/pickImage';
+import { scanC1PlanoWithVisionAi, C1OcrBoxDetection } from '../utils/ocrApi';
 import { UploadRow } from './ReportFormScreen';
 
 type ScanStage = 'before' | 'scanning' | 'review' | 'attachment' | 'done';
@@ -28,6 +29,12 @@ export default function C1OcrScreen({ route, navigation }: any) {
   const [tpsPhoto, setTpsPhoto] = useState<any>(null);
   const [tpsVideo, setTpsVideo] = useState(false);
 
+  // Vision AI state
+  const [aiConfidence, setAiConfidence] = useState<number>(0);
+  const [aiSource, setAiSource] = useState<'api' | 'offline_fallback'>('api');
+  const [detectedBoxes, setDetectedBoxes] = useState<C1OcrBoxDetection[]>([]);
+  const [aiMessage, setAiMessage] = useState<string>('');
+
   if (!record) {
     return <EmptyState title="TPS Tidak Ditemukan" body="Tidak dapat memproses OCR C1." icon="alert-circle" />;
   }
@@ -48,40 +55,44 @@ export default function C1OcrScreen({ route, navigation }: any) {
     setInvalidVotes('0');
     setPartyValues({});
     setCandidateValues({});
+    setDprCandidateValues({});
     setVotersPresent('0');
     setTpsPhoto(null);
     setTpsVideo(false);
+    setAiConfidence(0);
+    setDetectedBoxes([]);
+    setAiMessage('');
   };
 
-  const runScan = () => {
+  const runScan = async () => {
+    if (!photoUri) return;
     setStage('scanning');
-    setTimeout(() => {
-      const present = Math.round(record.dpt * 0.78);
-      const invalid = Math.max(1, Math.round(present * 0.02));
-      const remaining = present - invalid;
-      const share = Math.floor(remaining / 3);
-      setVotersPresent(String(present));
-      setInvalidVotes(String(invalid));
-      setPartyValues({
-        [partyNames[0]]: String(share + 12),
-        [partyNames[1]]: String(share - 5),
-        [partyNames[2]]: String(remaining - (share + 12) - (share - 5)),
-      });
-      setCandidateValues({
-        [candidateNames[0]]: String(share + 8),
-        [candidateNames[1]]: String(share - 3),
-        [candidateNames[2]]: String(remaining - (share + 8) - (share - 3)),
-      });
-      setDprCandidateValues({
-        [dprCandidates[0]]: String(Math.floor(share * 0.4)),
-        [dprCandidates[1]]: String(Math.floor(share * 0.3)),
-        [dprCandidates[2]]: String(Math.floor(share * 0.25)),
-        [dprCandidates[3]]: String(Math.floor(share * 0.35)),
-        [dprCandidates[4]]: String(Math.floor(share * 0.2)),
-        [dprCandidates[5]]: String(Math.floor(share * 0.15)),
-      });
+
+    try {
+      const result = await scanC1PlanoWithVisionAi(photoUri, record.id, 'all', record.dpt);
+      setAiConfidence(result.confidence);
+      setAiSource(result.source);
+      setDetectedBoxes(result.detectedBoxes);
+      setAiMessage(result.message || '');
+      setVotersPresent(String(result.votersPresent));
+      setInvalidVotes(String(result.invalidVotes));
+
+      setPartyValues(
+        Object.fromEntries(partyNames.map((p) => [p, String(result.partyVotes[p] ?? 0)])),
+      );
+      setCandidateValues(
+        Object.fromEntries(candidateNames.map((c) => [c, String(result.candidateVotes[c] ?? 0)])),
+      );
+      setDprCandidateValues(
+        Object.fromEntries(dprCandidates.map((c) => [c, String(result.dprCandidateVotes[c] ?? 0)])),
+      );
+
       setStage('review');
-    }, 1400);
+    } catch (err) {
+      console.warn('[C1OcrScreen] Error scanning C1:', err);
+      Alert.alert('Gagal Memindai', 'Terjadi kendala saat memproses gambar. Silakan coba lagi.');
+      setStage('before');
+    }
   };
 
   const confirm = () => {
@@ -91,7 +102,7 @@ export default function C1OcrScreen({ route, navigation }: any) {
     }
     const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     if (photoUri) {
-      addDocumentationPhoto(record.id, { source: { uri: photoUri }, takenAt: `${now} WIB — Foto Formulir C1 (Scan)` });
+      addDocumentationPhoto(record.id, { source: { uri: photoUri }, takenAt: `${now} WIB — Foto Formulir C1 (Vision AI Scan)` });
     }
     addDocumentationPhoto(record.id, { source: tpsPhoto, takenAt: `${now} WIB — Papan Hasil Hitung TPS` });
 
@@ -127,6 +138,9 @@ export default function C1OcrScreen({ route, navigation }: any) {
             <View style={[styles.photoPlaceholder, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}>
               <Feather name="file-text" size={40} color={colors.primary} strokeWidth={iconStrokeWidth} />
               <Text style={[styles.photoCaption, { color: colors.primary }]}>Area Pratinjau Pemindaian Lembar C1 Plano</Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 16 }}>
+                Format didukung: Kamera langsung atau galeri lembar plano plano KPU
+              </Text>
             </View>
           )}
 
@@ -139,17 +153,60 @@ export default function C1OcrScreen({ route, navigation }: any) {
           {stage === 'before' && photoUri && (
             <View style={{ flexDirection: 'row', gap: spacing.sm, width: '100%' }}>
               <PrimaryButton label="Ganti Foto" icon="x" variant="secondary" onPress={() => setPhotoUri(null)} style={{ flex: 1 }} />
-              <PrimaryButton label="Jalankan Pemindaian" icon="zap" onPress={runScan} style={{ flex: 2 }} />
+              <PrimaryButton label="Pindai AI Vision" icon="zap" onPress={runScan} style={{ flex: 2 }} />
             </View>
           )}
           {stage === 'scanning' && (
-            <PrimaryButton label="Menganalisis Gambar C1..." onPress={() => {}} loading style={{ width: '100%' }} />
+            <View style={{ width: '100%', gap: 8, alignItems: 'center' }}>
+              <PrimaryButton label="Menganalisis Kotak Angka Vision AI..." onPress={() => {}} loading style={{ width: '100%' }} />
+              <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+                Mengunggah multipart-form & mengekstrak kotak perolehan suara...
+              </Text>
+            </View>
           )}
         </Card>
       )}
 
       {stage === 'review' && (
         <>
+          {/* AI Banner */}
+          <View
+            style={[
+              styles.aiBanner,
+              {
+                backgroundColor: aiSource === 'api' ? colors.successBg : colors.surface,
+                borderColor: aiSource === 'api' ? colors.success : colors.border,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="cpu" size={16} color={aiSource === 'api' ? colors.success : colors.primary} />
+                <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>
+                  Vision AI Engine — Ekstraksi Kotak Angka
+                </Text>
+              </View>
+              <Pill
+                label={`${Math.round(aiConfidence * 100)}% Akurasi`}
+                tone={aiConfidence >= 0.9 ? 'success' : 'warning'}
+              />
+            </View>
+            <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+              {aiMessage || 'Angka formulir berhasil diekstraksi dari kotak lembar C1 Plano. Silakan verifikasi.'}
+            </Text>
+
+            {detectedBoxes.length > 0 && (
+              <View style={[styles.boxRow, { borderTopColor: colors.border }]}>
+                {detectedBoxes.map((b, idx) => (
+                  <View key={idx} style={[styles.detectedBoxItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 10, color: colors.textMuted }}>{b.label}</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '900', color: colors.primary }}>{b.value}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           <Card style={{ gap: spacing.sm }}>
             <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Langkah 1/2" tone="info" />}>
               Hasil Pembacaan C1
@@ -158,7 +215,7 @@ export default function C1OcrScreen({ route, navigation }: any) {
               Silakan periksa dan perbaiki angka jika terdapat perbedaan dengan lembar C1 Plano fisik.
             </Text>
             <Input
-              label="Pemilih Hadir"
+              label="Pemilih Hadir (DPT Masuk)"
               value={votersPresent}
               onChangeText={setVotersPresent}
               keyboardType="numeric"
@@ -170,7 +227,7 @@ export default function C1OcrScreen({ route, navigation }: any) {
               keyboardType="numeric"
             />
 
-            <Text style={[styles.subHeading, { color: colors.text }]}>Suara Partai</Text>
+            <Text style={[styles.subHeading, { color: colors.text }]}>Suara Partai Politik</Text>
             {partyNames.map((p) => (
               <Input
                 key={p}
@@ -218,10 +275,10 @@ export default function C1OcrScreen({ route, navigation }: any) {
               Lampiran Foto & Video
             </SectionTitle>
             <Text style={[styles.hint, { color: colors.textMuted }]}>
-              Data C1 udah beres. Lengkapi bukti foto papan hasil hitung sebelum dikirim.
+              Data C1 sudah diverifikasi. Lengkapi bukti foto papan hasil hitung sebelum dikirim.
             </Text>
             <UploadRow
-              label="Foto Formulir C1 (Sudah dari Scan)"
+              label="Foto Formulir C1 (Sudah dari Scan Vision AI)"
               imageSource={photoUri ? { uri: photoUri } : undefined}
               onPick={() => handlePick('camera')}
             />
@@ -245,6 +302,9 @@ export default function C1OcrScreen({ route, navigation }: any) {
       {stage === 'done' && (
         <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg }}>
           <Pill label="Hasil Form C1 Terverifikasi & Terkirim" tone="success" icon="check-circle" />
+          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
+            Data hasil suara telah dikirim ke pusat tabulasi dan dicadangkan ke antrean offline lokal.
+          </Text>
           <PrimaryButton label="Kembali ke Laporan" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
         </Card>
       )}
@@ -280,4 +340,23 @@ const styles = StyleSheet.create({
   subHeading: { fontSize: fontSize.sm, fontWeight: '700', marginTop: spacing.xs },
   imageOverlayBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   imageOverlayFull: { width: '100%', height: '80%' },
+  aiBanner: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  boxRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+  },
+  detectedBoxItem: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
 });

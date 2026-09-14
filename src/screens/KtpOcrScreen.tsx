@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, IconButton, Input, Modal, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
+import { scanKtpWithVisionAi } from '../utils/ocrApi';
 
 type ScanStage = 'idle' | 'scanning' | 'extracted' | 'saved';
 
@@ -178,18 +179,30 @@ export default function KtpOcrScreen({ navigation }: any) {
     const uri = await pickImage(source);
     if (!uri) return;
     setPhotoUri(uri);
-    handleScanKtp();
+    handleScanKtp(uri);
   };
 
-  const handleScanKtp = () => {
+  const handleScanKtp = async (targetUri?: string) => {
+    const uri = targetUri || photoUri;
+    if (!uri) return;
     setStage('scanning');
-    setTimeout(() => {
-      setNik('3271041908940003');
-      setName('BAMBANG HIDAYAT');
-      setAddress('Jl. Ir. H. Juanda No. 128, Kel. Dago, Kec. Coblong, Kota Bandung');
-      setDob('19/08/1994');
+    try {
+      const result = await scanKtpWithVisionAi(uri);
+      if (result.nik) setNik(result.nik);
+      if (result.nama) setName(result.nama);
+      if (result.alamat) {
+        const fullAddress = `${result.alamat}${result.kelurahan ? `, Kel. ${result.kelurahan}` : ''}${result.kecamatan ? `, Kec. ${result.kecamatan}` : ''}${result.kota ? `, ${result.kota}` : ''}`;
+        setAddress(fullAddress);
+      }
+      if (result.tglLahir) setDob(result.tglLahir);
+      if (result.phone) setPhone(result.phone);
+      if (result.email) setEmail(result.email);
       setStage('extracted');
-    }, 1200);
+    } catch (err) {
+      console.warn('[KtpOcrScreen] Gagal memindai KTP:', err);
+      Alert.alert('Kendala Pemindaian', 'Gagal memproses gambar KTP. Mengaktifkan mode pengisian manual.');
+      setStage('extracted');
+    }
   };
 
   const handleSave = () => {
