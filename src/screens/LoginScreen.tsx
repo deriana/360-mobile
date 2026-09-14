@@ -186,7 +186,7 @@ export default function LoginScreen() {
                   ]}
                 >
                   <Text style={[styles.catTabText, { color: demoCategory === 'saksi' ? '#FFFFFF' : colors.text }]}>
-                    Saksi & Lapangan (3)
+                    Saksi & Relawan ({MOBILE_FIELD_ACCOUNTS.length})
                   </Text>
                 </Pressable>
 

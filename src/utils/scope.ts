@@ -13,6 +13,7 @@ export const ROLE_HOME: Record<Role, { province?: string; regency?: string; dist
   TPS_COORDINATOR: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong', coordinatorId: 'COORD-1' },
   OPERATOR: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   TPS_WITNESS: {},
+  RELAWAN: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   CALEG: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   KADER_ANGGOTA: { province: 'Jawa Barat', regency: 'Kota Bandung' },
 };
@@ -26,6 +27,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   TPS_COORDINATOR: 'Koordinator TPS PAN Lapangan (6 TPS)',
   OPERATOR: 'Operator Lapangan PAN (Kota Bandung)',
   TPS_WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
+  RELAWAN: 'Relawan Lapangan & Pengawal Suara — PAN 360',
   CALEG: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
   KADER_ANGGOTA: 'Kader & Calon Parlemen DPR-RI — Partai Amanat Nasional',
 };
@@ -39,6 +41,7 @@ export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
   TPS_COORDINATOR: 'Cakupan Kluster TPS PAN — Supervisi 6 TPS di wilayah Kelurahan Dago',
   OPERATOR: 'Cakupan Operator PAN — Memantau & Mendampingi Saksi se-Kota Bandung',
   TPS_WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
+  RELAWAN: 'Cakupan Relawan — Mobilisasi Pemilih & Pemantauan TPS Wilayah Kelurahan Dago',
   CALEG: 'Cakupan Dapil Jabar I — Monitoring Suara Caleg, Perolehan Partai & Rekap C1',
   KADER_ANGGOTA: 'Cakupan Calon Parlemen — Monitoring Suara Pribadi Masuk, Suara Partai & e-KTA',
 };
@@ -154,6 +157,17 @@ export function getUserProfile(role: Role): UserProfile {
         roleLabel: 'Koordinator TPS PAN (Kluster 6)',
         scopeLocation: 'Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 3,
+      };
+    case 'RELAWAN':
+      return {
+        name: 'Siti Rahmawati',
+        nik: '3273014506950002',
+        phone: '0812-8877-6655',
+        email: 'relawan@pan.go.id',
+        badgeId: 'REL-PAN-DGO-01',
+        roleLabel: 'Relawan Lapangan & Pengawal Suara — PAN 360',
+        scopeLocation: 'Kel. Dago, Kec. Coblong, Kota Bandung',
+        avatarIndex: 4,
       };
     case 'TPS_WITNESS':
     default:
@@ -271,6 +285,15 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
     canAccessAllPayments: false,
     canMarkPayments: false,
   },
+  RELAWAN: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: false,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
 };
 
 export function scopeTps(role: Role, tps: Tps[], witnesses: Witness[] = []): Tps[] {
@@ -280,6 +303,10 @@ export function scopeTps(role: Role, tps: Tps[], witnesses: Witness[] = []): Tps
       return tps.filter((t) => t.id === witness.assignedTpsId);
     }
     return tps.slice(0, 1);
+  }
+
+  if (role === 'RELAWAN') {
+    return tps.filter((t) => t.regency === 'Kota Bandung' && t.district === 'Coblong');
   }
 
   if (role === 'TPS_COORDINATOR') {

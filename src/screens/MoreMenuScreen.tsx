@@ -246,6 +246,46 @@ export default function MoreMenuScreen({ navigation }: any) {
       ];
     }
 
+    if (role === 'RELAWAN') {
+      return [
+        profileItem,
+        {
+          key: 'EmergencyForm',
+          icon: 'alert-triangle',
+          label: 'Lapor Dugaan Pelanggaran (SOS)',
+          desc: 'Kirim temuan serangan fajar, money politics, atau intimidasi luar TPS',
+        },
+        {
+          key: 'EmergencyList',
+          icon: 'alert-circle',
+          label: 'Daftar Laporan Kendala Lapangan',
+          desc: 'Pantau status laporan kejadian di lingkungan Posko',
+        },
+        {
+          key: 'Documentation',
+          icon: 'camera',
+          label: 'Dokumentasi Suasana TPS & Papan C1',
+          desc: 'Unggah foto keramaian TPS dan lembar pengumuman salinan C1 luar TPS',
+          params: { tpsId: 'TPS-001' },
+        },
+        {
+          key: 'QuickCountGame',
+          icon: 'zap',
+          label: 'Tally Suara Cadangan',
+          desc: 'Catat hitung cepat cadangan relawan di luar TPS',
+        },
+        partyLeaderboardItem,
+        candidateExplorerItem,
+        helpCenterItem,
+        {
+          key: 'Broadcast',
+          icon: 'inbox',
+          label: 'Kotak Masuk Broadcast Posko',
+          desc: 'Instruksi koordinator relawan & pimpinan cabang',
+        },
+      ];
+    }
+
     const items: MenuItem[] = [profileItem, partyLeaderboardItem, helpCenterItem];
 
     if (permissions.canAccessEmergencyList) {

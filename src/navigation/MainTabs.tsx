@@ -17,6 +17,7 @@ import SupervisionScreen from '../screens/SupervisionScreen';
 import SimpanKtaScreen from '../screens/SimpanKtaScreen';
 import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import SimpanOfficesScreen from '../screens/SimpanOfficesScreen';
+import EmergencyFormScreen from '../screens/EmergencyFormScreen';
 import { Role } from '../types';
 
 const Tab = createBottomTabNavigator<any>();
@@ -28,6 +29,7 @@ const MoreStack = buildDetailStack('MoreMenu', MoreMenuScreen, 'Lainnya');
 
 const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Check-in');
 const ReportFormStack = buildDetailStack('ReportForm', ReportFormScreen, 'Lapor C1');
+const EmergencyFormStack = buildDetailStack('EmergencyForm', EmergencyFormScreen, 'Lapor Luar TPS');
 
 const SimpanKtaStack = buildDetailStack('SimpanKta', SimpanKtaScreen, 'e-KTA Digital');
 const SimpanNewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta DPP');
@@ -79,9 +81,20 @@ const KADER_TABS = [
   { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
 ];
 
+// 6. Relawan Lapangan & Pengawal Suara (Aksi luar bilik TPS, mobilisasi pemilih, pantau kecurangan)
+const RELAWAN_TABS = [
+  { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
+  { name: 'EmergencyTab', component: EmergencyFormStack, label: 'Lapor Luar', icon: 'alert-triangle' as const },
+  { name: 'OfficesTab', component: SimpanOfficesStack, label: 'Posko', icon: 'map-pin' as const },
+  { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
+];
+
 function getTabsForRole(role: Role) {
   if (role === 'TPS_WITNESS') {
     return WITNESS_TABS;
+  }
+  if (role === 'RELAWAN') {
+    return RELAWAN_TABS;
   }
   if (role === 'TPS_COORDINATOR' || role === 'OPERATOR') {
     return FIELD_COORDINATOR_TABS;

@@ -10,6 +10,7 @@ export interface Account {
 // 1. Akun Saksi & Lapangan (Saksi TPS, Operator Lapangan, Koordinator TPS)
 export const MOBILE_FIELD_ACCOUNTS: Account[] = [
   { role: 'TPS_WITNESS', email: 'saksi@pan.go.id', password: 'saksi123', name: 'Rudi Saputra (Saksi TPS PAN)' },
+  { role: 'RELAWAN', email: 'relawan@pan.go.id', password: 'relawan123', name: 'Siti Rahmawati (Relawan Posko & Kawal Suara)' },
   { role: 'OPERATOR', email: 'operator@pan.go.id', password: 'operator123', name: 'Budi Pratama (Operator Lapangan PAN)' },
   { role: 'TPS_COORDINATOR', email: 'korlap@pan.go.id', password: 'korlap123', name: 'Asep Ridwan (Koordinator TPS PAN)' },
 ];

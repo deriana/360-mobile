@@ -1,5 +1,6 @@
 export type Role =
   | 'TPS_WITNESS'
+  | 'RELAWAN'
   | 'OPERATOR'
   | 'TPS_COORDINATOR'
   | 'CALEG'

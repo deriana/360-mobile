@@ -33,6 +33,12 @@ export default function DashboardScreen({ navigation }: any) {
   const [attendancePage, setAttendancePage] = useState(1);
   const [attendanceSort, setAttendanceSort] = useState<'best' | 'worst'>('best');
 
+  // Relawan interactive states
+  const [relawanLogistikDone, setRelawanLogistikDone] = useState(true);
+  const [relawanGotvCount, setRelawanGotvCount] = useState(142);
+  const [relawanDocDone, setRelawanDocDone] = useState(false);
+  const [relawanTallyDone, setRelawanTallyDone] = useState(false);
+
   const scopedTps = scopeTps(role, tps, witnesses);
   const scopedWitnesses = scopeWitnesses(role, witnesses, scopedTps);
 
@@ -855,6 +861,376 @@ export default function DashboardScreen({ navigation }: any) {
             onPrev={() => setWitnessPage((p) => Math.max(1, p - 1))}
             onNext={() => setWitnessPage((p) => Math.min(totalWitnessPages, p + 1))}
           />
+        </Card>
+      </ScrollView>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // VIEW FOR RELAWAN LAPANGAN & PENGAWAL SUARA
+  // -------------------------------------------------------------
+  if (role === 'RELAWAN') {
+    const relawanStep1Done = relawanGotvCount >= 140;
+    const relawanStep2Done = relawanLogistikDone;
+    const relawanStep3Done = true; // Siaga & patroli lapangan aktif
+    const relawanStep4Done = relawanDocDone;
+    const relawanStep5Done = relawanTallyDone;
+
+    const relawanCompletedSteps = [
+      relawanStep1Done,
+      relawanStep2Done,
+      relawanStep3Done,
+      relawanStep4Done,
+      relawanStep5Done,
+    ].filter(Boolean).length;
+    const relawanProgressPct = Math.round((relawanCompletedSteps / 5) * 100);
+
+    const relawanChecklist = [
+      {
+        stepNumber: 1,
+        title: 'Cek & Dorong Kehadiran Pemilih (GOTV)',
+        desc: 'Pantau kehadiran warga binaan di RT/RW sekitar posko Dago untuk menggunakan hak pilih.',
+        icon: 'users' as const,
+        done: relawanStep1Done,
+        statusLabel: `${relawanGotvCount} / 180 Hadir (${Math.round((relawanGotvCount / 180) * 100)}%)`,
+        actionLabel: '+ Tambah Kehadiran Warga',
+        onPress: () => {
+          setRelawanGotvCount((prev) => {
+            const next = Math.min(180, prev + 5);
+            Alert.alert(
+              'Partisipasi Warga Bertambah',
+              `Kehadiran pemilih binaan diperbarui menjadi ${next} dari 180 warga (GOTV ${Math.round((next / 180) * 100)}%).`,
+            );
+            return next;
+          });
+        },
+        badgeTone: (relawanStep1Done ? 'success' : 'warning') as 'success' | 'warning',
+      },
+      {
+        stepNumber: 2,
+        title: 'Distribusi Logistik Saksi TPS',
+        desc: 'Pastikan paket konsumsi makan siang, air mineral, & vitamin telah tersalurkan ke saksi TPS 001 - 006.',
+        icon: 'package' as const,
+        done: relawanStep2Done,
+        statusLabel: relawanStep2Done ? 'Logistik Terkirim' : 'Perlu Didistribusikan',
+        actionLabel: relawanStep2Done ? 'Status: Siap' : 'Tandai Selesai Kirim',
+        onPress: () => {
+          setRelawanLogistikDone((prev) => {
+            const next = !prev;
+            Alert.alert(
+              'Logistik Saksi',
+              next ? 'Logistik saksi TPS berhasil ditandai telah tersalurkan.' : 'Status logistik diubah menjadi belum terkirim.',
+            );
+            return next;
+          });
+        },
+        badgeTone: (relawanStep2Done ? 'success' : 'warning') as 'success' | 'warning',
+      },
+      {
+        stepNumber: 3,
+        title: 'Patroli Pencegahan Pelanggaran Luar TPS',
+        desc: 'Pantau perimeter 200m luar TPS. Laporkan temuan serangan fajar, money politics, atau intimidasi pemilih.',
+        icon: 'shield' as const,
+        done: relawanStep3Done,
+        statusLabel: 'Siaga Patroli Lapangan',
+        actionLabel: 'Kirim Laporan SOS',
+        onPress: () => navigation.navigate('EmergencyForm'),
+        badgeTone: 'info' as const,
+      },
+      {
+        stepNumber: 4,
+        title: 'Foto Papan Salinan C1 Luar TPS',
+        desc: 'Setelah pukul 13:00 WIB, abadikan lembar C1 salinan yang ditempel KPPS di papan pengumuman luar TPS.',
+        icon: 'camera' as const,
+        done: relawanStep4Done,
+        statusLabel: relawanStep4Done ? 'Foto C1 Tersimpan' : 'Setelah Pukul 13:00 WIB',
+        actionLabel: relawanStep4Done ? 'Lihat Dokumentasi' : 'Ambil Foto Papan C1',
+        onPress: () => {
+          setRelawanDocDone(true);
+          navigation.navigate('Documentation', { tpsId: 'TPS-001' });
+        },
+        badgeTone: (relawanStep4Done ? 'success' : 'warning') as 'success' | 'warning',
+      },
+      {
+        stepNumber: 5,
+        title: 'Laporkan Estimasi Suara ke Posko',
+        desc: 'Catat quick tally hasil penghitungan suara terbuka sebagai pembanding independen saksi luar.',
+        icon: 'zap' as const,
+        done: relawanStep5Done,
+        statusLabel: relawanStep5Done ? 'Estimasi Terinput' : 'Mulai Input Tally',
+        actionLabel: relawanStep5Done ? 'Buka Tally Cadangan' : 'Input Tally Mandiri',
+        onPress: () => {
+          setRelawanTallyDone(true);
+          navigation.navigate('QuickCountGame');
+        },
+        badgeTone: (relawanStep5Done ? 'success' : 'info') as 'success' | 'info',
+      },
+    ];
+
+    const relawanBentoItems: BentoItem[] = [
+      {
+        id: 'emergency',
+        icon: 'alert-triangle',
+        title: 'Lapor Pelanggaran SOS',
+        subtitle: 'Kecurangan & Money Politics',
+        tone: 'danger',
+        badge: 'SOS',
+        onPress: () => navigation.navigate('EmergencyForm'),
+      },
+      {
+        id: 'doc',
+        icon: 'camera',
+        title: 'Foto Papan C1 & TPS',
+        subtitle: 'Dokumentasi Publik',
+        tone: 'primary',
+        onPress: () => navigation.navigate('Documentation', { tpsId: 'TPS-001' }),
+      },
+      {
+        id: 'tally',
+        icon: 'zap',
+        title: 'Tally Suara Cadangan',
+        subtitle: 'Hitung Cepat Terbuka',
+        tone: 'success',
+        onPress: () => navigation.navigate('QuickCountGame'),
+      },
+      {
+        id: 'posko',
+        icon: 'map-pin',
+        title: 'Posko Wilayah Dago',
+        subtitle: 'Lokasi Sekretariat PAN',
+        onPress: () => navigation.navigate('SimpanOffices'),
+      },
+      {
+        id: 'suara',
+        icon: 'bar-chart-2',
+        title: 'Tabulasi Suara Partai',
+        subtitle: 'Perolehan PAN Real-time',
+        onPress: () => navigation.navigate('PartyLeaderboard'),
+      },
+      {
+        id: 'news',
+        icon: 'file-text',
+        title: 'Warta & Arahan DPP',
+        subtitle: 'Instruksi Lapangan',
+        onPress: () => navigation.navigate('SimpanNews'),
+      },
+    ];
+
+    return (
+      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <PersonnelHeaderCard role={role} navigation={navigation} />
+        <SimpanEcosystemHubCard navigation={navigation} />
+        <BroadcastQuickButton navigation={navigation} />
+
+        {/* Hero Card Relawan */}
+        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.heroHeaderRow}>
+            <Image source={BRAND_ASSETS.official} style={{ width: 36, height: 36 }} resizeMode="contain" />
+            <Pill label="Posko Kel. Dago — Kec. Coblong" tone="primary" />
+          </View>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Pengawalan Teritorial Lapangan</Text>
+          <Text style={[styles.heroSub, { color: colors.textMuted }]}>
+            Mobilisasi pemilih, pengamanan logistik saksi, dan pemantauan kejujuran Pemilu di luar TPS
+          </Text>
+
+          {/* Progres Tugas Relawan */}
+          <View style={{ marginTop: spacing.sm, gap: 4 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text }}>Progres Tugas Hari-H</Text>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: colors.primary }}>
+                {relawanCompletedSteps} dari 5 Selesai ({relawanProgressPct}%)
+              </Text>
+            </View>
+            <View style={[styles.checklistProgressTrack, { backgroundColor: colors.border }]}>
+              <View
+                style={[
+                  styles.checklistProgressFill,
+                  {
+                    width: `${relawanProgressPct}%`,
+                    backgroundColor: relawanProgressPct === 100 ? colors.success : colors.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.statRow, { borderTopColor: colors.border }]}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.primary }]}>{relawanGotvCount}</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Warga Hadir GOTV</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.success }]}>{scopedTps.length} TPS</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Pantauan Wilayah</Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.text }]}>78,8%</Text>
+              <Text style={[styles.statSub, { color: colors.textMuted }]}>Target Partisipasi</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 5-Step Relawan Checklist */}
+        <View style={{ gap: spacing.sm }}>
+          <SectionTitle style={{ marginBottom: 0 }}>5 Agenda Kerja Hari-H Relawan Lapangan</SectionTitle>
+          <Text style={[styles.subHint, { color: colors.textMuted }]}>
+            Alur aksi pengawalan di luar bilik suara untuk memastikan kemenangan PAN:
+          </Text>
+
+          {relawanChecklist.map((item) => (
+            <View
+              key={item.stepNumber}
+              style={[
+                styles.stepCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: item.done ? colors.success : colors.border,
+                },
+              ]}
+            >
+              <View style={styles.stepHeaderRow}>
+                <View
+                  style={[
+                    styles.stepBadgeCircle,
+                    { backgroundColor: item.done ? colors.success : colors.primaryLight },
+                  ]}
+                >
+                  {item.done ? (
+                    <Feather name="check" size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.stepBadgeCircleText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {item.stepNumber}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.stepTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.stepDesc, { color: colors.textMuted }]}>{item.desc}</Text>
+                </View>
+
+                <Pill label={item.statusLabel} tone={item.badgeTone} />
+              </View>
+
+              <View style={[styles.stepFooterRow, { borderTopColor: colors.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name={item.icon} size={14} color={item.done ? colors.success : colors.primary} />
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    Agenda {item.stepNumber} dari 5
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={item.onPress}
+                  style={({ pressed }) => [
+                    styles.stepActionBtn,
+                    { backgroundColor: item.done ? colors.surface : colors.primary },
+                    item.done && { borderWidth: 1, borderColor: colors.border },
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.stepActionBtnText,
+                      { color: item.done ? colors.text : '#FFFFFF' },
+                    ]}
+                  >
+                    {item.actionLabel}
+                  </Text>
+                  <Feather
+                    name="chevron-right"
+                    size={14}
+                    color={item.done ? colors.text : '#FFFFFF'}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* SOS Fast Action Card */}
+        <Pressable
+          onPress={() => navigation.navigate('EmergencyForm')}
+          style={({ pressed }) => [
+            styles.sosCard,
+            { backgroundColor: colors.dangerBg, borderColor: colors.danger },
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.danger,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Feather name="alert-triangle" size={18} color="#FFFFFF" strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '900', color: colors.danger }}>
+                Tombol Darurat SOS Relawan
+              </Text>
+              <Text style={{ fontSize: 11, color: colors.text }}>
+                Lapor temuan serangan fajar, pembagian sembako, atau kecurangan luar TPS.
+              </Text>
+            </View>
+          </View>
+          <Feather name="arrow-right" size={16} color={colors.danger} />
+        </Pressable>
+
+        {/* Bento Grid Shortcut for Relawan */}
+        <View style={{ gap: spacing.xs }}>
+          <SectionTitle style={{ marginBottom: spacing.xs }}>Menu Aksi Cepat Relawan</SectionTitle>
+          <BentoGridShortcut items={relawanBentoItems} />
+        </View>
+
+        {/* Daftar TPS Lingkungan Binaan Relawan */}
+        <Card style={{ gap: spacing.md }}>
+          <SectionTitle style={{ marginBottom: 0 }}>
+            Pantauan TPS Lingkungan Binaan (Kec. Coblong, {scopedTps.length} TPS)
+          </SectionTitle>
+          <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: -4 }}>
+            Monitoring TPS sekitar posko untuk pendampingan saksi dan pengawalan suara.
+          </Text>
+
+          {scopedTps.map((t) => (
+            <Pressable
+              key={t.id}
+              onPress={() => navigation.navigate('TpsDetail', { tpsId: t.id })}
+              style={({ pressed }) => [
+                styles.witnessRowItem,
+                { borderBottomColor: colors.border },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.witnessName, { color: colors.text }]}>
+                  TPS {t.tpsNumber} — Kel. {t.village || 'Dago'}
+                </Text>
+                <Text style={[styles.witnessSub, { color: colors.primary, fontWeight: '700' }]}>
+                  DPT: {t.dpt} Pemilih • Kehadiran: {t.votersPresent} ({Math.round((t.votersPresent / t.dpt) * 100)}%)
+                </Text>
+                <Text style={[styles.witnessContact, { color: colors.textMuted }]}>
+                  Wilayah: Kel. {t.village || 'Dago'}, Kec. {t.district}
+                </Text>
+              </View>
+              <Pill
+                label={t.status === 'done' ? 'Selesai' : t.status === 'in_progress' ? 'Penghitungan' : 'Pemungutan'}
+                tone={t.status === 'done' ? 'success' : t.status === 'in_progress' ? 'info' : 'warning'}
+              />
+            </Pressable>
+          ))}
         </Card>
       </ScrollView>
     );
