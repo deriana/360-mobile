@@ -436,11 +436,11 @@ export default function DashboardScreen({ navigation }: any) {
         onPress: () => navigation.navigate('WitnessList'),
       },
       {
-        id: 'pimpinan',
+        id: 'insights',
         icon: 'trending-up',
-        title: 'Dashboard Pimpinan',
-        subtitle: 'Analisis Suara & Ranking',
-        onPress: () => navigation.navigate('Leadership'),
+        title: 'Pemantauan TPS',
+        subtitle: 'Analisis & Progres Suara',
+        onPress: () => navigation.navigate('Insights'),
       },
       {
         id: 'broadcast',

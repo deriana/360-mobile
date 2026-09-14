@@ -116,6 +116,19 @@ export default function ReportFormScreen({ route, navigation }: any) {
       Alert.alert('Lengkapi Dokumen', 'Unggah foto formulir C1 Plano dan foto lokasi TPS sebelum submit.');
       return;
     }
+
+    const candidateVotesSum = Object.values(candidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const partyVotesSum = Object.values(partyValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const dprVotesSum = Object.values(dprCandidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const totalSah = candidateVotesSum > 0 ? candidateVotesSum : (partyVotesSum > 0 ? partyVotesSum : dprVotesSum);
+    const totalTidakSah = Number(invalidVotes) || 0;
+    const pemilihHadir = Number(votersPresent) || 0;
+
+    if (totalSah + totalTidakSah !== pemilihHadir) {
+      Alert.alert('Data Tidak Valid', 'Data tidak valid: Total suara (Sah + Tidak Sah) tidak sama dengan jumlah Pemilih Hadir.');
+      return;
+    }
+
     const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     if (pickedReal.formPhoto) {
       addDocumentationPhoto(activeRecord.id, { source: uploads.formPhoto, takenAt: `${now} WIB — Foto Formulir C1 Plano` });
@@ -124,12 +137,12 @@ export default function ReportFormScreen({ route, navigation }: any) {
       addDocumentationPhoto(activeRecord.id, { source: uploads.tpsPhoto, takenAt: `${now} WIB — Foto Papan Perhitungan TPS` });
     }
     submitTpsReport(activeRecord.id, {
-      votersPresent: Number(votersPresent) || 0,
+      votersPresent: pemilihHadir,
       votes: {
         partyVotes: Object.fromEntries(partyNames.map((p) => [p, Number(partyValues[p]) || 0])),
         candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, Number(candidateValues[c]) || 0])),
         dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, Number(dprCandidateValues[c]) || 0])),
-        invalidVotes: Number(invalidVotes) || 0,
+        invalidVotes: totalTidakSah,
       },
       status: 'done',
     });

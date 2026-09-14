@@ -8,7 +8,6 @@ import { iconStrokeWidth, useTheme } from '../theme';
 import { buildDetailStack } from './DetailStack';
 
 import DashboardScreen from '../screens/DashboardScreen';
-import CommandCenterScreen from '../screens/CommandCenterScreen';
 import WitnessListScreen from '../screens/WitnessListScreen';
 import MoreMenuScreen from '../screens/MoreMenuScreen';
 import WitnessHomeScreen from '../screens/WitnessHomeScreen';
@@ -24,7 +23,6 @@ const Tab = createBottomTabNavigator<any>();
 
 const DashboardStack = buildDetailStack('Dashboard', DashboardScreen, 'Dashboard');
 const SupervisionStack = buildDetailStack('Supervision', SupervisionScreen, 'Pengawasan TPS');
-const CommandCenterStack = buildDetailStack('CommandCenter', CommandCenterScreen, 'Command Center');
 const WitnessesStack = buildDetailStack('WitnessList', WitnessListScreen, 'Saksi');
 const MoreStack = buildDetailStack('MoreMenu', MoreMenuScreen, 'Lainnya');
 

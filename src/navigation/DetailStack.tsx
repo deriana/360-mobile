@@ -25,7 +25,6 @@ import EmergencyListScreen from '../screens/EmergencyListScreen';
 import EmergencyFormScreen from '../screens/EmergencyFormScreen';
 import BroadcastScreen from '../screens/BroadcastScreen';
 import PaymentScreen from '../screens/PaymentScreen';
-import LeadershipScreen from '../screens/LeadershipScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import InsightsScreen from '../screens/InsightsScreen';
 import SecurityScreen from '../screens/SecurityScreen';
@@ -65,7 +64,6 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'EmergencyForm', component: EmergencyFormScreen, title: 'Lapor Kejadian' },
   { name: 'Broadcast', component: BroadcastScreen, title: 'Broadcast' },
   { name: 'Payment', component: PaymentScreen, title: 'Honorarium' },
-  { name: 'Leadership', component: LeadershipScreen, title: 'Dashboard Pimpinan' },
   { name: 'Insights', component: InsightsScreen, title: 'Pemantauan TPS' },
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
   { name: 'HelpCenter', component: HelpCenterScreen, title: 'Pusat Bantuan' },
