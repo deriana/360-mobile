@@ -49,6 +49,23 @@ export interface Witness {
   checkInLocation: string | null;
   checkInLat: number | null;
   checkInLng: number | null;
+  distanceMeters?: number | null;
+  overrideNote?: string | null;
+  insideGeofence?: boolean | null;
+}
+
+export interface CheckInPayload {
+  witnessId: string;
+  tpsId: string;
+  lat: number;
+  lng: number;
+  distanceMeters: number;
+  insideGeofence: boolean;
+  overrideNote?: string;
+  selfieUrl: string;
+  photoSizeBytes?: number;
+  timestamp: string;
+  locationLabel?: string;
 }
 
 export interface Coordinator {
@@ -139,6 +156,9 @@ export interface TpsDocPhoto {
   id: string;
   source: any;
   takenAt: string;
+  watermark?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface Region {

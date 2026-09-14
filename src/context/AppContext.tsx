@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import {
   tpsList as initialTps,
   witnesses as initialWitnesses,
@@ -53,7 +53,17 @@ interface AppContextValue {
   getDocumentation: (tpsId: string) => TpsDocPhoto[];
   addDocumentationPhoto: (tpsId: string, photo: Omit<TpsDocPhoto, 'id'>) => void;
   removeDocumentationPhoto: (tpsId: string, photoId: string) => void;
-  checkInWitness: (witnessId: string, override?: { lat: number; lng: number; locationLabel?: string }) => void;
+  checkInWitness: (
+    witnessId: string,
+    override?: {
+      lat: number;
+      lng: number;
+      locationLabel?: string;
+      distanceMeters?: number;
+      overrideNote?: string;
+      insideGeofence?: boolean;
+    },
+  ) => void;
   submitTpsReport: (
     tpsId: string,
     payload: { votersPresent: number; votes: VoteCounts; status: TpsStatus },
@@ -86,7 +96,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     checkNetworkIsOnline().then(setIsOnline);
     getUnsyncedQueueCount().then(setUnsyncedQueueCount);
 
-    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+    const unsubscribeNetInfo = NetInfo.addEventListener((state: NetInfoState) => {
       const online = Boolean(state.isConnected && state.isInternetReachable !== false);
       setIsOnline(online);
     });
@@ -133,6 +143,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             (tpsRecord ? `Dekat ${tpsRecord.district}, ${tpsRecord.regency}` : 'Lokasi tidak diketahui'),
           checkInLat: override?.lat ?? tpsRecord?.lat ?? null,
           checkInLng: override?.lng ?? tpsRecord?.lng ?? null,
+          distanceMeters: override?.distanceMeters ?? null,
+          overrideNote: override?.overrideNote ?? null,
+          insideGeofence: override?.insideGeofence ?? true,
         };
       }),
     );

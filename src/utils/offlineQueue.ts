@@ -3,7 +3,7 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
 export interface QueuedItem {
   id: string;
-  type: 'c1_report' | 'check_in' | 'emergency_report';
+  type: 'c1_report' | 'check_in' | 'emergency_report' | 'quick_tally';
   payload: any;
   createdAt: string;
   synced: boolean;

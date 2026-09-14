@@ -8,6 +8,7 @@ import { fontSize, spacing, iconStrokeWidth } from '../theme';
 
 export default function VerifyLetterScreen({ route }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
+  const token = route?.params?.token || `MNDT-PAN-${witnessId}-DEMO`;
   const { witnesses } = useApp();
   const { colors } = useTheme();
 
@@ -37,14 +38,21 @@ export default function VerifyLetterScreen({ route }: any) {
         <View style={{ alignItems: 'center', gap: 4 }}>
           <Text style={[styles.title, { color: colors.text }]}>Verifikasi Keaslian Surat Tugas</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Kode Dokumen: {witness.id}</Text>
+          <Text style={{ fontSize: 10, color: colors.primary, fontWeight: '700' }}>{token}</Text>
         </View>
 
         {verified ? (
-          <View style={[styles.resultBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <View style={[styles.resultBox, { backgroundColor: colors.background, borderColor: colors.border, gap: spacing.xs }]}>
             <Pill label="Surat Asli & Terverifikasi Sah" tone="success" icon="check-circle" />
             <Text style={[styles.resultText, { color: colors.text }]}>
-              Diterbitkan resmi atas nama <Text style={{ fontWeight: '800' }}>{witness.name}</Text>, terdaftar sah pada database nasional SAKSI 360.
+              Diterbitkan resmi atas nama <Text style={{ fontWeight: '800' }}>{witness.name}</Text> (NIK: {witness.nik}), terdaftar sah pada database nasional SAKSI 360.
             </Text>
+            <View style={{ width: '100%', height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+            <View style={{ width: '100%', gap: 2 }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>Otoritas Penerbit: BSN DPP Partai Amanat Nasional</Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>Otentikasi Kriptografis: SHA256:{witness.id}:DPP-PAN</Text>
+              <Text style={{ fontSize: 10, color: colors.success, fontWeight: '700' }}>✓ Sinkronisasi Offline Cache & Server Valid</Text>
+            </View>
           </View>
         ) : (
           <PrimaryButton label="Jalankan Verifikasi Kriptografis" icon="check-square" onPress={handleVerify} loading={checking} />

@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, Modal, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, EmptyState, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
+import { generateWatermarkText } from '../utils/watermark';
 
 export default function DocumentationScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const { tps, getDocumentation, addDocumentationPhoto, removeDocumentationPhoto } = useApp();
   const tpsId = route?.params?.tpsId;
-  const [previewSource, setPreviewSource] = useState<any>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<any>(null);
 
   const record = tps.find((t) => t.id === tpsId);
   const photos = tpsId ? getDocumentation(tpsId) : [];
@@ -20,9 +22,35 @@ export default function DocumentationScreen({ route, navigation }: any) {
     if (!tpsId) return;
     const uri = await pickImage(pickSource);
     if (!uri) return;
+
+    let lat = record?.lat ?? -6.8833;
+    let lng = record?.lng ?? 107.6167;
+    try {
+      const loc = await Location.getLastKnownPositionAsync({});
+      if (loc) {
+        lat = loc.coords.latitude;
+        lng = loc.coords.longitude;
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    const watermark = generateWatermarkText({
+      tpsId: record?.id,
+      tpsNumber: record?.tpsNumber,
+      village: record?.village ?? 'DAGO',
+      district: record?.district ?? 'Coblong',
+      regency: record?.regency ?? 'Kota Bandung',
+      lat,
+      lng,
+    });
+
     addDocumentationPhoto(tpsId, {
       source: { uri },
-      takenAt: `${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB — Foto Lapangan`,
+      takenAt: `${watermark.timestampWib} — Foto Lapangan`,
+      watermark: watermark.watermarkText,
+      lat,
+      lng,
     });
   };
 
@@ -72,11 +100,13 @@ export default function DocumentationScreen({ route, navigation }: any) {
           <View style={styles.grid}>
             {photos.map((photo) => (
               <View key={photo.id} style={styles.gridItemWrap}>
-                <Pressable onPress={() => setPreviewSource(photo.source)} style={styles.gridImagePressable}>
+                <Pressable onPress={() => setPreviewPhoto(photo)} style={styles.gridImagePressable}>
                   <Image source={photo.source} style={styles.gridImage} resizeMode="cover" />
                 </Pressable>
                 <View style={styles.timeBadge} pointerEvents="none">
-                  <Text style={styles.timeBadgeText}>{photo.takenAt}</Text>
+                  <Text style={styles.timeBadgeText} numberOfLines={1}>
+                    {photo.watermark ? '🔒 Watermark PAN' : photo.takenAt}
+                  </Text>
                 </View>
                 <Pressable
                   onPress={() => removePhoto(photo.id)}
@@ -98,10 +128,40 @@ export default function DocumentationScreen({ route, navigation }: any) {
         disabled={photos.length === 0}
       />
 
-      <Modal visible={!!previewSource} onClose={() => setPreviewSource(null)} variant="floating" title="Pratinjau Foto">
-        {previewSource && (
-          <View style={styles.previewImageWrap}>
-            <Image source={previewSource} style={styles.previewImage} resizeMode="contain" />
+      <Modal visible={!!previewPhoto} onClose={() => setPreviewPhoto(null)} variant="floating" title="Pratinjau Foto & Watermark">
+        {previewPhoto && (
+          <View style={{ gap: spacing.sm }}>
+            <View style={styles.previewImageWrap}>
+              <Image source={previewPhoto.source} style={styles.previewImage} resizeMode="contain" />
+            </View>
+
+            {/* Official Watermark Stamping Badge */}
+            <View
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: radius.md,
+                padding: spacing.sm,
+                gap: 4,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="shield" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.primary }}>
+                    PAN BSN • Autentikasi Bukti Fisik
+                  </Text>
+                </View>
+                <Pill label="Stempel Sah" tone="success" icon="check" />
+              </View>
+              <Text style={{ fontSize: 10, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: colors.text }}>
+                {previewPhoto.watermark ?? `[PAN BSN - TPS ${record?.tpsNumber ?? '001'} - ${previewPhoto.takenAt}]`}
+              </Text>
+              <Text style={{ fontSize: 9, color: colors.textMuted }}>
+                Waktu Rekam: {previewPhoto.takenAt}
+              </Text>
+            </View>
           </View>
         )}
       </Modal>

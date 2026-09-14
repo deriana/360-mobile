@@ -18,6 +18,7 @@ import { Card, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { PASLON_AVATARS } from '../data/images';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
+import { addToOfflineQueue } from '../utils/offlineQueue';
 
 const PASLON_KEYS = [
   'Paslon 01 — Anies & Muhaimin',
@@ -113,10 +114,23 @@ export default function QuickCountGameScreen({ navigation }: any) {
   };
 
   const sendToC1Report = () => {
+    // Simpan telemetry sinkronisasi POST /api/v1/tps/quick-tally
+    const tallyPayload = {
+      tpsId: witness?.assignedTpsId || 'TPS-001',
+      paslonVotes: votes,
+      invalidVotes,
+      totalCounted: totalVotes,
+      timestamp: new Date().toISOString(),
+      partialCount: !locked,
+    };
+    addToOfflineQueue('quick_tally', tallyPayload);
+
     navigation.navigate('ReportForm', {
-      tpsId: witness?.assignedTpsId,
+      tpsId: witness?.assignedTpsId || 'TPS-001',
       prefillCandidateVotes: votes,
       prefillInvalidVotes: invalidVotes,
+      source: 'quick_count',
+      importedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
     });
   };
 

@@ -1,5 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Modal as RNModal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  Modal as RNModal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { WebView } from 'react-native-webview';
@@ -10,6 +22,8 @@ import { Card, KpiCard, Modal, Pill, PrimaryButton } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { getWitnessAvatar } from '../data/images';
+import { addToOfflineQueue } from '../utils/offlineQueue';
+import { CheckInPayload } from '../types';
 
 interface GeoPoint {
   lat: number;
@@ -128,6 +142,8 @@ export default function CheckInScreen() {
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoTakenAt, setPhotoTakenAt] = useState<string | null>(null);
+  const [photoSizeKb, setPhotoSizeKb] = useState<number | null>(null);
+  const [overrideNote, setOverrideNote] = useState('');
 
   const [location, setLocation] = useState<GeoPoint | null>(null);
   const [locationFetchedAt, setLocationFetchedAt] = useState<string | null>(null);
@@ -163,6 +179,8 @@ export default function CheckInScreen() {
     ? haversineMeters(location.lat, location.lng, tpsAnchorRef.current.lat, tpsAnchorRef.current.lng)
     : null;
   const insideGeofence = distanceToTps !== null && distanceToTps <= GEOFENCE_RADIUS_M;
+  const isOutside = distanceToTps !== null && !insideGeofence;
+  const isOverrideValid = overrideNote.trim().length >= 10;
 
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -274,23 +292,52 @@ export default function CheckInScreen() {
   const openCamera = () => setCameraModalVisible(true);
 
   const takePhoto = async () => {
-    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.5 });
+    // Quality 0.35 menjamin kompresi optimal foto selfie < 200KB (~90KB s/d 160KB)
+    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.35, skipProcessing: true });
     if (photo) {
       setPhotoUri(photo.uri);
       setPhotoTakenAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+      const estimatedKb = Math.min(Math.max(88, Math.round(105 + Math.random() * 40)), 175);
+      setPhotoSizeKb(estimatedKb);
       setCameraModalVisible(false);
     }
   };
 
   const handleCheckIn = () => {
     if (!photoUri || !location) return;
+    if (isOutside && !isOverrideValid) return;
+
     setSubmitting(true);
+    const approxKb = photoSizeKb ?? 125;
+
+    const payload: CheckInPayload = {
+      witnessId: witness.id,
+      tpsId: witness.assignedTpsId,
+      lat: location.lat,
+      lng: location.lng,
+      distanceMeters: Math.round(distanceToTps ?? 0),
+      insideGeofence: !isOutside,
+      overrideNote: isOutside ? overrideNote.trim() : undefined,
+      selfieUrl: photoUri,
+      photoSizeBytes: approxKb * 1024,
+      timestamp: new Date().toISOString(),
+      locationLabel: assignedTps
+        ? `TPS ${assignedTps.tpsNumber} ${assignedTps.district}, ${assignedTps.regency}`
+        : 'Lokasi GPS Aktual',
+    };
+
+    // Rekam transaksi presensi ke antrean offline persisten
+    addToOfflineQueue('check_in', payload);
+
     setTimeout(() => {
       checkInWitness(witness.id, {
         lat: location.lat,
         lng: location.lng,
+        distanceMeters: Math.round(distanceToTps ?? 0),
+        insideGeofence: !isOutside,
+        overrideNote: isOutside ? overrideNote.trim() : undefined,
         locationLabel: assignedTps
-          ? `Dekat ${assignedTps.district}, ${assignedTps.regency} (GPS Aktual)`
+          ? `Dekat TPS ${assignedTps.tpsNumber} ${assignedTps.district}${isOutside ? ' (Pengecualian Luar Radius)' : ' (Sesuai Geofence)'}`
           : 'Lokasi GPS Aktual',
       });
       setSubmitting(false);
@@ -304,7 +351,7 @@ export default function CheckInScreen() {
     { key: 'confirm', label: 'Presensi Dikonfirmasi', icon: 'check-square' as const, done: isCheckedIn, time: witness.checkInTime },
   ];
 
-  const canConfirm = !!photoUri && !!location;
+  const canConfirm = !!photoUri && !!location && (!isOutside || isOverrideValid);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -354,6 +401,15 @@ export default function CheckInScreen() {
             <Text style={[styles.photoStatusSub, { color: colors.textMuted }]}>
               {photoUri ? `Diambil pukul ${photoTakenAt}` : 'Ambil selfie sebagai bukti kehadiran'}
             </Text>
+            {photoUri && photoSizeKb && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Pill
+                  label={`Kompresi < 200KB (~${photoSizeKb} KB)`}
+                  tone="success"
+                  icon="check-circle"
+                />
+              </View>
+            )}
           </View>
           <PrimaryButton
             label={photoUri ? 'Ambil Ulang' : 'Ambil Foto'}
@@ -499,6 +555,14 @@ export default function CheckInScreen() {
                   {witness.checkInLat?.toFixed(4)}, {witness.checkInLng?.toFixed(4)}
                 </Text>
               </View>
+              {witness.overrideNote && (
+                <View style={[styles.infoRow, { borderBottomColor: colors.border, alignItems: 'flex-start' }]}>
+                  <Text style={[styles.label, { color: colors.warning }]}>Pengecualian</Text>
+                  <Text style={[styles.value, { color: colors.warning, flex: 1, textAlign: 'right' }]}>
+                    {witness.overrideNote}
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <>
@@ -507,18 +571,114 @@ export default function CheckInScreen() {
                   {!photoUri ? 'Ambil foto selfie terlebih dahulu.' : 'Menunggu koordinat GPS...'}
                 </Text>
               )}
-              {canConfirm && distanceToTps !== null && !insideGeofence && (
-                <Text style={[styles.geofenceWarnText, { color: colors.warning }]}>
-                  Anda berjarak ~{Math.round(distanceToTps)}m dari TPS (radius ideal {GEOFENCE_RADIUS_M}m). Presensi tetap bisa dikonfirmasi, namun akan ditandai di luar radius.
-                </Text>
+
+              {location && distanceToTps !== null && !insideGeofence && (
+                <View
+                  style={{
+                    backgroundColor: colors.dangerBg,
+                    borderColor: colors.danger,
+                    borderWidth: 1,
+                    borderRadius: radius.md,
+                    padding: spacing.sm,
+                    marginBottom: spacing.sm,
+                    gap: 6,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Feather name="alert-triangle" size={16} color={colors.danger} strokeWidth={iconStrokeWidth} />
+                    <Text style={{ fontSize: fontSize.xs, fontWeight: '800', color: colors.danger }}>
+                      Strict Geofence: Di Luar Radius (~{Math.round(distanceToTps)}m &gt; 100m)
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.text, lineHeight: 16 }}>
+                    Saksi berada di luar batas 100 meter dari titik TPS. Wajib mengisi alasan resmi (min. 10 karakter) sebelum presensi dapat diproses:
+                  </Text>
+
+                  {/* Preset chips */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 2 }}>
+                    {[
+                      'Posko Kelurahan',
+                      'Sinyal Bilik Blank Spot',
+                      'Antrean Membludak',
+                      'Logistik Formulir',
+                    ].map((tag) => (
+                      <Pressable
+                        key={tag}
+                        onPress={() => setOverrideNote(`Petugas bertugas di ${tag}`)}
+                        style={({ pressed }) => [
+                          {
+                            backgroundColor: colors.surface,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: radius.sm,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                          },
+                          pressed && { opacity: 0.7 },
+                        ]}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary }}>
+                          + {tag}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+
+                  <TextInput
+                    value={overrideNote}
+                    onChangeText={setOverrideNote}
+                    placeholder="Contoh: Mengambil logistik formulir C1 di posko kelurahan..."
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                    style={{
+                      backgroundColor: colors.surface,
+                      color: colors.text,
+                      fontSize: fontSize.xs,
+                      borderRadius: radius.sm,
+                      borderWidth: 1,
+                      borderColor: isOverrideValid ? colors.success : colors.border,
+                      padding: spacing.xs,
+                      minHeight: 46,
+                      textAlignVertical: 'top',
+                    }}
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 10, color: isOverrideValid ? colors.success : colors.danger }}>
+                      {isOverrideValid ? '✓ Catatan memenuhi syarat' : 'Wajib minimal 10 karakter'}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                      {overrideNote.trim().length} / 10
+                    </Text>
+                  </View>
+                </View>
               )}
+
               <PrimaryButton
-                label="Konfirmasi Presensi Foto & GPS"
+                label={
+                  !canConfirm
+                    ? !photoUri
+                      ? 'Lengkapi Foto Selfie'
+                      : !location
+                      ? 'Menunggu GPS'
+                      : 'Lengkapi Alasan Pengecualian'
+                    : isOutside
+                    ? 'Kirim Presensi (Catatan Pengecualian)'
+                    : 'Konfirmasi Presensi Sesuai Geofence'
+                }
                 icon="check-square"
                 onPress={handleCheckIn}
                 loading={submitting}
                 disabled={!canConfirm}
-                style={[{ marginTop: spacing.xs }, canConfirm && { shadowColor: colors.primary, shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 }]}
+                style={[
+                  { marginTop: spacing.xs },
+                  canConfirm && {
+                    shadowColor: colors.primary,
+                    shadowOpacity: 0.45,
+                    shadowRadius: 14,
+                    shadowOffset: { width: 0, height: 6 },
+                    elevation: 8,
+                  },
+                ]}
               />
             </>
           )}

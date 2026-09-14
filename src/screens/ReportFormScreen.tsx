@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +10,8 @@ import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
+import { generateWatermarkText } from '../utils/watermark';
+import { addToOfflineQueue } from '../utils/offlineQueue';
 import { Tps } from '../types';
 
 type MainViewMode = 'history' | 'form';
@@ -63,10 +66,37 @@ export default function ReportFormScreen({ route, navigation }: any) {
     tpsVideo: false,
   });
   const [isEditing, setIsEditing] = useState(false);
-  // Tracks which uploads are real user-picked photos (vs the stock placeholder
-  // shown for already-submitted TPS) — only real ones get carried into
-  // TPS documentation on submit.
+  // Tracks which uploads are real user-picked photos
   const [pickedReal, setPickedReal] = useState<{ formPhoto: boolean; tpsPhoto: boolean }>({ formPhoto: false, tpsPhoto: false });
+  const [photoWatermarks, setPhotoWatermarks] = useState<{ formPhoto?: string; tpsPhoto?: string }>({});
+  const [importedNotice, setImportedNotice] = useState<string | null>(null);
+
+  // Reaktif terhadap incoming prefill dari QuickCount
+  useEffect(() => {
+    if (route?.params?.prefillCandidateVotes) {
+      setViewMode('form');
+      setEntryCategory('pilpres');
+      if (route.params.tpsId) {
+        setSelectedTpsId(route.params.tpsId);
+      }
+      const incoming = route.params.prefillCandidateVotes;
+      setCandidateValues((prev) => ({
+        ...prev,
+        ...Object.fromEntries(
+          Object.entries(incoming).map(([k, v]) => [k, String(v ?? 0)])
+        ),
+      }));
+      if (route.params.prefillInvalidVotes !== undefined) {
+        setInvalidVotes(String(route.params.prefillInvalidVotes));
+      }
+
+      const totalValid = Object.values(incoming).reduce((sum: number, val: any) => sum + Number(val || 0), 0);
+      const totalCounted = totalValid + Number(route.params.prefillInvalidVotes || 0);
+      setVotersPresent((curr) => (!curr || curr === '0' ? String(totalCounted) : curr));
+
+      setImportedNotice(`Data hasil Hitung Cepat Bilik Suara (${totalCounted} suara) berhasil diimpor otomatis!`);
+    }
+  }, [route?.params?.prefillCandidateVotes, route?.params?.prefillInvalidVotes, route?.params?.tpsId]);
 
   // Load a specific TPS into the editor form
   const handleSelectTpsForEdit = (targetTps: Tps) => {
@@ -106,8 +136,75 @@ export default function ReportFormScreen({ route, navigation }: any) {
   const handlePickUpload = async (key: 'formPhoto' | 'tpsPhoto', source: 'camera' | 'library') => {
     const uri = await pickImage(source);
     if (!uri) return;
+
+    let lat = activeRecord?.lat ?? -6.8833;
+    let lng = activeRecord?.lng ?? 107.6167;
+    try {
+      const loc = await Location.getLastKnownPositionAsync({});
+      if (loc) {
+        lat = loc.coords.latitude;
+        lng = loc.coords.longitude;
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    const watermark = generateWatermarkText({
+      tpsId: activeRecord?.id,
+      tpsNumber: activeRecord?.tpsNumber,
+      village: activeRecord?.village ?? 'DAGO',
+      district: activeRecord?.district ?? 'Coblong',
+      regency: activeRecord?.regency ?? 'Kota Bandung',
+      lat,
+      lng,
+    });
+
     setUploads((prev) => ({ ...prev, [key]: { uri } }));
     setPickedReal((prev) => ({ ...prev, [key]: true }));
+    setPhotoWatermarks((prev) => ({ ...prev, [key]: watermark.watermarkText }));
+  };
+
+  const executeSaveReport = (pemilihHadir: number, totalTidakSah: number) => {
+    if (!activeRecord) return;
+    const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    if (pickedReal.formPhoto) {
+      addDocumentationPhoto(activeRecord.id, {
+        source: uploads.formPhoto,
+        takenAt: `${now} WIB — Foto Formulir C1 Plano`,
+        watermark: photoWatermarks.formPhoto,
+      });
+    }
+    if (pickedReal.tpsPhoto) {
+      addDocumentationPhoto(activeRecord.id, {
+        source: uploads.tpsPhoto,
+        takenAt: `${now} WIB — Foto Papan Perhitungan TPS`,
+        watermark: photoWatermarks.tpsPhoto,
+      });
+    }
+
+    const reportPayload = {
+      tpsId: activeRecord.id,
+      votersPresent: pemilihHadir,
+      votes: {
+        partyVotes: Object.fromEntries(partyNames.map((p) => [p, Number(partyValues[p]) || 0])),
+        candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, Number(candidateValues[c]) || 0])),
+        dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, Number(dprCandidateValues[c]) || 0])),
+        invalidVotes: totalTidakSah,
+      },
+      watermark: photoWatermarks.formPhoto,
+      timestamp: new Date().toISOString(),
+      status: 'done' as const,
+    };
+
+    addToOfflineQueue('c1_report', reportPayload);
+    submitTpsReport(activeRecord.id, reportPayload);
+
+    Alert.alert(
+      'Laporan Berhasil Disimpan',
+      `Data perolehan suara C1 untuk ${activeRecord.id} telah tersimpan dan dicatat dalam antrean sinkronisasi server.`,
+      [{ text: 'Lihat Riwayat Laporan', onPress: () => setViewMode('history') }],
+    );
   };
 
   const handleSubmitForm = () => {
@@ -120,38 +217,31 @@ export default function ReportFormScreen({ route, navigation }: any) {
     const candidateVotesSum = Object.values(candidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
     const partyVotesSum = Object.values(partyValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
     const dprVotesSum = Object.values(dprCandidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
-    const totalSah = candidateVotesSum > 0 ? candidateVotesSum : (partyVotesSum > 0 ? partyVotesSum : dprVotesSum);
+    const currentCategorySah =
+      entryCategory === 'pilpres'
+        ? candidateVotesSum
+        : entryCategory === 'dpr'
+        ? dprVotesSum
+        : partyVotesSum;
+
     const totalTidakSah = Number(invalidVotes) || 0;
     const pemilihHadir = Number(votersPresent) || 0;
+    const totalSuara = currentCategorySah + totalTidakSah;
 
-    if (totalSah + totalTidakSah !== pemilihHadir) {
-      Alert.alert('Data Tidak Valid', 'Data tidak valid: Total suara (Sah + Tidak Sah) tidak sama dengan jumlah Pemilih Hadir.');
+    if (pemilihHadir > 0 && totalSuara !== pemilihHadir) {
+      const selisih = Math.abs(totalSuara - pemilihHadir);
+      Alert.alert(
+        'Peringatan Disparitas Suara',
+        `Total suara (${totalSuara}) tidak sama dengan Pemilih Hadir (${pemilihHadir}). Terjadi selisih ${selisih} suara.\n\nApakah Anda ingin tetap mengirimkan laporan C1 ini sesuai catatan selisih dari KPPS?`,
+        [
+          { text: 'Periksa Kembali', style: 'cancel' },
+          { text: 'Tetap Kirim (Ada Selisih KPPS)', style: 'destructive', onPress: () => executeSaveReport(pemilihHadir, totalTidakSah) },
+        ],
+      );
       return;
     }
 
-    const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    if (pickedReal.formPhoto) {
-      addDocumentationPhoto(activeRecord.id, { source: uploads.formPhoto, takenAt: `${now} WIB — Foto Formulir C1 Plano` });
-    }
-    if (pickedReal.tpsPhoto) {
-      addDocumentationPhoto(activeRecord.id, { source: uploads.tpsPhoto, takenAt: `${now} WIB — Foto Papan Perhitungan TPS` });
-    }
-    submitTpsReport(activeRecord.id, {
-      votersPresent: pemilihHadir,
-      votes: {
-        partyVotes: Object.fromEntries(partyNames.map((p) => [p, Number(partyValues[p]) || 0])),
-        candidateVotes: Object.fromEntries(candidateNames.map((c) => [c, Number(candidateValues[c]) || 0])),
-        dprCandidateVotes: Object.fromEntries(dprCandidates.map((c) => [c, Number(dprCandidateValues[c]) || 0])),
-        invalidVotes: totalTidakSah,
-      },
-      status: 'done',
-    });
-
-    Alert.alert(
-      'Laporan Berhasil Disimpan',
-      `Data perolehan suara C1 untuk ${activeRecord.id} telah tersimpan dan diperbarui di server.`,
-      [{ text: 'Lihat Riwayat Laporan', onPress: () => setViewMode('history') }],
-    );
+    executeSaveReport(pemilihHadir, totalTidakSah);
   };
 
   const filteredHistory = scopedTps.filter((t) => {
@@ -389,6 +479,30 @@ export default function ReportFormScreen({ route, navigation }: any) {
               />
             ) : (
               <>
+                {importedNotice && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing.xs,
+                      backgroundColor: colors.primaryLight,
+                      borderColor: colors.primary,
+                      borderWidth: 1,
+                      borderRadius: radius.md,
+                      padding: spacing.sm,
+                      marginBottom: spacing.xs,
+                    }}
+                  >
+                    <Feather name="check-circle" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, fontSize: fontSize.xs, color: colors.primary, fontWeight: '700' }}>
+                      {importedNotice}
+                    </Text>
+                    <Pressable onPress={() => setImportedNotice(null)} hitSlop={8}>
+                      <Feather name="x" size={14} color={colors.primary} />
+                    </Pressable>
+                  </View>
+                )}
+
                 <PrimaryButton
                   label="Scan Otomatis Kamera Formulir C1 (OCR)"
                   icon="zap"
@@ -399,23 +513,73 @@ export default function ReportFormScreen({ route, navigation }: any) {
                 <Card style={{ gap: spacing.md }}>
                   <SectionTitle style={{ marginBottom: 0 }}>Data Kehadiran Pemilih</SectionTitle>
                   <Input label="Jumlah DPT Terdaftar" value={String(activeRecord.dpt)} editable={false} icon="users" />
-              <Input
-                label="Jumlah Pemilih Hadir"
-                value={votersPresent}
-                onChangeText={setVotersPresent}
-                keyboardType="numeric"
-                icon="user-check"
-                placeholder="Masukkan total pemilih hadir"
-              />
-              <Input
-                label="Jumlah Suara Tidak Sah"
-                value={invalidVotes}
-                onChangeText={setInvalidVotes}
-                keyboardType="numeric"
-                icon="x-circle"
-                placeholder="Masukkan jumlah suara tidak sah"
-              />
-            </Card>
+                  <Input
+                    label="Jumlah Pemilih Hadir"
+                    value={votersPresent}
+                    onChangeText={setVotersPresent}
+                    keyboardType="numeric"
+                    icon="user-check"
+                    placeholder="Masukkan total pemilih hadir"
+                  />
+                  <Input
+                    label="Jumlah Suara Tidak Sah"
+                    value={invalidVotes}
+                    onChangeText={setInvalidVotes}
+                    keyboardType="numeric"
+                    icon="x-circle"
+                    placeholder="Masukkan jumlah suara tidak sah"
+                  />
+                </Card>
+
+                {/* Live Mathematical Balance Indicator */}
+                {Number(votersPresent) > 0 && (() => {
+                  const candSum = Object.values(candidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+                  const prtSum = Object.values(partyValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+                  const dprSum = Object.values(dprCandidateValues).reduce((sum, v) => sum + (Number(v) || 0), 0);
+                  const activeSah = entryCategory === 'pilpres' ? candSum : entryCategory === 'dpr' ? dprSum : prtSum;
+                  const tdkSah = Number(invalidVotes) || 0;
+                  const hadir = Number(votersPresent) || 0;
+                  const totalMasuk = activeSah + tdkSah;
+                  const selisih = totalMasuk - hadir;
+                  const match = selisih === 0;
+
+                  return (
+                    <Card
+                      style={{
+                        gap: spacing.xs,
+                        backgroundColor: match ? colors.successBg : colors.dangerBg,
+                        borderColor: match ? colors.success : colors.danger,
+                        borderWidth: 1,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Feather
+                            name={match ? 'check-circle' : 'alert-triangle'}
+                            size={16}
+                            color={match ? colors.success : colors.danger}
+                            strokeWidth={2}
+                          />
+                          <Text style={{ fontSize: fontSize.xs, fontWeight: '800', color: match ? colors.success : colors.danger }}>
+                            {match
+                              ? 'Keseimbangan Suara: Akurat Sempurna'
+                              : `Disparitas Suara! Selisih ${Math.abs(selisih)} Suara`}
+                          </Text>
+                        </View>
+                        <Pill
+                          label={match ? 'Cocok (100%)' : selisih > 0 ? `+${selisih}` : `${selisih}`}
+                          tone={match ? 'success' : 'danger'}
+                        />
+                      </View>
+
+                      <Text style={{ fontSize: 11, color: colors.text, lineHeight: 16 }}>
+                        {match
+                          ? `Total suara masuk (${totalMasuk}) seimbang dengan Pemilih Hadir (${hadir}). Rincian: ${activeSah} Suara Sah (${entryCategory.toUpperCase()}) + ${tdkSah} Suara Tidak Sah.`
+                          : `Total suara masuk (${totalMasuk}) tidak sama dengan Pemilih Hadir (${hadir}). Rincian: ${activeSah} Suara Sah (${entryCategory.toUpperCase()}) + ${tdkSah} Tidak Sah. Selisih ${selisih > 0 ? `kelebihan +${selisih}` : `kekurangan ${selisih}`} suara.`}
+                      </Text>
+                    </Card>
+                  );
+                })()}
 
             {/* Category Tabs Selector */}
             <View style={{ gap: spacing.xs }}>
@@ -516,11 +680,13 @@ export default function ReportFormScreen({ route, navigation }: any) {
               <UploadRow
                 label="Foto Formulir C.Hasil Plano (Wajib)"
                 imageSource={uploads.formPhoto}
+                watermark={photoWatermarks.formPhoto}
                 onPick={(source) => handlePickUpload('formPhoto', source)}
               />
               <UploadRow
                 label="Foto Papan Perhitungan TPS (Wajib)"
                 imageSource={uploads.tpsPhoto}
+                watermark={photoWatermarks.tpsPhoto}
                 onPick={(source) => handlePickUpload('tpsPhoto', source)}
               />
               <UploadRow
@@ -620,12 +786,14 @@ export function UploadRow({
   onPick,
   done,
   onPress,
+  watermark,
 }: {
   label: string;
   imageSource?: any;
   onPick?: (source: 'camera' | 'library') => void;
   done?: boolean;
   onPress?: () => void;
+  watermark?: string;
 }) {
   const { colors } = useTheme();
 
@@ -633,19 +801,29 @@ export function UploadRow({
   if (onPick) {
     const isDone = !!imageSource;
     return (
-      <View style={[styles.uploadRow, { borderBottomColor: colors.border }]}>
-        {isDone ? (
-          <Image source={imageSource} style={styles.previewImage} />
-        ) : (
-          <View style={[styles.previewPlaceholder, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}>
-            <Feather name="image" size={16} color={colors.primary} />
+      <View style={{ gap: 4, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.xs }}>
+        <View style={[styles.uploadRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+          {isDone ? (
+            <Image source={imageSource} style={styles.previewImage} />
+          ) : (
+            <View style={[styles.previewPlaceholder, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}>
+              <Feather name="image" size={16} color={colors.primary} />
+            </View>
+          )}
+          <Text style={[styles.uploadLabel, { color: colors.text }]}>{label}</Text>
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <IconButton icon="camera" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('camera')} />
+            <IconButton icon="image" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('library')} />
+          </View>
+        </View>
+        {watermark && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 46 }}>
+            <Feather name="shield" size={10} color={colors.success} />
+            <Text style={{ fontSize: 9, color: colors.success, fontWeight: '700' }} numberOfLines={1}>
+              {watermark}
+            </Text>
           </View>
         )}
-        <Text style={[styles.uploadLabel, { color: colors.text }]}>{label}</Text>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          <IconButton icon="camera" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('camera')} />
-          <IconButton icon="image" tone={isDone ? 'neutral' : 'primary'} size={16} onPress={() => onPick('library')} />
-        </View>
       </View>
     );
   }

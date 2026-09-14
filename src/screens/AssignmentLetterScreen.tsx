@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -9,6 +9,11 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
+import {
+  CachedAssignmentLetter,
+  getCachedAssignmentLetter,
+  saveAssignmentLetterToCache,
+} from '../utils/letterCache';
 
 export default function AssignmentLetterScreen({ route, navigation }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
@@ -17,6 +22,8 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
 
   const witness = witnesses.find((w) => w.id === witnessId);
   const [downloading, setDownloading] = useState(false);
+  const [cachedData, setCachedData] = useState<CachedAssignmentLetter | null>(null);
+  const [isCached, setIsCached] = useState(false);
 
   if (!witness) {
     return <EmptyState title="Surat Tidak Ditemukan" body="Data penugasan ini tidak tersedia." icon="file-text" />;
@@ -68,12 +75,50 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
     }
   };
 
+  useEffect(() => {
+    async function initOfflineCache() {
+      if (!witness) return;
+      const existing = await getCachedAssignmentLetter(witness.id);
+      if (existing) {
+        setCachedData(existing);
+        setIsCached(true);
+      } else {
+        const token = `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`;
+        const snapshot: CachedAssignmentLetter = {
+          witnessId: witness.id,
+          letterNo,
+          witnessName: witness.name,
+          nik: witness.nik,
+          assignedTpsId: witness.assignedTpsId,
+          tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : '-',
+          province: assignedTps?.province ?? 'Jawa Barat',
+          verificationToken: token,
+          verifyUrl: `https://saksi360.pan.or.id/verify/${token}`,
+          digitalSealHash: `SHA256:${witness.id}:${witness.nik.slice(-4)}:DPP-PAN`,
+          cachedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+          isOfflineReady: true,
+        };
+        await saveAssignmentLetterToCache(snapshot);
+        setCachedData(snapshot);
+        setIsCached(true);
+      }
+    }
+    initOfflineCache();
+  }, [witness?.id]);
+
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <Card style={{ gap: spacing.sm }}>
         <View style={styles.headerBlock}>
           <Text style={[styles.docTitle, { color: colors.text }]}>SURAT TUGAS DIGITAL SAKSI</Text>
           <Text style={[styles.docSubtitle, { color: colors.textMuted }]}>{letterNo}</Text>
+          <View style={{ marginTop: 6 }}>
+            <Pill
+              label={isCached ? `Tersimpan Offline (${cachedData?.cachedAt})` : 'Sinkronisasi Surat...'}
+              tone="success"
+              icon="check-circle"
+            />
+          </View>
         </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -89,10 +134,15 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         <View style={styles.qrRow}>
-          <QrPlaceholder seed={witness.id} />
+          <QrPlaceholder seed={cachedData?.verificationToken ?? witness.id} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={[styles.qrLabel, { color: colors.textMuted }]}>Kode Otentikasi Digital</Text>
-            <Text style={[styles.qrCode, { color: colors.text }]}>{witness.id}-{letterNo.slice(-4)}</Text>
+            <Text style={[styles.qrCode, { color: colors.text }]} numberOfLines={1}>
+              {cachedData?.verificationToken ?? `${witness.id}-${letterNo.slice(-4)}`}
+            </Text>
+            <Text style={{ fontSize: 9, color: colors.textMuted }} numberOfLines={1}>
+              {cachedData?.verifyUrl ?? `https://saksi360.pan.or.id/verify/${witness.id}`}
+            </Text>
             <Pill label="Terverifikasi Resmi" tone="success" icon="check-circle" />
           </View>
         </View>
@@ -117,7 +167,12 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
           label="Verifikasi Keaslian Surat"
           icon="shield"
           variant="secondary"
-          onPress={() => navigation.navigate('VerifyLetter', { witnessId: witness.id })}
+          onPress={() =>
+            navigation.navigate('VerifyLetter', {
+              witnessId: witness.id,
+              token: cachedData?.verificationToken,
+            })
+          }
         />
       </View>
     </ScrollView>
