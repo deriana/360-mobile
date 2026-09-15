@@ -48,9 +48,7 @@
           "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk memotret dokumen."
         }
       ],
-      "expo-font",
-      "expo-sharing",
-      "expo-status-bar"
+      "expo-font"
     ]
   }
 }

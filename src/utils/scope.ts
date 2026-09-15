@@ -1,7 +1,22 @@
+import { Feather } from '@expo/vector-icons';
 import { Coordinator, Role, Tps, Witness } from '../types';
 
 export const CURRENT_WITNESS_ID = 'SAKSI-001';
 export const CURRENT_COORDINATOR_ID = 'COORD-1';
+
+export const ROLE_ICON: Record<Role, keyof typeof Feather.glyphMap> = {
+  DPP: 'flag',
+  DPW: 'globe',
+  DPD: 'map',
+  DPC: 'map-pin',
+  PAC: 'home',
+  TPS_COORDINATOR: 'users',
+  OPERATOR: 'settings',
+  TPS_WITNESS: 'eye',
+  RELAWAN: 'heart',
+  CALEG: 'award',
+  KADER_ANGGOTA: 'user-check',
+};
 
 // Each non-witness role is anchored to one mock home region/unit for this demo.
 export const ROLE_HOME: Record<Role, { province?: string; regency?: string; district?: string; coordinatorId?: string }> = {

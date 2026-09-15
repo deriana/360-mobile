@@ -1,41 +1,48 @@
 import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { PrimaryButton, Input, Card } from '../components/ui';
+import { PrimaryButton, Input } from '../components/ui';
+import { QuickLoginPicker, QuickLoginCategory } from '../components/QuickLoginPicker';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
-import { ACCOUNTS, CADRE_CANDIDATE_ACCOUNTS, MOBILE_FIELD_ACCOUNTS, PENGURUS_ACCOUNTS, findAccount } from '../data/accounts';
-import { ROLE_LABEL, ROLE_SCOPE_DESCRIPTION } from '../utils/scope';
+import { CADRE_CANDIDATE_ACCOUNTS, MOBILE_FIELD_ACCOUNTS, PENGURUS_ACCOUNTS, findAccount } from '../data/accounts';
+import { Role } from '../types';
 import { BRAND_ASSETS } from '../data/images';
 import RegisterMemberScreen from './RegisterMemberScreen';
 
+const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
+  { key: 'kader', label: 'Kader', fullLabel: 'Caleg & Kader', icon: 'award', accounts: CADRE_CANDIDATE_ACCOUNTS },
+  { key: 'saksi', label: 'Saksi', fullLabel: 'Saksi & Relawan', icon: 'shield', accounts: MOBILE_FIELD_ACCOUNTS },
+  { key: 'pengurus', label: 'Pengurus', fullLabel: 'Pengurus Wilayah', icon: 'briefcase', accounts: PENGURUS_ACCOUNTS },
+];
+
 export default function LoginScreen() {
   const { login } = useApp();
-  const { colors } = useTheme();
+  const { colors, shadow } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDemoAccounts, setShowDemoAccounts] = useState(true);
-  const [demoCategory, setDemoCategory] = useState<'saksi' | 'kader' | 'pengurus'>('kader');
   const [showRegisterScreen, setShowRegisterScreen] = useState(false);
 
   const handleSubmit = () => {
     const account = findAccount(email, password);
     if (!account) {
-      setError('Email atau kata sandi tidak cocok dengan akun demo manapun.');
+      setError('Email atau kata sandi yang dimasukkan belum terdaftar.');
       return;
     }
     setError(null);
     login(account.role);
   };
 
-  const fillDemoAccount = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
+  const handleQuickLogin = (role: Role) => {
     setError(null);
+    login(role);
   };
 
   if (showRegisterScreen) {
@@ -55,39 +62,32 @@ export default function LoginScreen() {
     );
   }
 
-  const currentCategoryAccounts =
-    demoCategory === 'saksi'
-      ? MOBILE_FIELD_ACCOUNTS
-      : demoCategory === 'kader'
-      ? CADRE_CANDIDATE_ACCOUNTS
-      : PENGURUS_ACCOUNTS;
-
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style="light" animated />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Brand Header — Modern Sleek simPAN Official */}
-        <View style={styles.brandBlock}>
-          <View style={[styles.logoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Image
-              source={BRAND_ASSETS.official}
-              style={styles.officialLogo}
-              resizeMode="contain"
-            />
+        {/* Hero — identitas brand di atas panel biru pekat */}
+        <View style={[styles.hero, { backgroundColor: colors.primaryDark, paddingTop: insets.top + spacing.lg }]}>
+          <View style={[styles.logoCard, { backgroundColor: colors.surface }]}>
+            <Image source={BRAND_ASSETS.official} style={styles.officialLogo} resizeMode="contain" />
           </View>
-          <Text style={[styles.brandTitle, { color: colors.text }]}>sim<Text style={{ color: colors.primary }}>PAN</Text></Text>
+          <Text style={[styles.brandTitle, { color: colors.textInverse }]}>
+            sim<Text style={{ color: colors.primaryLight }}>PAN</Text>
+          </Text>
           <View style={[styles.partyCapsule, { backgroundColor: colors.primaryLight }]}>
             <Text style={[styles.partyCapsuleText, { color: colors.primary }]}>PARTAI AMANAT NASIONAL</Text>
           </View>
-          <Text style={[styles.tagline, { color: colors.textMuted }]}>
+          <Text style={[styles.tagline, { color: colors.textInverse, opacity: 0.82 }]}>
             Sistem Informasi Manajemen Data & Pengawalan Pemilu
           </Text>
         </View>
 
-        <Card style={styles.card}>
-          <Text style={[styles.formTitle, { color: colors.text }]}>Masuk ke Akun simPAN</Text>
+        {/* Sheet — form kerja, menumpuk di atas hero */}
+        <View style={[styles.sheet, { backgroundColor: colors.surface }, shadow.card]}>
+          <Text style={[styles.formTitle, { color: colors.text }]}>Masuk ke simPAN</Text>
 
           {error && (
             <View style={[styles.errorBanner, { backgroundColor: colors.dangerBg }]}>
@@ -130,6 +130,12 @@ export default function LoginScreen() {
 
           <PrimaryButton label="Masuk Sekarang" icon="log-in" onPress={handleSubmit} style={{ marginTop: spacing.xs }} />
 
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textMuted }]}>atau</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
           {/* Tombol Pendaftaran Anggota AI Scan KTP */}
           <Pressable
             onPress={() => setShowRegisterScreen(true)}
@@ -151,90 +157,14 @@ export default function LoginScreen() {
             <Feather name="arrow-right" size={16} color={colors.primary} />
           </Pressable>
 
-          <Pressable
-            hitSlop={8}
-            style={styles.demoToggle}
-            onPress={() => setShowDemoAccounts((v) => !v)}
-          >
-            <Feather name="users" size={16} color={colors.primary} strokeWidth={iconStrokeWidth} />
-            <Text style={[styles.demoToggleText, { color: colors.primary }]}>
-              {showDemoAccounts ? 'Sembunyikan Akun Per Peran' : 'Pilih Akun Demo Per Peran (RBAC)'}
-            </Text>
-          </Pressable>
-
-          {showDemoAccounts && (
-            <View style={[styles.demoList, { borderTopColor: colors.border }]}>
-              {/* Category selector pills */}
-              <View style={styles.catTabRow}>
-                <Pressable
-                  onPress={() => setDemoCategory('kader')}
-                  style={[
-                    styles.catTab,
-                    { backgroundColor: demoCategory === 'kader' ? colors.primary : colors.background, borderColor: colors.border },
-                  ]}
-                >
-                  <Text style={[styles.catTabText, { color: demoCategory === 'kader' ? '#FFFFFF' : colors.text }]}>
-                    Caleg & Kader (2)
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setDemoCategory('saksi')}
-                  style={[
-                    styles.catTab,
-                    { backgroundColor: demoCategory === 'saksi' ? colors.primary : colors.background, borderColor: colors.border },
-                  ]}
-                >
-                  <Text style={[styles.catTabText, { color: demoCategory === 'saksi' ? '#FFFFFF' : colors.text }]}>
-                    Saksi & Relawan ({MOBILE_FIELD_ACCOUNTS.length})
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setDemoCategory('pengurus')}
-                  style={[
-                    styles.catTab,
-                    { backgroundColor: demoCategory === 'pengurus' ? colors.primary : colors.background, borderColor: colors.border },
-                  ]}
-                >
-                  <Text style={[styles.catTabText, { color: demoCategory === 'pengurus' ? '#FFFFFF' : colors.text }]}>
-                    Pengurus Wilayah (5)
-                  </Text>
-                </Pressable>
-              </View>
-
-              {currentCategoryAccounts.map((a) => (
-                <Pressable
-                  key={a.role}
-                  hitSlop={4}
-                  style={({ pressed }) => [
-                    styles.demoRow,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                    pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] },
-                  ]}
-                  onPress={() => fillDemoAccount(a.email, a.password)}
-                >
-                  <View style={styles.demoRoleIconWrap}>
-                    <Feather name="user-check" size={16} color={colors.primary} strokeWidth={iconStrokeWidth} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.demoRole, { color: colors.text }]}>{ROLE_LABEL[a.role]}</Text>
-                    <Text style={[styles.demoDesc, { color: colors.primary }]}>
-                      {ROLE_SCOPE_DESCRIPTION[a.role]}
-                    </Text>
-                    <Text style={[styles.demoCreds, { color: colors.textMuted }]}>
-                      {a.email} / {a.password}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-right" size={18} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </Card>
+          <QuickLoginPicker
+            categories={QUICK_LOGIN_CATEGORIES}
+            onSelectRole={handleQuickLogin}
+          />
+        </View>
 
         <Text style={[styles.footnote, { color: colors.textMuted }]}>
-          simPAN — Sistem Informasi Manajemen Data Partai Amanat Nasional. Seluruh akun demo & data wilayah bersifat simulasi.
+          simPAN — Sistem Informasi Manajemen Data Partai Amanat Nasional. Data pada versi ini bersifat simulasi.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -243,24 +173,30 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: spacing.xl, paddingTop: 48, paddingBottom: spacing.xxl + 40, gap: spacing.md },
-  brandBlock: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.sm, gap: 5 },
+  content: { flexGrow: 1, paddingBottom: spacing.xxl },
+  hero: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl + 12,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    gap: 6,
+  },
   logoCard: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0066B3',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowColor: '#00111F',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
     marginBottom: 4,
   },
   officialLogo: { width: 54, height: 78 },
-  brandTitle: { fontSize: 21, fontWeight: '900', letterSpacing: 0.8 },
+  brandTitle: { fontSize: 22, fontWeight: '900', letterSpacing: 0.8 },
   partyCapsule: {
     paddingHorizontal: 12,
     paddingVertical: 3,
@@ -272,7 +208,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   tagline: { fontSize: 12, textAlign: 'center', maxWidth: 300, lineHeight: 16 },
-  card: { gap: spacing.md },
+  sheet: {
+    marginTop: -24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 28,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
   formTitle: { fontSize: fontSize.lg, fontWeight: '800' },
   errorBanner: {
     flexDirection: 'row',
@@ -282,23 +226,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   errorText: { fontSize: fontSize.xs, flex: 1, fontWeight: '600' },
-  demoToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: spacing.xs },
-  demoToggleText: { fontSize: fontSize.xs, fontWeight: '700' },
-  demoList: { gap: spacing.sm, borderTopWidth: 1, paddingTop: spacing.md },
-  demoSectionTitle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  demoRow: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: spacing.md,
+    gap: 10,
   },
-  demoRoleIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' },
-  demoRole: { fontSize: fontSize.sm, fontWeight: '800' },
-  demoDesc: { fontSize: 11, fontWeight: '700', marginTop: 1 },
-  demoCreds: { fontSize: 11, marginTop: 2 },
-  footnote: { fontSize: fontSize.xs, textAlign: 'center' },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: fontSize.xs, fontWeight: '700' },
+  footnote: { fontSize: fontSize.xs, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.md },
   registerHeaderBar: {
     paddingTop: 48,
     paddingHorizontal: spacing.md,
@@ -322,7 +257,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    marginTop: 2,
   },
   registerBannerTitle: {
     fontSize: fontSize.xs,
@@ -331,22 +265,5 @@ const styles = StyleSheet.create({
   registerBannerSub: {
     fontSize: 10.5,
     marginTop: 1,
-  },
-  catTabRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: spacing.xs,
-  },
-  catTab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  catTabText: {
-    fontSize: 10,
-    fontWeight: '800',
   },
 });
