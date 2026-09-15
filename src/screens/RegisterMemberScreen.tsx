@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Image,
   ImageBackground,
@@ -15,7 +14,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { Card, Input, Pill, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, ConfirmDialog, Input, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
@@ -57,42 +56,55 @@ export default function RegisterMemberScreen({ navigation }: any) {
 
   // Generated KTA Data
   const [noKta, setNoKta] = useState('');
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+  }>({ visible: false, title: '', message: '' });
 
   // Scanning animation
   const scanAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!isScanning) return;
-    scanAnim.setValue(0);
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        Animated.timing(scanAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isScanning, scanAnim]);
+    if (isScanning) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      scanAnim.setValue(0);
+    }
+  }, [isScanning]);
 
   const handlePickPhoto = async (source: 'camera' | 'library') => {
     const uri = await pickImage(source);
     if (uri) {
       setPhotoUri(uri);
-      startOcrScan(uri);
+      processOcr(uri);
     }
   };
 
   const handleSimulateSample = () => {
     const sampleUri = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80';
     setPhotoUri(sampleUri);
-    startOcrScan(sampleUri);
+    processOcr(sampleUri);
   };
 
-  const startOcrScan = async (targetUri?: string) => {
-    const uri = targetUri || photoUri;
+  const processOcr = async (uri: string) => {
     setIsScanning(true);
     try {
-      const result = await scanKtpWithVisionAi(uri || 'sample_ktp.jpg');
+      const result = await scanKtpWithVisionAi(uri);
       if (result.nik) setNik(result.nik);
       if (result.nama) setNama(result.nama);
       if (result.tempatLahir) setTempatLahir(result.tempatLahir);
@@ -118,7 +130,12 @@ export default function RegisterMemberScreen({ navigation }: any) {
 
   const handleIssueKta = () => {
     if (!nik || !nama) {
-      Alert.alert('Data Belum Lengkap', 'Mohon lengkapi NIK dan Nama sebelum menerbitkan e-KTA.');
+      setDialogConfig({
+        visible: true,
+        title: 'Data Belum Lengkap',
+        message: 'Mohon lengkapi NIK dan Nama sebelum menerbitkan e-KTA.',
+        tone: 'warning',
+      });
       return;
     }
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -440,7 +457,14 @@ export default function RegisterMemberScreen({ navigation }: any) {
               <PrimaryButton
                 label="Unduh / Simpan e-KTA (PDF)"
                 icon="download"
-                onPress={() => Alert.alert('e-KTA Diunduh', `e-KTA dengan No. ${noKta} berhasil disimpan ke memori perangkat.`)}
+                onPress={() =>
+                  setDialogConfig({
+                    visible: true,
+                    title: 'e-KTA Diunduh',
+                    message: `e-KTA dengan No. ${noKta} berhasil disimpan ke memori perangkat.`,
+                    tone: 'success',
+                  })
+                }
               />
 
               <PrimaryButton
@@ -466,6 +490,16 @@ export default function RegisterMemberScreen({ navigation }: any) {
           </View>
         )}
       </ScrollView>
+
+      <ConfirmDialog
+        visible={dialogConfig.visible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        tone={dialogConfig.tone || 'info'}
+        singleButton
+        confirmLabel="OK"
+        onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 }

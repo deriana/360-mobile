@@ -10,7 +10,7 @@ import { buildDetailStack } from './DetailStack';
 import DashboardScreen from '../screens/DashboardScreen';
 import WitnessListScreen from '../screens/WitnessListScreen';
 import MoreMenuScreen from '../screens/MoreMenuScreen';
-import WitnessHomeScreen from '../screens/WitnessHomeScreen';
+import AssignmentLetterScreen from '../screens/AssignmentLetterScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import ReportFormScreen from '../screens/ReportFormScreen';
 import SupervisionScreen from '../screens/SupervisionScreen';
@@ -27,6 +27,7 @@ const SupervisionStack = buildDetailStack('Supervision', SupervisionScreen, 'Pen
 const WitnessesStack = buildDetailStack('WitnessList', WitnessListScreen, 'Saksi');
 const MoreStack = buildDetailStack('MoreMenu', MoreMenuScreen, 'Lainnya');
 
+const AssignmentLetterStack = buildDetailStack('AssignmentLetter', AssignmentLetterScreen, 'Surat Mandat');
 const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Check-in');
 const ReportFormStack = buildDetailStack('ReportForm', ReportFormScreen, 'Lapor C1');
 const EmergencyFormStack = buildDetailStack('EmergencyForm', EmergencyFormScreen, 'Lapor Luar TPS');
@@ -35,11 +36,11 @@ const SimpanKtaStack = buildDetailStack('SimpanKta', SimpanKtaScreen, 'e-KTA Dig
 const SimpanNewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta DPP');
 const SimpanOfficesStack = buildDetailStack('SimpanOffices', SimpanOfficesScreen, 'Kantor Sekretariat');
 
-// 1. Saksi TPS Lapangan (Petugas resmi TPS yang bertugas hadir presensi & input C1)
+// 1. Saksi TPS Lapangan (Fokus pada Checklist Hari-H, Surat Mandat Digital KPPS, & Lapor SOS)
 const WITNESS_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Tugas', icon: 'home' as const },
-  { name: 'CheckInTab', component: CheckInStack, label: 'Check-in', icon: 'map-pin' as const },
-  { name: 'ReportFormTab', component: ReportFormStack, label: 'Lapor C1', icon: 'edit-3' as const },
+  { name: 'MandatTab', component: AssignmentLetterStack, label: 'Mandat', icon: 'file-text' as const },
+  { name: 'EmergencyTab', component: EmergencyFormStack, label: 'Bantuan & SOS', icon: 'alert-triangle' as const },
   { name: 'MoreTab', component: MoreStack, label: 'Lainnya', icon: 'more-horizontal' as const },
 ];
 

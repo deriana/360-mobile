@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   Image,
   LayoutAnimation,
   Platform,
@@ -14,7 +13,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { PASLON_AVATARS } from '../data/images';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
@@ -79,6 +78,7 @@ export default function QuickCountGameScreen({ navigation }: any) {
   );
   const [invalidVotes, setInvalidVotes] = useState(0);
   const [locked, setLocked] = useState(false);
+  const [confirmFinishVisible, setConfirmFinishVisible] = useState(false);
 
   const totalCandidateVotes = PASLON_KEYS.reduce((sum, k) => sum + (votes[k] ?? 0), 0);
   const totalVotes = totalCandidateVotes + invalidVotes;
@@ -97,14 +97,7 @@ export default function QuickCountGameScreen({ navigation }: any) {
   const subtractInvalid = () => setInvalidVotes((v) => Math.max(0, v - 1));
 
   const finishCounting = () => {
-    Alert.alert(
-      'Selesai Hitung Suara?',
-      'Tally akan dikunci. Pastikan setiap surat suara sah sudah dihitung dan cocok dengan saksi lain sebelum lanjut ke laporan C1.',
-      [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Ya, Selesai', onPress: () => setLocked(true) },
-      ],
-    );
+    setConfirmFinishVisible(true);
   };
 
   const resetCount = () => {
@@ -247,6 +240,20 @@ export default function QuickCountGameScreen({ navigation }: any) {
           </Card>
         </>
       )}
+
+      <ConfirmDialog
+        visible={confirmFinishVisible}
+        title="Selesai Hitung Suara?"
+        message="Tally akan dikunci. Pastikan setiap surat suara sah sudah dihitung dan cocok dengan saksi lain sebelum lanjut ke laporan C1."
+        tone="primary"
+        confirmLabel="Ya, Selesai"
+        cancelLabel="Batal"
+        onConfirm={() => {
+          setConfirmFinishVisible(false);
+          setLocked(true);
+        }}
+        onCancel={() => setConfirmFinishVisible(false)}
+      />
     </ScrollView>
   );
 }

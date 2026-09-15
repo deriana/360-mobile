@@ -19,18 +19,6 @@ export default function HelpCenterScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={[styles.headerIconWrap, { backgroundColor: colors.primaryLight }]}>
-          <Feather name="help-circle" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Pusat Bantuan</Text>
-          <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-            Pertanyaan yang sering ditanyakan seputar penggunaan SAKSI 360.
-          </Text>
-        </View>
-      </View>
-
       <Input
         placeholder="Cari pertanyaan, mis. 'check-in', 'C1', 'honor'..."
         icon="search"
@@ -96,10 +84,6 @@ export default function HelpCenterScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  headerIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 2 },
   faqRow: { paddingVertical: spacing.sm, borderBottomWidth: 0.5, gap: 6 },
   faqQuestionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   faqQuestion: { fontSize: fontSize.xs + 1, fontWeight: '700', flex: 1 },

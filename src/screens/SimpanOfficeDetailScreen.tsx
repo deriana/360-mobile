@@ -1,14 +1,20 @@
-import React from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, SectionTitle, PrimaryButton } from '../components/ui';
+import { Card, ConfirmDialog, Pill, SectionTitle, PrimaryButton } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { KANTOR_SEKRETARIAT_LIST, KantorSekretariat } from '../data/simpan';
 
 export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
   const { colors } = useTheme();
+  const [contactDialog, setContactDialog] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({ visible: false, title: '', message: '' });
+
   const kantorId = route?.params?.kantorId || 'KANTOR-03';
 
   const kantor: KantorSekretariat =
@@ -16,7 +22,11 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
 
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone.replace(/[^0-9]/g, '')}`).catch(() => {
-      Alert.alert('Kontak Telepon', `Nomor telepon: ${phone}`);
+      setContactDialog({
+        visible: true,
+        title: 'Kontak Telepon',
+        message: `Nomor telepon: ${phone}`,
+      });
     });
   };
 
@@ -24,13 +34,21 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
     const cleanWa = wa.replace(/[^0-9]/g, '').replace(/^0/, '62');
     const url = `whatsapp://send?phone=${cleanWa}&text=Halo%20Sekretariat%20simPAN%20${encodeURIComponent(kantor.namaKantor)},%20saya%20kader%20PAN%20ingin%20berkonsultasi.`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('WhatsApp', `Nomor WhatsApp: ${wa}`);
+      setContactDialog({
+        visible: true,
+        title: 'WhatsApp',
+        message: `Nomor WhatsApp: ${wa}`,
+      });
     });
   };
 
   const handleEmail = (email: string) => {
     Linking.openURL(`mailto:${email}?subject=Konsultasi%20Kader%20simPAN`).catch(() => {
-      Alert.alert('Email', `Alamat email: ${email}`);
+      setContactDialog({
+        visible: true,
+        title: 'Email',
+        message: `Alamat email: ${email}`,
+      });
     });
   };
 
@@ -38,7 +56,11 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
     const query = encodeURIComponent(`${kantor.namaKantor} ${kantor.alamat} ${kantor.kota}`);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     Linking.openURL(mapsUrl).catch(() => {
-      Alert.alert('Peta', `Alamat: ${kantor.alamat}, ${kantor.kota}`);
+      setContactDialog({
+        visible: true,
+        title: 'Peta',
+        message: `Alamat: ${kantor.alamat}, ${kantor.kota}`,
+      });
     });
   };
 
@@ -224,6 +246,16 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
         icon="map"
         onPress={handleOpenMaps}
         style={{ marginTop: spacing.xs }}
+      />
+
+      <ConfirmDialog
+        visible={contactDialog.visible}
+        title={contactDialog.title}
+        message={contactDialog.message}
+        tone="info"
+        singleButton
+        confirmLabel="Mengerti"
+        onConfirm={() => setContactDialog((prev) => ({ ...prev, visible: false }))}
       />
     </ScrollView>
   );

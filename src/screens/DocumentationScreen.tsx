@@ -61,19 +61,15 @@ export default function DocumentationScreen({ route, navigation }: any) {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={[styles.headerIconWrap, { backgroundColor: colors.primaryLight }]}>
-          <Feather name="image" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Dokumentasi Kegiatan TPS</Text>
-          <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-            {record
-              ? `${record.id} — TPS ${record.tpsNumber}, Kec. ${record.district}, ${record.regency}`
-              : 'Unggah foto kegiatan lapangan sebagai bukti dokumentasi (persiapan, pemungutan, penghitungan suara, dll).'}
+      {record && (
+        <View style={[styles.tpsScopeBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Feather name="map-pin" size={13} color={colors.primary} />
+          <Text style={[styles.tpsScopeText, { color: colors.text }]}>
+            TPS {record.tpsNumber} • Kec. {record.district}, {record.regency}
           </Text>
+          <Text style={[styles.tpsIdText, { color: colors.textMuted }]}>{record.id}</Text>
         </View>
-      </View>
+      )}
 
       <Card style={{ gap: spacing.sm }}>
         <SectionTitle
@@ -172,10 +168,17 @@ export default function DocumentationScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  headerIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 2 },
+  tpsScopeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  tpsScopeText: { fontSize: fontSize.xs, fontWeight: '700', flex: 1 },
+  tpsIdText: { fontSize: 10, fontFamily: 'monospace' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItemWrap: { position: 'relative', width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: radius.md },
   gridImagePressable: { width: '100%', height: '100%' },

@@ -35,14 +35,10 @@ export default function SecurityScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={[styles.badge, { backgroundColor: colors.primaryLight }]}>
-          <Feather name="shield" size={14} color={colors.primary} strokeWidth={iconStrokeWidth} />
-          <Text style={[styles.badgeText, { color: colors.primary }]}>Keamanan Sistem</Text>
-        </View>
-        <Text style={[styles.title, { color: colors.text }]}>Keamanan & Kepercayaan</Text>
-        <Text style={[styles.disclaimer, { color: colors.textMuted }]}>
-          Sistem SAKSI 360 dirancang sesuai standar keamanan data pemilu terenkripsi.
+      <View style={[styles.securityBanner, { backgroundColor: colors.primaryLight }]}>
+        <Feather name="shield" size={16} color={colors.primary} strokeWidth={iconStrokeWidth} />
+        <Text style={[styles.securityBannerText, { color: colors.primary }]}>
+          Standar Enkripsi AES-256 & Audit Log Imutabel Aktif
         </Text>
       </View>
 
@@ -64,19 +60,15 @@ export default function SecurityScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { gap: 4 },
-  badge: {
+  securityBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
   },
-  badgeText: { fontSize: fontSize.xs, fontWeight: '700' },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  disclaimer: { fontSize: fontSize.xs },
+  securityBannerText: { fontSize: fontSize.xs, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconWrap: {
     width: 48,

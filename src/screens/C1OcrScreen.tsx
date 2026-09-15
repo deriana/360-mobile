@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
+import { Card, ConfirmDialog, EmptyState, Modal, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { pickImage } from '../utils/pickImage';
@@ -28,6 +28,12 @@ export default function C1OcrScreen({ route, navigation }: any) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [tpsPhoto, setTpsPhoto] = useState<any>(null);
   const [tpsVideo, setTpsVideo] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+  }>({ visible: false, title: '', message: '' });
 
   // Vision AI state
   const [aiConfidence, setAiConfidence] = useState<number>(0);
@@ -90,14 +96,24 @@ export default function C1OcrScreen({ route, navigation }: any) {
       setStage('review');
     } catch (err) {
       console.warn('[C1OcrScreen] Error scanning C1:', err);
-      Alert.alert('Gagal Memindai', 'Terjadi kendala saat memproses gambar. Silakan coba lagi.');
+      setDialogConfig({
+        visible: true,
+        title: 'Gagal Memindai',
+        message: 'Terjadi kendala saat memproses gambar. Silakan coba lagi.',
+        tone: 'danger',
+      });
       setStage('before');
     }
   };
 
   const confirm = () => {
     if (!tpsPhoto) {
-      Alert.alert('Lengkapi Dokumen', 'Unggah foto papan hasil hitung TPS sebelum mengirim laporan.');
+      setDialogConfig({
+        visible: true,
+        title: 'Lengkapi Dokumen',
+        message: 'Unggah foto papan hasil hitung TPS sebelum mengirim laporan.',
+        tone: 'warning',
+      });
       return;
     }
     const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -310,12 +326,27 @@ export default function C1OcrScreen({ route, navigation }: any) {
       )}
 
       {photoUri && (
-        <Modal visible={previewOpen} transparent animationType="fade" onRequestClose={() => setPreviewOpen(false)}>
-          <Pressable style={styles.imageOverlayBackdrop} onPress={() => setPreviewOpen(false)}>
-            <Image source={{ uri: photoUri }} style={styles.imageOverlayFull} resizeMode="contain" />
-          </Pressable>
+        <Modal
+          visible={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          variant="floating"
+          title="Pratinjau Lembar C1"
+        >
+          <View style={{ height: 350, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+          </View>
         </Modal>
       )}
+
+      <ConfirmDialog
+        visible={dialogConfig.visible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        tone={dialogConfig.tone || 'info'}
+        singleButton
+        confirmLabel="OK"
+        onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
   );
 }

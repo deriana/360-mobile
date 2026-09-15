@@ -38,7 +38,12 @@ export default function WitnessListScreen({ navigation }: any) {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Manajemen Saksi ({filtered.length})</Text>
+      <View style={styles.topBar}>
+        <Text style={[styles.scopeText, { color: colors.textMuted }]}>
+          Cakupan Penugasan
+        </Text>
+        <Pill label={`${filtered.length} Saksi`} tone="primary" />
+      </View>
 
       <Input
         placeholder="Cari nama, No HP, atau ID TPS..."
@@ -96,7 +101,8 @@ export default function WitnessListScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg },
-  title: { fontSize: fontSize.xl, fontWeight: '800', marginBottom: spacing.md },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  scopeText: { fontSize: fontSize.xs },
   rowCard: {
     flexDirection: 'row',
     alignItems: 'center',

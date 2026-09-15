@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import Svg, { Path } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
+import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import {
@@ -24,6 +24,12 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
   const [downloading, setDownloading] = useState(false);
   const [cachedData, setCachedData] = useState<CachedAssignmentLetter | null>(null);
   const [isCached, setIsCached] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    tone?: 'success' | 'danger';
+  }>({ visible: false, title: '', message: '' });
 
   if (!witness) {
     return <EmptyState title="Surat Tidak Ditemukan" body="Data penugasan ini tidak tersedia." icon="file-text" />;
@@ -66,10 +72,20 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Simpan Surat Tugas PDF' });
       } else {
-        Alert.alert('PDF Dibuat', `File tersimpan sementara di: ${uri}`);
+        setDialogConfig({
+          visible: true,
+          title: 'PDF Dibuat',
+          message: `File tersimpan sementara di: ${uri}`,
+          tone: 'success',
+        });
       }
     } catch (err) {
-      Alert.alert('Gagal Membuat PDF', 'Terjadi kesalahan saat membuat dokumen PDF. Silakan coba lagi.');
+      setDialogConfig({
+        visible: true,
+        title: 'Gagal Membuat PDF',
+        message: 'Terjadi kesalahan saat membuat dokumen PDF. Silakan coba lagi.',
+        tone: 'danger',
+      });
     } finally {
       setDownloading(false);
     }
@@ -175,6 +191,15 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
           }
         />
       </View>
+
+      <ConfirmDialog
+        visible={dialogConfig.visible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        tone={dialogConfig.tone}
+        singleButton
+        onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
   );
 }

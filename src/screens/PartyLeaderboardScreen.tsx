@@ -11,13 +11,6 @@ export default function PartyLeaderboardScreen({ navigation }: any) {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Perolehan Suara PAN di Dapil</Text>
-        <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-          Ringkasan tabulasi suara Partai Amanat Nasional wilayah pemilihan Jawa Barat I.
-        </Text>
-      </View>
-
       <Card style={styles.mainCard}>
         <View style={styles.cardHeaderRow}>
           <View style={styles.brandGroup}>
@@ -110,16 +103,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
     paddingBottom: spacing.xl,
-  },
-  header: {
-    gap: 2,
-  },
-  title: {
-    fontSize: fontSize.xl,
-    fontWeight: '800',
-  },
-  subTitle: {
-    fontSize: fontSize.xs,
   },
   mainCard: {
     padding: spacing.lg,

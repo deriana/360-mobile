@@ -12,13 +12,6 @@ export default function BroadcastScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Kotak Masuk Broadcast & Instruksi</Text>
-        <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-          Instruksi resmi, dokumen panduan, & pengumuman penting dari Pusat Komando ke Petugas Lapangan.
-        </Text>
-      </View>
-
       {broadcasts.length === 0 ? (
         <EmptyState title="Belum Ada Pesan Masuk" body="Pesan broadcast dan pengumuman dari pusat komando akan tampil di sini." icon="radio" />
       ) : (
@@ -48,9 +41,6 @@ export default function BroadcastScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg, gap: spacing.sm },
-  header: { gap: 2, marginBottom: spacing.xs },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 18 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   senderBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   senderText: { fontSize: 11, fontWeight: '800' },

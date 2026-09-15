@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { MOCK_BACALEG_DATA } from '../data/simpan';
 
@@ -10,23 +9,18 @@ export default function SimpanBacalegScreen() {
   const { colors } = useTheme();
   const data = MOCK_BACALEG_DATA;
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const handleAjukan = () => {
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      Alert.alert('Pendaftaran Terkirim', 'Berkas pencalonan legislatif Anda sedang ditinjau oleh Komite Pemenangan Pemilu Nasional (KPPN) PAN.');
+      setShowSuccessDialog(true);
     }, 1000);
   };
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Pendaftaran Bacaleg simPAN</Text>
-        <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-          Portal pendaftaran dan verifikasi berkas Bakal Calon Anggota Legislatif Partai Amanat Nasional.
-        </Text>
-      </View>
 
       {/* Candidate Status Summary */}
       <Card style={{ gap: spacing.sm, backgroundColor: '#004F8A' }}>
@@ -81,6 +75,16 @@ export default function SimpanBacalegScreen() {
         loading={submitting}
         onPress={handleAjukan}
       />
+
+      <ConfirmDialog
+        visible={showSuccessDialog}
+        title="Pendaftaran Terkirim"
+        message="Berkas pencalonan legislatif Anda sedang ditinjau oleh Komite Pemenangan Pemilu Nasional (KPPN) PAN."
+        tone="success"
+        singleButton
+        confirmLabel="Selesai"
+        onConfirm={() => setShowSuccessDialog(false)}
+      />
     </ScrollView>
   );
 }
@@ -88,9 +92,6 @@ export default function SimpanBacalegScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { gap: 2 },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs },
   badgeReg: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   badgeRegText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' },
   dapilBox: { backgroundColor: 'rgba(0,0,0,0.15)', padding: spacing.sm, borderRadius: radius.md, gap: 2 },

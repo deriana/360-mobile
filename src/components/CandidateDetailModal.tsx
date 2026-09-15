@@ -1,8 +1,8 @@
 import React from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, PrimaryButton, SectionTitle } from './ui';
+import { Card, Modal, Pill, PrimaryButton, SectionTitle } from './ui';
 import { fontSize, radius, spacing } from '../theme';
 import { getCandidateProfile } from '../data/candidates';
 
@@ -19,79 +19,75 @@ export function CandidateDetailModal({ candidateName, onClose }: CandidateDetail
   const profile = getCandidateProfile(candidateName);
 
   return (
-    <Modal visible={!!candidateName} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {/* Top Header Row */}
-          <View style={styles.topRow}>
-            <Pill label="Profil Resmi KPU" tone="success" icon="check-circle" />
-            <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color={colors.textMuted} />
-            </Pressable>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
-            {/* Candidate Header Badge */}
-            <View style={{ alignItems: 'center', gap: spacing.xs, marginVertical: spacing.xs }}>
-              {profile.runningMateAvatarUri ? (
-                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
-                  <Image source={profile.runningMateAvatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
-                </View>
-              ) : (
-                <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
-              )}
-              <Text style={[styles.candidateNumber, { color: colors.primary }]}>{profile.numberLabel}</Text>
-              <Text style={[styles.candidateTitle, { color: colors.text }]}>{profile.name}</Text>
-              <Pill label={profile.partyOrCoalition} tone="neutral" />
+    <Modal
+      visible={!!candidateName}
+      onClose={onClose}
+      variant="bottomSheet"
+      title={profile.name}
+      subtitle={profile.partyOrCoalition}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}
+      >
+        {/* Candidate Header Badge */}
+        <View style={{ alignItems: 'center', gap: spacing.xs, marginVertical: spacing.xs }}>
+          {profile.runningMateAvatarUri ? (
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+              <Image source={profile.runningMateAvatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
             </View>
-
-            {/* Visi & Misi Card */}
-            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Visi Utama</SectionTitle>
-              <Text style={[styles.visionText, { color: colors.text }]}>"{profile.vision}"</Text>
-            </Card>
-
-            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Misi Strategis</SectionTitle>
-              {profile.mission.map((item, idx) => (
-                <View key={idx} style={styles.listItemRow}>
-                  <Feather name="check" size={14} color={colors.primary} style={{ marginTop: 2 }} />
-                  <Text style={[styles.listItemText, { color: colors.text }]}>{item}</Text>
-                </View>
-              ))}
-            </Card>
-
-            {/* Program Unggulan */}
-            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Program Kerja Unggulan</SectionTitle>
-              {profile.programs.map((prog, idx) => (
-                <View key={idx} style={styles.programPill}>
-                  <Feather name="zap" size={13} color={colors.primary} />
-                  <Text style={[styles.programText, { color: colors.text }]}>{prog}</Text>
-                </View>
-              ))}
-            </Card>
-
-            {/* Pendidikan & Pengalaman */}
-            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-              <SectionTitle style={{ marginBottom: 0 }}>Latar Belakang & Rekam Jejak</SectionTitle>
-              <View style={styles.infoRow}>
-                <Feather name="book-open" size={14} color={colors.textMuted} />
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Pendidikan:</Text>
-                <Text style={[styles.infoVal, { color: colors.text }]}>{profile.education}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Feather name="award" size={14} color={colors.textMuted} />
-                <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Pengalaman:</Text>
-                <Text style={[styles.infoVal, { color: colors.text }]}>{profile.experience}</Text>
-              </View>
-            </Card>
-
-            <PrimaryButton label="Tutup Detail Profil" icon="check" onPress={onClose} />
-          </ScrollView>
+          ) : (
+            <Image source={profile.avatarUri} style={[styles.avatarImage, { borderColor: colors.primary }]} />
+          )}
+          <Text style={[styles.candidateNumber, { color: colors.primary }]}>{profile.numberLabel}</Text>
+          <Pill label="Profil Resmi KPU" tone="success" icon="check-circle" />
         </View>
-      </View>
+
+        {/* Visi & Misi Card */}
+        <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Visi Utama</SectionTitle>
+          <Text style={[styles.visionText, { color: colors.text }]}>"{profile.vision}"</Text>
+        </Card>
+
+        <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Misi Strategis</SectionTitle>
+          {profile.mission.map((item, idx) => (
+            <View key={idx} style={styles.listItemRow}>
+              <Feather name="check" size={14} color={colors.primary} style={{ marginTop: 2 }} />
+              <Text style={[styles.listItemText, { color: colors.text }]}>{item}</Text>
+            </View>
+          ))}
+        </Card>
+
+        {/* Program Unggulan */}
+        <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Program Kerja Unggulan</SectionTitle>
+          {profile.programs.map((prog, idx) => (
+            <View key={idx} style={styles.programPill}>
+              <Feather name="zap" size={13} color={colors.primary} />
+              <Text style={[styles.programText, { color: colors.text }]}>{prog}</Text>
+            </View>
+          ))}
+        </Card>
+
+        {/* Pendidikan & Pengalaman */}
+        <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Latar Belakang & Rekam Jejak</SectionTitle>
+          <View style={styles.infoRow}>
+            <Feather name="book-open" size={14} color={colors.textMuted} />
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Pendidikan:</Text>
+            <Text style={[styles.infoVal, { color: colors.text }]}>{profile.education}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Feather name="award" size={14} color={colors.textMuted} />
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Pengalaman:</Text>
+            <Text style={[styles.infoVal, { color: colors.text }]}>{profile.experience}</Text>
+          </View>
+        </Card>
+
+        <PrimaryButton label="Tutup Detail Profil" icon="check" onPress={onClose} />
+      </ScrollView>
     </Modal>
   );
 }

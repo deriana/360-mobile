@@ -614,6 +614,121 @@ export function Modal({
 }
 
 // ==========================================
+// CONFIRM & ALERT DIALOG
+// ==========================================
+export interface ConfirmDialogProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  icon?: keyof typeof Feather.glyphMap;
+  tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  onCancel?: () => void;
+  singleButton?: boolean;
+  confirmLoading?: boolean;
+}
+
+export function ConfirmDialog({
+  visible,
+  title,
+  message,
+  icon,
+  tone = 'primary',
+  confirmLabel,
+  cancelLabel = 'Batal',
+  onConfirm,
+  onCancel,
+  singleButton = false,
+  confirmLoading = false,
+}: ConfirmDialogProps) {
+  const { colors, fontSize, iconStrokeWidth, spacing } = useTheme();
+
+  const toneConfig = {
+    danger: {
+      icon: icon || ('alert-triangle' as const),
+      iconBg: colors.dangerBg,
+      iconColor: colors.danger,
+      btnVariant: 'danger' as const,
+      defaultConfirm: 'Lanjutkan',
+    },
+    warning: {
+      icon: icon || ('alert-circle' as const),
+      iconBg: colors.warningBg,
+      iconColor: colors.warning,
+      btnVariant: 'primary' as const,
+      defaultConfirm: 'Lanjutkan',
+    },
+    success: {
+      icon: icon || ('check-circle' as const),
+      iconBg: colors.successBg,
+      iconColor: colors.success,
+      btnVariant: 'primary' as const,
+      defaultConfirm: 'Selesai',
+    },
+    info: {
+      icon: icon || ('info' as const),
+      iconBg: colors.infoBg,
+      iconColor: colors.info,
+      btnVariant: 'primary' as const,
+      defaultConfirm: 'Mengerti',
+    },
+    primary: {
+      icon: icon || ('help-circle' as const),
+      iconBg: colors.primaryLight,
+      iconColor: colors.primary,
+      btnVariant: 'primary' as const,
+      defaultConfirm: 'Ya, Lanjutkan',
+    },
+  }[tone];
+
+  const resolvedConfirmLabel = confirmLabel || (singleButton ? 'Mengerti' : toneConfig.defaultConfirm);
+
+  return (
+    <Modal visible={visible} onClose={onCancel || onConfirm} variant="floating">
+      <View style={styles.confirmDialogBody}>
+        <View style={[styles.confirmIconWrap, { backgroundColor: toneConfig.iconBg }]}>
+          <Feather name={toneConfig.icon} size={28} color={toneConfig.iconColor} strokeWidth={iconStrokeWidth} />
+        </View>
+
+        <View style={styles.confirmTextWrap}>
+          <Text style={[styles.confirmTitle, { color: colors.text, fontSize: fontSize.md + 1 }]}>
+            {title}
+          </Text>
+          <Text style={[styles.confirmMessage, { color: colors.textMuted, fontSize: fontSize.xs + 0.5 }]}>
+            {message}
+          </Text>
+        </View>
+
+        <View style={styles.confirmActionsRow}>
+          {!singleButton && onCancel && (
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                label={cancelLabel}
+                variant="outline"
+                onPress={onCancel}
+                fullWidth
+              />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              label={resolvedConfirmLabel}
+              variant={toneConfig.btnVariant}
+              onPress={onConfirm}
+              loading={confirmLoading}
+              fullWidth
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+
+// ==========================================
 // KPI CARD
 // ==========================================
 export interface KpiCardProps {
@@ -920,6 +1035,38 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     gap: 12,
+  },
+  confirmDialogBody: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 8,
+  },
+  confirmIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmTextWrap: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  confirmTitle: {
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  confirmActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    marginTop: 6,
   },
   kpiCard: {
     flex: 1,

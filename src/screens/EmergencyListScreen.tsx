@@ -70,8 +70,8 @@ export default function EmergencyListScreen({ navigation }: any) {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: colors.text }]}>Laporan Darurat</Text>
+      <View style={styles.topActionRow}>
+        <Pill label={`${filteredReports.length} Laporan`} tone={filteredReports.length > 0 ? 'danger' : 'neutral'} />
         <PrimaryButton label="Buat Laporan" icon="plus" onPress={() => navigation.navigate('EmergencyForm')} fullWidth={false} />
       </View>
 
@@ -181,8 +181,7 @@ function DetailRow({ icon, label, value }: { icon: keyof typeof Feather.glyphMap
 
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md, gap: spacing.sm },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
+  topActionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   cardItem: { gap: spacing.xs },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   category: { fontSize: fontSize.sm, fontWeight: '700' },

@@ -23,12 +23,7 @@ export default function PaymentScreen() {
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Status Honorarium Saksi</Text>
-      <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-        Informasi status pencairan honorarium penugasan saksi TPS Anda.
-      </Text>
-
-      <Card style={{ gap: spacing.md, marginTop: spacing.xs }}>
+      <Card style={{ gap: spacing.md }}>
         <View style={styles.statusRow}>
           <View style={[styles.iconWrap, { backgroundColor: isPaid ? colors.successBg : colors.warningBg }]}>
             <Feather
@@ -128,9 +123,7 @@ function InvoiceMetaRow({ icon, label, value }: { icon: keyof typeof Feather.gly
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.xs, paddingBottom: spacing.xl },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginBottom: spacing.xs },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   statusLabelText: { fontSize: 11, fontWeight: '600' },

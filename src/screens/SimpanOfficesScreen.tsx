@@ -1,30 +1,27 @@
-import React from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, SectionTitle } from '../components/ui';
+import { Card, ConfirmDialog, Pill, SectionTitle } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { KANTOR_SEKRETARIAT_LIST } from '../data/simpan';
 
 export default function SimpanOfficesScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const [contactDialog, setContactDialog] = useState<{
+    visible: boolean;
+    phone: string;
+  }>({ visible: false, phone: '' });
 
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone.replace(/[^0-9]/g, '')}`).catch(() => {
-      Alert.alert('Kontak', `Nomor telepon: ${phone}`);
+      setContactDialog({ visible: true, phone });
     });
   };
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Kantor Sekretariat simPAN</Text>
-        <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-          Alamat resmi gedung kantor, posko komando BSN, dan konter pelayanan terpadu Partai Amanat Nasional.
-        </Text>
-      </View>
-
       <View style={{ gap: spacing.md }}>
         {KANTOR_SEKRETARIAT_LIST.map((kantor) => (
           <Pressable
@@ -99,6 +96,16 @@ export default function SimpanOfficesScreen({ navigation }: any) {
           </Pressable>
         ))}
       </View>
+
+      <ConfirmDialog
+        visible={contactDialog.visible}
+        title="Kontak Telepon"
+        message={`Nomor telepon kantor: ${contactDialog.phone}`}
+        tone="info"
+        singleButton
+        confirmLabel="Mengerti"
+        onConfirm={() => setContactDialog((prev) => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
   );
 }
@@ -106,9 +113,6 @@ export default function SimpanOfficesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { gap: 2 },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs },
   kantorHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   kantorNama: { fontSize: fontSize.md, fontWeight: '800' },
   rowInfo: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },

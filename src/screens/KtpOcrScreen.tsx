@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Image, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Card, IconButton, Input, Modal, PrimaryButton, SectionTitle } from '../components/ui';
+import { Card, ConfirmDialog, IconButton, Input, Modal, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
 import { scanKtpWithVisionAi } from '../utils/ocrApi';
@@ -117,6 +117,17 @@ export default function KtpOcrScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    tone?: 'danger' | 'warning' | 'info' | 'primary';
+    confirmLabel?: string;
+    cancelLabel?: string;
+    singleButton?: boolean;
+    onConfirm?: () => void;
+  }>({ visible: false, title: '', message: '' });
+
   const handlePickProfilePhoto = async (source: 'camera' | 'library') => {
     const uri = await pickImage(source);
     if (uri) setProfilePhoto(uri);
@@ -164,14 +175,19 @@ export default function KtpOcrScreen({ navigation }: any) {
     return navigation.addListener('beforeRemove', (e: any) => {
       if (!hasUnsavedRef.current) return;
       e.preventDefault();
-      Alert.alert(
-        'Keluar Tanpa Menyimpan?',
-        'Data KTP yang sudah diisi akan hilang jika Anda keluar sekarang.',
-        [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Keluar', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
-        ],
-      );
+      setAlertConfig({
+        visible: true,
+        title: 'Keluar Tanpa Menyimpan?',
+        message: 'Data KTP yang sudah diisi akan hilang jika Anda keluar sekarang.',
+        tone: 'danger',
+        confirmLabel: 'Keluar',
+        cancelLabel: 'Batal',
+        singleButton: false,
+        onConfirm: () => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigation.dispatch(e.data.action);
+        },
+      });
     });
   }, [navigation]);
 
@@ -200,7 +216,14 @@ export default function KtpOcrScreen({ navigation }: any) {
       setStage('extracted');
     } catch (err) {
       console.warn('[KtpOcrScreen] Gagal memindai KTP:', err);
-      Alert.alert('Kendala Pemindaian', 'Gagal memproses gambar KTP. Mengaktifkan mode pengisian manual.');
+      setAlertConfig({
+        visible: true,
+        title: 'Kendala Pemindaian',
+        message: 'Gagal memproses gambar KTP. Mengaktifkan mode pengisian manual.',
+        tone: 'warning',
+        confirmLabel: 'Mengerti',
+        singleButton: true,
+      });
       setStage('extracted');
     }
   };
@@ -227,20 +250,6 @@ export default function KtpOcrScreen({ navigation }: any) {
       onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
       scrollEventThrottle={16}
     >
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={[styles.headerIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="credit-card" size={20} color={colors.primary} strokeWidth={iconStrokeWidth} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>Pemindaian KTP Saksi</Text>
-            <Text style={[styles.subTitle, { color: colors.textMuted }]}>
-              Pindai KTP Saksi untuk mengisi NIK, nama, dan alamat secara otomatis.
-            </Text>
-          </View>
-        </View>
-      </View>
-
       <StepProgress activeIndex={activeStepIndex} />
 
       {/* Frame Pemindaian KTP */}
@@ -498,6 +507,24 @@ export default function KtpOcrScreen({ navigation }: any) {
           ))}
         </View>
       </Modal>
+
+      <ConfirmDialog
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        tone={alertConfig.tone}
+        confirmLabel={alertConfig.confirmLabel}
+        cancelLabel={alertConfig.cancelLabel}
+        singleButton={alertConfig.singleButton}
+        onConfirm={() => {
+          if (alertConfig.onConfirm) {
+            alertConfig.onConfirm();
+          } else {
+            setAlertConfig((prev) => ({ ...prev, visible: false }));
+          }
+        }}
+        onCancel={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -506,13 +533,9 @@ export default function KtpOcrScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  header: { gap: 2 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   formHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   formHeaderIcon: { width: 32, height: 32, borderRadius: radius.sm },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 2 },
   stepRow: { flexDirection: 'row', alignItems: 'center' },
   stepItem: { alignItems: 'center', gap: 4, width: 78 },
   stepCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },

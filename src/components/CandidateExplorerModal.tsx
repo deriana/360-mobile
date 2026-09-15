@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Pill, PrimaryButton, SectionTitle } from './ui';
+import { Card, Modal, Pill, PrimaryButton, SectionTitle } from './ui';
 import { fontSize, radius, spacing } from '../theme';
 import { CANDIDATE_PROFILES } from '../data/candidates';
 import { CandidateDetailModal } from './CandidateDetailModal';
@@ -28,21 +28,13 @@ export function CandidateExplorerModal({ visible, onClose }: CandidateExplorerMo
   });
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {/* Header Row */}
-          <View style={styles.topRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>Profil Paslon & Caleg Pemilu</Text>
-              <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                Pilih kandidat untuk melihat visi, misi, program kerja, dan rekam jejak.
-              </Text>
-            </View>
-            <Pressable hitSlop={12} onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color={colors.textMuted} />
-            </Pressable>
-          </View>
+    <Modal
+      visible={visible}
+      onClose={onClose}
+      variant="bottomSheet"
+      title="Profil Paslon & Caleg Pemilu"
+      subtitle="Pilih kandidat untuk melihat visi, misi, program kerja, dan rekam jejak."
+    >
 
           {/* Filter Pills */}
           <View style={{ flexDirection: 'row', gap: spacing.xs, marginVertical: spacing.xs }}>
@@ -127,7 +119,7 @@ export function CandidateExplorerModal({ visible, onClose }: CandidateExplorerMo
               </Pressable>
             ))}
 
-            <PrimaryButton label="Tutup Pengjelajah Kandidat" icon="check" variant="secondary" onPress={onClose} />
+            <PrimaryButton label="Tutup Penjelajah Kandidat" icon="check" variant="secondary" onPress={onClose} />
           </ScrollView>
 
           {/* Candidate Detail Modal */}
@@ -135,8 +127,6 @@ export function CandidateExplorerModal({ visible, onClose }: CandidateExplorerMo
             candidateName={selectedCandidateName}
             onClose={() => setSelectedCandidateName(null)}
           />
-        </View>
-      </View>
     </Modal>
   );
 }

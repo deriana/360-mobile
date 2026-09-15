@@ -1,14 +1,21 @@
-import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-export async function pickImage(source: 'camera' | 'library'): Promise<string | null> {
+export async function pickImage(
+  source: 'camera' | 'library',
+  onPermissionDenied?: (message: string) => void,
+): Promise<string | null> {
   const permission =
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (!permission.granted) {
-    Alert.alert('Izin Ditolak', 'Aktifkan izin kamera/galeri di pengaturan perangkat untuk melanjutkan.');
+    const msg = 'Aktifkan izin kamera/galeri di pengaturan perangkat untuk melanjutkan.';
+    if (onPermissionDenied) {
+      onPermissionDenied(msg);
+    } else {
+      console.warn('[pickImage] Izin Ditolak:', msg);
+    }
     return null;
   }
 

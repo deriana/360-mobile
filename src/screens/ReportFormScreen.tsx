@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, DropdownPicker, EmptyState, IconButton, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
+import { Card, ConfirmDialog, DropdownPicker, EmptyState, IconButton, Modal, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
 import { fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
@@ -40,6 +40,17 @@ export default function ReportFormScreen({ route, navigation }: any) {
   const [selectedTpsId, setSelectedTpsId] = useState<string | null>(initialTpsId);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('all');
   const [previewTps, setPreviewTps] = useState<Tps | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+    confirmLabel?: string;
+    cancelLabel?: string;
+    singleButton?: boolean;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({ visible: false, title: '', message: '' });
 
   // Form State for active TPS being edited — null until a TPS is explicitly chosen
   const activeRecord = selectedTpsId ? tps.find((t) => t.id === selectedTpsId) ?? null : null;
@@ -200,17 +211,30 @@ export default function ReportFormScreen({ route, navigation }: any) {
     addToOfflineQueue('c1_report', reportPayload);
     submitTpsReport(activeRecord.id, reportPayload);
 
-    Alert.alert(
-      'Laporan Berhasil Disimpan',
-      `Data perolehan suara C1 untuk ${activeRecord.id} telah tersimpan dan dicatat dalam antrean sinkronisasi server.`,
-      [{ text: 'Lihat Riwayat Laporan', onPress: () => setViewMode('history') }],
-    );
+    setConfirmDialog({
+      visible: true,
+      title: 'Laporan Berhasil Disimpan',
+      message: `Data perolehan suara C1 untuk ${activeRecord.id} telah tersimpan dan dicatat dalam antrean sinkronisasi server.`,
+      tone: 'success',
+      confirmLabel: 'Lihat Riwayat Laporan',
+      singleButton: true,
+      onConfirm: () => {
+        setConfirmDialog((prev) => ({ ...prev, visible: false }));
+        setViewMode('history');
+      },
+    });
   };
 
   const handleSubmitForm = () => {
     if (!activeRecord) return;
     if (!uploads.formPhoto || !uploads.tpsPhoto) {
-      Alert.alert('Lengkapi Dokumen', 'Unggah foto formulir C1 Plano dan foto lokasi TPS sebelum submit.');
+      setConfirmDialog({
+        visible: true,
+        title: 'Lengkapi Dokumen',
+        message: 'Unggah foto formulir C1 Plano dan foto lokasi TPS sebelum submit.',
+        tone: 'warning',
+        singleButton: true,
+      });
       return;
     }
 
@@ -230,14 +254,20 @@ export default function ReportFormScreen({ route, navigation }: any) {
 
     if (pemilihHadir > 0 && totalSuara !== pemilihHadir) {
       const selisih = Math.abs(totalSuara - pemilihHadir);
-      Alert.alert(
-        'Peringatan Disparitas Suara',
-        `Total suara (${totalSuara}) tidak sama dengan Pemilih Hadir (${pemilihHadir}). Terjadi selisih ${selisih} suara.\n\nApakah Anda ingin tetap mengirimkan laporan C1 ini sesuai catatan selisih dari KPPS?`,
-        [
-          { text: 'Periksa Kembali', style: 'cancel' },
-          { text: 'Tetap Kirim (Ada Selisih KPPS)', style: 'destructive', onPress: () => executeSaveReport(pemilihHadir, totalTidakSah) },
-        ],
-      );
+      setConfirmDialog({
+        visible: true,
+        title: 'Peringatan Disparitas Suara',
+        message: `Total suara (${totalSuara}) tidak sama dengan Pemilih Hadir (${pemilihHadir}). Terjadi selisih ${selisih} suara.\n\nApakah Anda ingin tetap mengirimkan laporan C1 ini sesuai catatan selisih dari KPPS?`,
+        tone: 'danger',
+        confirmLabel: 'Tetap Kirim (Ada Selisih KPPS)',
+        cancelLabel: 'Periksa Kembali',
+        singleButton: false,
+        onConfirm: () => {
+          setConfirmDialog((prev) => ({ ...prev, visible: false }));
+          executeSaveReport(pemilihHadir, totalTidakSah);
+        },
+        onCancel: () => setConfirmDialog((prev) => ({ ...prev, visible: false })),
+      });
       return;
     }
 
@@ -708,74 +738,84 @@ export default function ReportFormScreen({ route, navigation }: any) {
       </ScrollView>
 
       {/* FULL C1 DOCUMENT PREVIEW MODAL */}
-      <Modal visible={!!previewTps} animationType="slide" transparent onRequestClose={() => setPreviewTps(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: fontSize.md, fontWeight: '800', color: colors.text }}>
-                Pratinjau Dokumen C1 {previewTps?.id}
+      <Modal
+        visible={!!previewTps}
+        onClose={() => setPreviewTps(null)}
+        variant="floating"
+        title={previewTps ? `Pratinjau Dokumen C1 ${previewTps.id}` : ''}
+      >
+        {previewTps && (
+          <ScrollView contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
+            <Image source={IMAGES.c1Form} style={styles.modalFormImage} resizeMode="contain" />
+
+            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+              <SectionTitle style={{ marginBottom: 0 }}>Statistik Suara {previewTps.id}</SectionTitle>
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                TPS {previewTps.tpsNumber} — Kec. {previewTps.district}, {previewTps.regency}
               </Text>
-              <Pressable hitSlop={8} onPress={() => setPreviewTps(null)}>
-                <Feather name="x" size={20} color={colors.textMuted} />
-              </Pressable>
-            </View>
+              <Text style={{ fontSize: 12, color: colors.text, fontWeight: '700' }}>
+                Pemilih Hadir: {previewTps.votersPresent} / {previewTps.dpt} DPT | Suara Tidak Sah: {previewTps.votes.invalidVotes}
+              </Text>
+            </Card>
 
-            {previewTps && (
-              <ScrollView contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
-                <Image source={IMAGES.c1Form} style={styles.modalFormImage} resizeMode="contain" />
+            <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+              <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Pilpres" tone="primary" />}>
+                Suara Paslon Pilpres
+              </SectionTitle>
+              {Object.entries(previewTps.votes.candidateVotes).map(([name, val]) => (
+                <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
+                  <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                  <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
+                </View>
+              ))}
+            </Card>
 
-                <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-                  <SectionTitle style={{ marginBottom: 0 }}>Statistik Suara {previewTps.id}</SectionTitle>
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>
-                    TPS {previewTps.tpsNumber} — Kec. {previewTps.district}, {previewTps.regency}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.text, fontWeight: '700' }}>
-                    Pemilih Hadir: {previewTps.votersPresent} / {previewTps.dpt} DPT | Suara Tidak Sah: {previewTps.votes.invalidVotes}
-                  </Text>
-                </Card>
-
-                <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-                  <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Pilpres" tone="primary" />}>
-                    Suara Paslon Pilpres
-                  </SectionTitle>
-                  {Object.entries(previewTps.votes.candidateVotes).map(([name, val]) => (
-                    <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
-                      <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
-                      <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
-                      <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
-                    </View>
-                  ))}
-                </Card>
-
-                {previewTps.votes.dprCandidateVotes && (
-                  <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
-                    <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Dapil Jabar I" tone="info" />}>
-                      Suara Caleg DPR RI
-                    </SectionTitle>
-                    {Object.entries(previewTps.votes.dprCandidateVotes).map(([name, val]) => (
-                      <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
-                        <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
-                        <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
-                      </View>
-                    ))}
-                  </Card>
-                )}
-
-                <PrimaryButton
-                  label="Edit Laporan C1 Ini"
-                  icon="edit-3"
-                  onPress={() => {
-                    const target = previewTps;
-                    setPreviewTps(null);
-                    handleSelectTpsForEdit(target);
-                  }}
-                />
-              </ScrollView>
+            {previewTps.votes.dprCandidateVotes && (
+              <Card style={{ gap: spacing.xs, backgroundColor: colors.background }}>
+                <SectionTitle style={{ marginBottom: 0 }} action={<Pill label="Dapil Jabar I" tone="info" />}>
+                  Suara Caleg DPR RI
+                </SectionTitle>
+                {Object.entries(previewTps.votes.dprCandidateVotes).map(([name, val]) => (
+                  <View key={name} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: spacing.xs }}>
+                    <Image source={getCandidateAvatar(name)} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border }} />
+                    <Text style={{ fontSize: 12, color: colors.text, flex: 1, fontWeight: '600' }}>{name}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: colors.text }}>{val} Suara</Text>
+                  </View>
+                ))}
+              </Card>
             )}
-          </View>
-        </View>
+
+            <PrimaryButton
+              label="Edit Laporan C1 Ini"
+              icon="edit-3"
+              onPress={() => {
+                const target = previewTps;
+                setPreviewTps(null);
+                handleSelectTpsForEdit(target);
+              }}
+            />
+          </ScrollView>
+        )}
       </Modal>
+
+      <ConfirmDialog
+        visible={confirmDialog.visible}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        tone={confirmDialog.tone || 'primary'}
+        confirmLabel={confirmDialog.confirmLabel}
+        cancelLabel={confirmDialog.cancelLabel}
+        singleButton={confirmDialog.singleButton}
+        onConfirm={() => {
+          if (confirmDialog.onConfirm) {
+            confirmDialog.onConfirm();
+          } else {
+            setConfirmDialog((prev) => ({ ...prev, visible: false }));
+          }
+        }}
+        onCancel={confirmDialog.onCancel || (() => setConfirmDialog((prev) => ({ ...prev, visible: false })))}
+      />
     </KeyboardAvoidingView>
   );
 }
