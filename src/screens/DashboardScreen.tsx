@@ -335,10 +335,107 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           </View>
 
-          
+          <View style={[styles.swDivider, { backgroundColor: isDark ? '#1A5490' : '#CBD5E1' }]} />
+
+          <View style={styles.statusWilayahItem}>
+            <Text style={[styles.swLabel, { color: colors.textMuted }]}>Wilayah:</Text>
+            <Text style={[styles.swValue, { color: colors.text }]} numberOfLines={1}>
+              DPD Kabupaten Bandung
+            </Text>
+            <Text style={[styles.swSubValue, { color: colors.primary }]} numberOfLines={1}>
+              Dapil Jawa Barat I
+            </Text>
+          </View>
+        </View>
+
+        {/* e-KTA Mini Pass Action Strip */}
+        <View style={[styles.ktaMiniStrip, { backgroundColor: isDark ? 'rgba(0,26,51,0.5)' : '#FFFFFF', borderColor: colors.border }]}>
+          <View style={styles.ktaEmblemRow}>
+            <Image source={BRAND_ASSETS.official} style={styles.panEmblemSmall} resizeMode="contain" />
+            <View>
+              <Text style={[styles.ktaLabelText, { color: colors.textMuted }]}>NO. KTA RESMI simPAN</Text>
+              <Text style={[styles.ktaNumberText, { color: colors.primary }]}>32.73.01.2024.08912</Text>
+            </View>
+          </View>
+
+          <View style={styles.ktaButtonRow}>
+            <Pressable
+              onPress={() => setShowKtaQrModal(true)}
+              style={({ pressed }) => [
+                styles.ktaMiniBtnOutline,
+                { borderColor: colors.border, backgroundColor: colors.surface },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Feather name="maximize" size={13} color={colors.primary} />
+              <Text style={[styles.ktaMiniBtnText, { color: colors.primary }]}>QR Pass</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('SimpanKta')}
+              style={({ pressed }) => [
+                styles.ktaMiniBtnSolid,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.ktaMiniBtnSolidText}>e-KTA</Text>
+              <Feather name="chevron-right" size={13} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
       </View>
-{/* ========================================================================= */}
+
+      {/* Offline Sync Banner if Needed */}
+      {(!isOnline || unsyncedQueueCount > 0) && (
+        <View
+          style={[
+            styles.syncBannerCard,
+            {
+              backgroundColor: !isOnline ? colors.warningBg : colors.primaryLight,
+              borderColor: !isOnline ? colors.warning : colors.primary,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+            <Feather
+              name={!isOnline ? 'wifi-off' : 'cloud-off'}
+              size={18}
+              color={!isOnline ? colors.warning : colors.primary}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.syncBannerTitle, { color: colors.text }]}>
+                {!isOnline ? 'Koneksi Lapangan Terputus' : `${unsyncedQueueCount} Transaksi Menunggu Sinyal`}
+              </Text>
+              <Text style={[styles.syncBannerSub, { color: colors.textMuted }]}>
+                Data tetap aman di HP & otomatis disinkronkan saat internet aktif.
+              </Text>
+            </View>
+          </View>
+          {isOnline && (
+            <Pressable
+              onPress={handleManualSync}
+              disabled={isSyncing}
+              style={({ pressed }) => [
+                styles.syncBannerBtn,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="refresh-cw" size={12} color="#FFFFFF" />
+                  <Text style={styles.syncBannerBtnText}>Sinkron</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
