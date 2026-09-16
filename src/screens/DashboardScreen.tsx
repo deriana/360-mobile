@@ -904,6 +904,65 @@ export default function DashboardScreen({ navigation }: any) {
       </Card>
 
       {/* ========================================================================= */}
+      {/* 7. 📍 AKTIVITAS WILAYAH (LIVE REGIONAL TIMELINE)                           */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>📍 Aktivitas Wilayah</Text>
+            <View style={[styles.counterBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.counterBadgeText, { color: colors.primary }]}>Live Feed</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+            DPD Kab. Bandung
+          </Text>
+        </View>
+
+        <View style={{ gap: 10 }}>
+          {[
+            {
+              time: '15 Menit Lalu',
+              title: 'Saksi TPS 003 Dago Berhasil Presensi GPS',
+              desc: 'Rudi Santoso telah terverifikasi hadir di titik koordinat TPS radius 45 meter.',
+              tag: 'Presensi',
+              icon: 'map-pin' as const,
+              tone: 'success' as const,
+            },
+            {
+              time: '1 Jam Lalu',
+              title: 'Distribusi 1.200 Surat Mandat Fisik DPD',
+              desc: 'Sekretariat DPD menyelesaikan penyerahan bundel surat mandat ke 6 posko kecamatan.',
+              tag: 'Logistik',
+              icon: 'package' as const,
+              tone: 'primary' as const,
+            },
+            {
+              time: '3 Jam Lalu',
+              title: 'Posko Induk Coblong: Logistik Saksi Tiba',
+              desc: 'Paket konsumsi, vitamin, dan rompi saksi resmi siap didistribusikan ke TPS 001 - 015.',
+              tag: 'Posko',
+              icon: 'truck' as const,
+              tone: 'warning' as const,
+            },
+          ].map((act, idx) => (
+            <View key={idx} style={styles.activityFeedItem}>
+              <View style={[styles.activityIconCircle, { backgroundColor: colors.primaryLight }]}>
+                <Feather name={act.icon} size={13} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.activityItemTitle, { color: colors.text }]}>{act.title}</Text>
+                  <Text style={[styles.activityItemTime, { color: colors.textMuted }]}>{act.time}</Text>
+                </View>
+                <Text style={[styles.activityItemDesc, { color: colors.textMuted }]}>{act.desc}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
