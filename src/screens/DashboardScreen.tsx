@@ -436,6 +436,46 @@ export default function DashboardScreen({ navigation }: any) {
       )}
 
       {/* ========================================================================= */}
+      {/* 2. 📢 INFORMASI PAN (PROMINENT RED / OFFICIAL PAN ACCENT CARD)            */}
+      {/* ========================================================================= */}
+      <Pressable
+        onPress={() => setShowInfoModal(true)}
+        style={({ pressed }) => [
+          styles.informasiPanCard,
+          pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
+        ]}
+      >
+        <View style={styles.informasiTopBadgeRow}>
+          <View style={styles.informasiTagPill}>
+            <Feather name="volume-2" size={14} color="#FFFFFF" />
+            <Text style={styles.informasiTagText}>📢 INFORMASI RESMI PAN</Text>
+          </View>
+          <View style={styles.informasiDateBadge}>
+            <Text style={styles.informasiDateText}>HARI INI • 08:30 WIB</Text>
+          </View>
+        </View>
+
+        <Text style={styles.informasiTitle}>
+          Instruksi DPP: Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara Pemilu
+        </Text>
+
+        <Text style={styles.informasiExcerpt} numberOfLines={2}>
+          Ketua Umum DPP PAN Dr. (H.C.) Zulkifli Hasan menginstruksikan seluruh kader, pengurus DPD, dan saksi TPS siaga penuh mengawal suara rakyat di setiap bilik suara.
+        </Text>
+
+        <View style={styles.informasiFooterRow}>
+          <View style={styles.informasiAuthorRow}>
+            <Image source={BRAND_ASSETS.official} style={{ width: 18, height: 18 }} resizeMode="contain" />
+            <Text style={styles.informasiAuthorText}>DPP PAN & Badan Saksi Nasional (BSN)</Text>
+          </View>
+          <View style={styles.informasiLinkRow}>
+            <Text style={styles.informasiLinkText}>Baca Arahan</Text>
+            <Feather name="arrow-right" size={14} color="#FFFFFF" />
+          </View>
+        </View>
+      </Pressable>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
