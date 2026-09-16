@@ -596,6 +596,127 @@ export default function DashboardScreen({ navigation }: any) {
       </View>
 
       {/* ========================================================================= */}
+      {/* 4. 🎓 PELATIHAN SAYA (AKADEMI SAKSI & KADER PAN)                           */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>🎓 Pelatihan Saya</Text>
+            <Pill label="Akademi simPAN" tone="primary" />
+          </View>
+          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: colors.success }}>
+            2 dari 3 Selesai
+          </Text>
+        </View>
+
+        {/* Pelatihan 1: Bimtek Saksi C1 */}
+        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
+          <View style={styles.trainingItemHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <View style={[styles.trainingIconBadge, { backgroundColor: colors.successBg }]}>
+                <Feather name="check-circle" size={16} color={colors.success} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
+                  Bimtek Saksi TPS & Vision AI C1 Plano
+                </Text>
+                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
+                  3 dari 3 Modul Selesai • Skor 96/100
+                </Text>
+              </View>
+            </View>
+            <Pill label="Lulus 100%" tone="success" />
+          </View>
+          <Pressable
+            onPress={() => {
+              setDialogConfig({
+                visible: true,
+                title: 'E-Sertifikat Saksi Terverifikasi',
+                message: 'Sertifikat Kompetensi Saksi BSN PAN No. SERT-PAN-3273-08912 telah diterbitkan secara digital.',
+                tone: 'success',
+              });
+            }}
+            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
+          >
+            <Feather name="award" size={12} color={colors.primary} />
+            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
+              Lihat E-Sertifikat Saksi BSN
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Pelatihan 2: Kaderisasi Tingkat Pertama (In Progress) */}
+        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
+          <View style={styles.trainingItemHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <View style={[styles.trainingIconBadge, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="book-open" size={16} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
+                  Kaderisasi Tingkat Pertama (KTP) simPAN
+                </Text>
+                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
+                  Modul 2 Selesai • Lanjut: Visi & Platform PAN
+                </Text>
+              </View>
+            </View>
+            <Pill label="67% Berjalan" tone="primary" />
+          </View>
+
+          <View style={[styles.trainingProgressBarTrack, { backgroundColor: colors.border }]}>
+            <View style={[styles.trainingProgressBarFill, { width: '67%', backgroundColor: colors.primary }]} />
+          </View>
+
+          <Pressable
+            onPress={() => {
+              setDialogConfig({
+                visible: true,
+                title: 'Lanjutkan Modul 3',
+                message: 'Modul "Platform Perjuangan Politik & Etika Saksi PAN" siap dipelajari.',
+                tone: 'primary',
+              });
+            }}
+            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
+          >
+            <Feather name="play-circle" size={12} color={colors.primary} />
+            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
+              Lanjutkan Modul 3 (Estimasi: 15 Menit)
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Pelatihan 3: SOP Sengketa */}
+        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
+          <View style={styles.trainingItemHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <View style={[styles.trainingIconBadge, { backgroundColor: colors.warningBg }]}>
+                <Feather name="shield" size={16} color={colors.warning} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
+                  SOP Advokasi & Penanganan Sengketa Suara
+                </Text>
+                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
+                  Panduan Pelanggaran KPPS, Bawaslu, & MK
+                </Text>
+              </View>
+            </View>
+            <Pill label="Tersedia" tone="warning" />
+          </View>
+          <Pressable
+            onPress={() => navigation.navigate('HelpCenter')}
+            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
+          >
+            <Feather name="external-link" size={12} color={colors.primary} />
+            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
+              Pelajari Panduan & SOP Saksi
+            </Text>
+          </Pressable>
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
