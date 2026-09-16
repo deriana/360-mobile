@@ -811,6 +811,99 @@ export default function DashboardScreen({ navigation }: any) {
       </Card>
 
       {/* ========================================================================= */}
+      {/* 6. 🗳️ STATUS SAKSI (MONITORING STATUS PENUGASAN TPS SAYA)                  */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>🗳️ Status Saksi</Text>
+            <Pill label="Mandat Terverifikasi" tone="success" />
+          </View>
+          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
+            TPS 001 Dago
+          </Text>
+        </View>
+
+        <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: isDark ? '#0A3D6B' : '#BAE6FD' }]}>
+          <View style={styles.witnessStatusTop}>
+            <View style={{ gap: 2, flex: 1 }}>
+              <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
+                TPS 001 — Kel. Dago, Kec. Coblong
+              </Text>
+              <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
+                Kota Bandung, Jawa Barat • DPT: 284 Pemilih
+              </Text>
+            </View>
+            <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
+              <View style={[styles.pulsingGreenDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>
+                SIAGA LAPANGAN
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.wsDetailsGrid, { borderTopColor: colors.border }]}>
+            <View style={styles.wsDetailCell}>
+              <Text style={[styles.wsCellLabel, { color: colors.textMuted }]}>Koordinator TPS</Text>
+              <Text style={[styles.wsCellValue, { color: colors.text }]}>Asep Ridwan</Text>
+              <Text style={[styles.wsCellSub, { color: colors.primary }]}>0811-2233-4455</Text>
+            </View>
+            <View style={styles.wsDetailCell}>
+              <Text style={[styles.wsCellLabel, { color: colors.textMuted }]}>Surat Mandat</Text>
+              <Text style={[styles.wsCellValue, { color: colors.text }]}>042/SM-DPP/2026</Text>
+              <Text style={[styles.wsCellSub, { color: colors.success }]}>Sah KPU & Bawaslu</Text>
+            </View>
+          </View>
+
+          {/* Quick Buttons for Witness */}
+          <View style={styles.wsActionButtonsRow}>
+            <Pressable
+              onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
+              style={({ pressed }) => [
+                styles.wsBtnOutline,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Feather name="file-text" size={13} color={colors.primary} />
+              <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Buka Mandat</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
+              style={({ pressed }) => [
+                styles.wsBtnOutline,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Feather name="map-pin" size={13} color={colors.primary} />
+              <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Info TPS</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setDialogConfig({
+                  visible: true,
+                  title: 'Kontak Koordinator',
+                  message: 'Hubungi Asep Ridwan (Koordinator TPS Kel. Dago) di nomor 0811-2233-4455 via WhatsApp atau Telepon.',
+                  tone: 'info',
+                });
+              }}
+              style={({ pressed }) => [
+                styles.wsBtnSolid,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Feather name="phone" size={13} color="#FFFFFF" />
+              <Text style={styles.wsBtnSolidText}>Hubungi Korlap</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
