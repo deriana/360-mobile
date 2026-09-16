@@ -717,6 +717,100 @@ export default function DashboardScreen({ navigation }: any) {
       </Card>
 
       {/* ========================================================================= */}
+      {/* 5. 🎯 TUGAS SAYA (CHECKLIST HARIAN & HARI-H ANGGOTA)                       */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>🎯 Tugas Saya</Text>
+            <View style={[styles.counterBadge, { backgroundColor: colors.successBg }]}>
+              <Text style={[styles.counterBadgeText, { color: colors.success }]}>2 Selesai</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted }}>
+            Hari Pemungutan Suara
+          </Text>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          {taskChecklist.map((task) => (
+            <View
+              key={task.id}
+              style={[
+                styles.taskItemBox,
+                {
+                  backgroundColor: isDark ? 'rgba(0,43,82,0.35)' : '#FFFFFF',
+                  borderColor: task.done ? colors.success : colors.border,
+                },
+              ]}
+            >
+              <View style={styles.taskItemTopRow}>
+                <View
+                  style={[
+                    styles.taskCheckCircle,
+                    { backgroundColor: task.done ? colors.success : colors.border },
+                  ]}
+                >
+                  <Feather
+                    name={task.done ? 'check' : 'clock'}
+                    size={13}
+                    color={task.done ? '#FFFFFF' : colors.textMuted}
+                  />
+                </View>
+
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text
+                    style={[
+                      styles.taskTitleText,
+                      { color: colors.text, textDecorationLine: task.done ? 'none' : 'none' },
+                    ]}
+                  >
+                    {task.title}
+                  </Text>
+                  <Text style={[styles.taskDescText, { color: colors.textMuted }]}>
+                    {task.desc}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.taskFooterRow, { borderTopColor: colors.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="info" size={11} color={task.done ? colors.success : colors.primary} />
+                  <Text style={[styles.taskStatusNote, { color: task.done ? colors.success : colors.textMuted }]}>
+                    {task.time}
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={task.onPress}
+                  style={({ pressed }) => [
+                    styles.taskActionButton,
+                    { backgroundColor: task.done ? colors.surface : colors.primary, borderColor: colors.border },
+                    task.done && { borderWidth: 1 },
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.taskActionButtonText,
+                      { color: task.done ? colors.text : '#FFFFFF' },
+                    ]}
+                  >
+                    {task.actionLabel}
+                  </Text>
+                  <Feather
+                    name="chevron-right"
+                    size={12}
+                    color={task.done ? colors.text : '#FFFFFF'}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
