@@ -476,6 +476,126 @@ export default function DashboardScreen({ navigation }: any) {
       </Pressable>
 
       {/* ========================================================================= */}
+      {/* 3. 📅 AGENDA TERDEKAT (SWIPEABLE HORIZONTAL CARDS)                         */}
+      {/* ========================================================================= */}
+      <View style={styles.sectionWrap}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>📅 Agenda Terdekat</Text>
+            <View style={[styles.counterBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.counterBadgeText, { color: colors.primary }]}>3 Acara</Text>
+            </View>
+          </View>
+          <Pressable onPress={() => setShowAgendaModal(true)} hitSlop={8}>
+            <Text style={[styles.sectionActionLink, { color: colors.primary }]}>Lihat Semua</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.agendaCarouselTrack}
+        >
+          {/* Agenda 1 */}
+          <View style={[styles.agendaCardGold, { backgroundColor: '#D4A017' }]}>
+            <View style={styles.agendaCardHeader}>
+              <View style={styles.agendaPillTag}>
+                <Text style={styles.agendaPillTagText}>Konsolidasi DPD</Text>
+              </View>
+              <Text style={styles.agendaPriorityText}>Wajib Hadir</Text>
+            </View>
+            <Text style={styles.agendaCardTitle} numberOfLines={2}>
+              Konsolidasi Akbar Kader DPD & Pemenangan Pemilu
+            </Text>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="calendar" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText}>Sabtu, 20 Sep 2026 • 09:00 WIB</Text>
+            </View>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="map-pin" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText} numberOfLines={1}>
+                Gedung DPD PAN Kab. Bandung
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                setDialogConfig({
+                  visible: true,
+                  title: 'Konfirmasi Kehadiran',
+                  message: 'Kehadiran Anda pada Konsolidasi Akbar DPD telah dicatat oleh sekretariat.',
+                  tone: 'success',
+                });
+              }}
+              style={({ pressed }) => [styles.agendaJoinBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.agendaJoinBtnText}>Konfirmasi Hadir</Text>
+              <Feather name="check" size={12} color="#1E3A8A" />
+            </Pressable>
+          </View>
+
+          {/* Agenda 2 */}
+          <View style={[styles.agendaCardGold, { backgroundColor: '#B8860B' }]}>
+            <View style={styles.agendaCardHeader}>
+              <View style={styles.agendaPillTag}>
+                <Text style={styles.agendaPillTagText}>Bimtek Saksi C1</Text>
+              </View>
+              <Text style={styles.agendaPriorityText}>Terdaftar</Text>
+            </View>
+            <Text style={styles.agendaCardTitle} numberOfLines={2}>
+              Pelatihan Pengisian C1 Plano & Vision AI BSN
+            </Text>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="calendar" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText}>Minggu, 21 Sep 2026 • 13:00 WIB</Text>
+            </View>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="map-pin" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText} numberOfLines={1}>
+                Posko Kawal Suara Coblong
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => navigation.navigate('ReportForm', { tpsId: 'TPS-001' })}
+              style={({ pressed }) => [styles.agendaJoinBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.agendaJoinBtnText}>Buka Materi Bimtek</Text>
+              <Feather name="book-open" size={12} color="#1E3A8A" />
+            </Pressable>
+          </View>
+
+          {/* Agenda 3 */}
+          <View style={[styles.agendaCardGold, { backgroundColor: '#C59B27' }]}>
+            <View style={styles.agendaCardHeader}>
+              <View style={styles.agendaPillTag}>
+                <Text style={styles.agendaPillTagText}>Apel Akbar</Text>
+              </View>
+              <Text style={styles.agendaPriorityText}>Buka Kuota</Text>
+            </View>
+            <Text style={styles.agendaCardTitle} numberOfLines={2}>
+              Apel Siaga Pengawalan Suara Saksi TPS Se-Kabupaten
+            </Text>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="calendar" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText}>Rabu, 24 Sep 2026 • 07:00 WIB</Text>
+            </View>
+            <View style={styles.agendaInfoRow}>
+              <Feather name="map-pin" size={12} color="#FFFFFF" />
+              <Text style={styles.agendaInfoText} numberOfLines={1}>
+                Lapangan Merdeka Kota Bandung
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setShowAgendaModal(true)}
+              style={({ pressed }) => [styles.agendaJoinBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.agendaJoinBtnText}>Daftar Ikut</Text>
+              <Feather name="user-plus" size={12} color="#1E3A8A" />
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
