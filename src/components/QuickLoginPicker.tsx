@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { fonts } from '../theme';
 import { Account } from '../data/accounts';
 import { Role } from '../types';
 import { ROLE_ICON, ROLE_LABEL, ROLE_SCOPE_DESCRIPTION } from '../utils/scope';
@@ -248,9 +249,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   triggerTitle: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
   },
   triggerSubtitle: {
+    fontFamily: fonts.medium,
     fontSize: 10.5,
     marginTop: 1,
     fontWeight: '500',
@@ -278,6 +281,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   segmentLabel: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
   },
   countBadge: {
@@ -290,6 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countBadgeText: {
+    fontFamily: fonts.extraBold,
     fontSize: 9,
     fontWeight: '800',
   },
@@ -299,9 +304,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   categoryHeaderTitle: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
   },
   categoryHeaderCount: {
+    fontFamily: fonts.semiBold,
     fontSize: 10.5,
     fontWeight: '600',
   },
@@ -320,10 +327,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountRole: {
+    fontFamily: fonts.bold,
     fontSize: 12.5,
     fontWeight: '800',
   },
   accountScope: {
+    fontFamily: fonts.medium,
     fontSize: 10.5,
     fontWeight: '600',
     marginTop: 1,
@@ -337,6 +346,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   useTagText: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
     fontWeight: '800',
   },

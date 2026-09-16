@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Modal, Pill, PrimaryButton, SectionTitle } from './ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { getCandidateProfile } from '../data/candidates';
 
 interface CandidateDetailModalProps {
@@ -121,20 +121,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   candidateNumber: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '800',
     textTransform: 'uppercase',
   },
   candidateTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.md,
-    fontWeight: '800',
     textAlign: 'center',
   },
   visionText: {
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.xs + 1,
     fontStyle: 'italic',
     lineHeight: 18,
-    fontWeight: '600',
   },
   listItemRow: {
     flexDirection: 'row',
@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   listItemText: {
+    fontFamily: fonts.regular,
     fontSize: fontSize.xs,
     flex: 1,
     lineHeight: 18,
@@ -154,8 +155,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   programText: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '700',
   },
   infoRow: {
     flexDirection: 'row',
@@ -164,12 +165,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   infoLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.xs,
-    fontWeight: '600',
   },
   infoVal: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '700',
     flex: 1,
   },
 });

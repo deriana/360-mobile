@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Pill } from './ui';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
 
 export interface PersonnelIdCardRow {
@@ -92,19 +92,19 @@ const styles = StyleSheet.create({
   },
   cardLogo: { width: 140, height: 36 },
   cardHeaderBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: '#004F8A' },
-  cardHeaderText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+  cardHeaderText: { fontFamily: fonts.bold, fontSize: 10, color: '#FFFFFF', letterSpacing: 0.5 },
   cardBody: { padding: spacing.lg, gap: spacing.md },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   profileAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#0066B3' },
-  profileName: { fontSize: fontSize.lg, fontWeight: '800' },
-  badgeIdText: { fontSize: 11, fontWeight: '700' },
+  profileName: { fontFamily: fonts.bold, fontSize: fontSize.lg },
+  badgeIdText: { fontFamily: fonts.bold, fontSize: 11 },
   divider: { height: 1, width: '100%' },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   detailIconBox: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  detailLabel: { fontSize: 11 },
-  detailValue: { fontSize: fontSize.sm, fontWeight: '700' },
+  detailLabel: { fontFamily: fonts.medium, fontSize: 11 },
+  detailValue: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   cardFooter: { padding: spacing.md, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  footerTitle: { fontSize: fontSize.xs, fontWeight: '800' },
-  footerSub: { fontSize: 10, marginTop: 2 },
+  footerTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  footerSub: { fontFamily: fonts.regular, fontSize: 10, marginTop: 2 },
   qrPlaceholder: { width: 52, height: 52, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
 });

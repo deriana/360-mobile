@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Modal, Pill, PrimaryButton, SectionTitle } from './ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { CANDIDATE_PROFILES } from '../data/candidates';
 import { CandidateDetailModal } from './CandidateDetailModal';
 
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   filterText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   avatar: {
     width: 48,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     marginLeft: -16,
   },
   candTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1,
-    fontWeight: '800',
   },
 });

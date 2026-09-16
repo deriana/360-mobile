@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { PARTY_COLORS, PARTY_LOGOS, partyInitials } from '../data/legislative';
+import { fonts } from '../theme';
 
 export function PartyBadge({ party, size = 40 }: { party: string; size?: number }) {
   const logo = PARTY_LOGOS[party];
@@ -30,7 +31,7 @@ export function PartyBadge({ party, size = 40 }: { party: string; size?: number 
 
 const styles = StyleSheet.create({
   badge: { alignItems: 'center', justifyContent: 'center' },
-  text: { color: '#FFFFFF', fontWeight: '800' },
+  text: { color: '#FFFFFF', fontFamily: fonts.extraBold },
   logoWrap: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,

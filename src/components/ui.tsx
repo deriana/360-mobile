@@ -19,8 +19,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { statusBg, statusColors, statusLabel } from '../theme';
+import { fonts, getFontFamily, statusBg, statusColors, statusLabel } from '../theme';
 import { TpsStatus } from '../types';
+
+// ==========================================
+// APP TEXT (POPPINS TYPOGRAPHY)
+// ==========================================
+export interface AppTextProps extends React.ComponentProps<typeof Text> {
+  weight?: 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold';
+}
+
+export function AppText({ style, weight, children, ...props }: AppTextProps) {
+  const flattened = StyleSheet.flatten(style) || {};
+  let targetFamily: string = fonts.regular;
+  if (weight) {
+    targetFamily = fonts[weight] || fonts.regular;
+  } else if (flattened.fontFamily) {
+    targetFamily = flattened.fontFamily;
+  } else if (flattened.fontWeight) {
+    targetFamily = getFontFamily(flattened.fontWeight);
+  }
+
+  return (
+    <Text {...props} style={[{ fontFamily: fonts.regular }, style, { fontFamily: targetFamily }]}>
+      {children}
+    </Text>
+  );
+}
 
 // ==========================================
 // SCREEN
@@ -917,6 +942,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitleText: {
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
   badge: {
@@ -931,6 +957,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   badgeText: {
+    fontFamily: fonts.semiBold,
     fontWeight: '700',
   },
   button: {
@@ -949,6 +976,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
   iconButton: {
@@ -964,6 +992,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputLabel: {
+    fontFamily: fonts.semiBold,
     fontWeight: '700',
   },
   inputWrapper: {
@@ -977,6 +1006,7 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     paddingVertical: 12,
+    fontFamily: fonts.regular,
   },
   inputActionIcon: {
     marginLeft: 8,
@@ -988,9 +1018,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   errorText: {
+    fontFamily: fonts.medium,
     fontWeight: '500',
   },
   helperText: {
+    fontFamily: fonts.regular,
     marginTop: 2,
   },
   modalBackdrop: {
@@ -1028,9 +1060,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalTitle: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
   },
   modalSubtitle: {
+    fontFamily: fonts.regular,
     marginTop: 2,
   },
   modalBody: {
@@ -1054,10 +1088,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   confirmTitle: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
     textAlign: 'center',
   },
   confirmMessage: {
+    fontFamily: fonts.regular,
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -1086,9 +1122,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   kpiLabel: {
+    fontFamily: fonts.medium,
     fontWeight: '600',
   },
   kpiValue: {
+    fontFamily: fonts.bold,
     fontWeight: '800',
   },
   trendRow: {
@@ -1097,6 +1135,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   trendText: {
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
   emptyState: {
@@ -1113,9 +1152,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyTitle: {
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
   emptyBody: {
+    fontFamily: fonts.regular,
     textAlign: 'center',
   },
   skeleton: {
@@ -1149,6 +1190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dropdownModalTitle: {
+    fontFamily: fonts.bold,
     fontSize: 16,
     fontWeight: '800',
   },
@@ -1161,6 +1203,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
   },
   dropdownOptionText: {
+    fontFamily: fonts.medium,
     fontSize: 14,
   },
 });
