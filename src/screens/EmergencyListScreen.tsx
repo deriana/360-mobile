@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { EmptyState, Pill, PrimaryButton, Card, DropdownPicker, Modal } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { EmergencyCategory, EmergencyReport, EmergencySeverity, EmergencyStatus } from '../types';
 import { ROLE_PERMISSIONS, scopeTps } from '../utils/scope';
 
@@ -184,17 +184,17 @@ const styles = StyleSheet.create({
   topActionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   cardItem: { gap: spacing.xs },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  category: { fontSize: fontSize.sm, fontWeight: '700' },
-  desc: { fontSize: fontSize.xs, lineHeight: 18 },
+  category: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  desc: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 18 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.xs, borderTopWidth: 0.5, marginTop: 4 },
-  meta: { fontSize: fontSize.xs },
+  meta: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   detailBadgeRow: { flexDirection: 'row', gap: spacing.xs },
-  detailDesc: { fontSize: fontSize.sm, lineHeight: 20 },
+  detailDesc: { fontFamily: fonts.regular, fontSize: fontSize.sm, lineHeight: 20 },
   detailInfoBox: { borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, gap: spacing.sm },
   detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  detailRowLabel: { fontSize: fontSize.xs, width: 92 },
-  detailRowValue: { fontSize: fontSize.xs, fontWeight: '700', flex: 1 },
-  photosLabel: { fontSize: fontSize.xs, fontWeight: '700' },
+  detailRowLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs, width: 92 },
+  detailRowValue: { fontFamily: fonts.bold, fontSize: fontSize.xs, flex: 1 },
+  photosLabel: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   photoThumbWrap: { width: 92, height: 92, borderRadius: radius.md, overflow: 'hidden' },
   photoThumb: { width: '100%', height: '100%' },

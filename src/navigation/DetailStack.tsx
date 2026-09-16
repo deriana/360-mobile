@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../theme';
+import { fonts, useTheme } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
@@ -84,7 +84,7 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
     const screenOptions = {
       headerStyle: { backgroundColor: colors.surface },
       headerTintColor: colors.text,
-      headerTitleStyle: { fontWeight: '700' as const, color: colors.text },
+      headerTitleStyle: { fontFamily: fonts.bold, fontWeight: '700' as const, color: colors.text },
       headerShadowVisible: false,
       contentStyle: { backgroundColor: colors.background },
       headerRight: () => (

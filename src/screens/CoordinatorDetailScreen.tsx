@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 
 export default function CoordinatorDetailScreen({ route, navigation }: any) {
@@ -106,13 +106,13 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   headerCard: { alignItems: 'center', gap: spacing.xs },
   avatar: { width: 64, height: 64, borderRadius: 32, marginBottom: spacing.xs, borderWidth: 2, borderColor: '#4F46E5' },
-  name: { fontSize: fontSize.lg, fontWeight: '800', marginBottom: spacing.xs },
+  name: { fontFamily: fonts.bold, fontSize: fontSize.lg, marginBottom: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, gap: spacing.md, borderBottomWidth: 0.5 },
-  rowLabel: { fontSize: fontSize.xs, flexShrink: 0 },
-  rowValue: { fontSize: fontSize.sm, fontWeight: '600', flex: 1, textAlign: 'right' },
-  muted: { fontSize: fontSize.xs },
+  rowLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs, flexShrink: 0 },
+  rowValue: { fontFamily: fonts.semiBold, fontSize: fontSize.sm, flex: 1, textAlign: 'right' },
+  muted: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   witnessRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs, borderBottomWidth: 0.5 },
   witnessAvatar: { width: 36, height: 36, borderRadius: 18 },
-  witnessName: { fontSize: fontSize.sm, fontWeight: '700' },
-  witnessSub: { fontSize: 11 },
+  witnessName: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  witnessSub: { fontFamily: fonts.regular, fontSize: 11 },
 });

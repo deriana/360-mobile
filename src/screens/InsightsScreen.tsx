@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { insightsList } from '../data/insights';
 
 export default function InsightsScreen() {
@@ -58,11 +58,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  badgeText: { fontSize: fontSize.xs, fontWeight: '700' },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  disclaimer: { fontSize: fontSize.xs },
+  badgeText: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  title: { fontFamily: fonts.extraBold, fontSize: fontSize.xl },
+  disclaimer: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   insightCard: { borderLeftWidth: 4, gap: spacing.xs },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  body: { fontSize: fontSize.sm, lineHeight: 20 },
+  body: { fontFamily: fonts.regular, fontSize: fontSize.sm, lineHeight: 20 },
 });
 

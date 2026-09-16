@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
 import { generateWatermarkText } from '../utils/watermark';
 
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  tpsScopeText: { fontSize: fontSize.xs, fontWeight: '700', flex: 1 },
+  tpsScopeText: { fontFamily: fonts.bold, fontSize: fontSize.xs, flex: 1 },
   tpsIdText: { fontSize: 10, fontFamily: 'monospace' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItemWrap: { position: 'relative', width: '31%', aspectRatio: 1, overflow: 'hidden', borderRadius: radius.md },
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
   previewImage: { width: '100%', height: '100%' },
   timeBadge: { position: 'absolute', left: 4, bottom: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  timeBadgeText: { fontSize: 9, color: '#FFFFFF', fontWeight: '700' },
+  timeBadgeText: { fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' },
   removeBtn: {
     position: 'absolute',
     top: -6,

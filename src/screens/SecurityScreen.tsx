@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState } from '../components/ui';
-import { fontSize, iconSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { ROLE_PERMISSIONS } from '../utils/scope';
 
 const ITEMS: Array<{ icon: keyof typeof Feather.glyphMap; title: string; body: string }> = [
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
   },
-  securityBannerText: { fontSize: fontSize.xs, fontWeight: '700' },
+  securityBannerText: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconWrap: {
     width: 48,
@@ -77,6 +77,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: { fontSize: fontSize.sm, fontWeight: '700' },
-  body: { fontSize: fontSize.xs, lineHeight: 18 },
+  cardTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  body: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 18 },
 });

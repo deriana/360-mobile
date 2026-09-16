@@ -3,7 +3,7 @@ import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Pill, SectionTitle, PrimaryButton } from '../components/ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { KANTOR_SEKRETARIAT_LIST, KantorSekretariat } from '../data/simpan';
 
@@ -265,14 +265,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  gedungTag: { fontSize: 11, fontWeight: '600' },
+  gedungTag: { fontFamily: fonts.semiBold, fontSize: 11 },
   idBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
-  idBadgeText: { fontSize: 10, fontWeight: '800' },
-  namaKantor: { fontSize: fontSize.lg, fontWeight: '900', marginTop: 2 },
+  idBadgeText: { fontFamily: fonts.bold, fontSize: 10 },
+  namaKantor: { fontFamily: fonts.extraBold, fontSize: fontSize.lg, marginTop: 2 },
   addressRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  addressText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  addressText: { fontFamily: fonts.regular, fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
   jamRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  jamText: { fontSize: 11 },
+  jamText: { fontFamily: fonts.medium, fontSize: 11 },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -291,8 +291,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: radius.md,
   },
-  actionItemText: { fontSize: 11, fontWeight: '800' },
-  subHint: { fontSize: fontSize.xs, lineHeight: 16 },
+  actionItemText: { fontFamily: fonts.bold, fontSize: 11 },
+  subHint: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 16 },
   staffCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -321,21 +321,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#16A34A',
     borderWidth: 2,
   },
-  staffName: { fontSize: fontSize.sm, fontWeight: '800' },
-  staffRole: { fontSize: 11, fontWeight: '700' },
-  staffNip: { fontSize: 10 },
+  staffName: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  staffRole: { fontFamily: fonts.bold, fontSize: 11 },
+  staffNip: { fontFamily: fonts.regular, fontSize: 10 },
   contactBox: {
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: 4,
   },
-  contactBoxTitle: { fontSize: 11, fontWeight: '700' },
-  contactBoxVal: { fontSize: fontSize.xs, fontWeight: '800' },
+  contactBoxTitle: { fontFamily: fonts.bold, fontSize: 11 },
+  contactBoxVal: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   loketHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
-  loketTag: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
-  layananTitle: { fontSize: fontSize.sm, fontWeight: '800', marginTop: 2 },
-  layananDesc: { fontSize: fontSize.xs, lineHeight: 17 },
+  loketTag: { fontFamily: fonts.extraBold, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' },
+  layananTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm, marginTop: 2 },
+  layananDesc: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 17 },
   layananMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaText: { fontSize: 10.5 },
+  metaText: { fontFamily: fonts.regular, fontSize: 10.5 },
   fasilitasGrid: { gap: 6 },
   fasilitasItem: {
     flexDirection: 'row',
@@ -355,5 +355,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  fasilitasText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  fasilitasText: { fontFamily: fonts.regular, fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
 });

@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { EmptyState, Pill, Input } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { scopeTps, scopeWitnesses } from '../utils/scope';
 import { IMAGES, getWitnessAvatar } from '../data/images';
 import { WitnessStatus } from '../types';
@@ -102,7 +102,7 @@ export default function WitnessListScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  scopeText: { fontSize: fontSize.xs },
+  scopeText: { fontFamily: fonts.medium, fontSize: fontSize.xs },
   rowCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#4F46E5',
   },
-  name: { fontSize: fontSize.sm, fontWeight: '700' },
+  name: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tps: { fontSize: fontSize.xs },
-  dotSep: { fontSize: fontSize.xs },
+  tps: { fontFamily: fonts.regular, fontSize: fontSize.xs },
+  dotSep: { fontFamily: fonts.regular, fontSize: fontSize.xs },
 });

@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Pill, PrimaryButton } from '../components/ui';
 import { BRAND_ASSETS } from '../data/images';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 
 export default function PartyLeaderboardScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -124,10 +124,11 @@ const styles = StyleSheet.create({
     height: 38,
   },
   cardTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.md,
-    fontWeight: '800',
   },
   cardSubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 11,
   },
   heroStatBox: {
@@ -142,18 +143,19 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   heroLabel: {
+    fontFamily: fonts.bold,
     color: 'rgba(255, 255, 255, 0.85)',
     fontSize: 10,
-    fontWeight: '700',
     letterSpacing: 0.5,
   },
   heroValue: {
+    fontFamily: fonts.extraBold,
     color: '#FFFFFF',
     fontSize: 30,
-    fontWeight: '900',
     lineHeight: 36,
   },
   heroSub: {
+    fontFamily: fonts.regular,
     color: 'rgba(255, 255, 255, 0.85)',
     fontSize: 11,
     marginTop: 2,
@@ -167,15 +169,15 @@ const styles = StyleSheet.create({
     minWidth: 72,
   },
   seatNumber: {
+    fontFamily: fonts.extraBold,
     color: '#FFFFFF',
     fontSize: 26,
-    fontWeight: '900',
     lineHeight: 30,
   },
   seatLabel: {
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
   },
   progressSection: {
     gap: 6,
@@ -186,12 +188,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   progressTitle: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '700',
   },
   progressPercent: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
   },
   progressBarTrack: {
     height: 8,
@@ -209,8 +211,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   breakdownHeader: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
     marginBottom: 4,
   },
   statRow: {
@@ -232,12 +234,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statName: {
+    fontFamily: fonts.semiBold,
     fontSize: 12,
-    fontWeight: '600',
   },
   statNum: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
   },
   infoFooterRow: {
     flexDirection: 'row',
@@ -251,7 +253,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   infoBadgeText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: '600',
   },
 });

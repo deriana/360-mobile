@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill } from '../components/ui';
-import { fontSize, spacing, iconStrokeWidth } from '../theme';
+import { fonts, fontSize, spacing, iconStrokeWidth } from '../theme';
 
 export default function BroadcastScreen() {
   const { broadcasts } = useApp();
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg, gap: spacing.sm },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   senderBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  senderText: { fontSize: 11, fontWeight: '800' },
-  cardTitle: { fontSize: fontSize.sm, fontWeight: '800' },
-  cardBody: { fontSize: fontSize.xs, lineHeight: 18 },
+  senderText: { fontFamily: fonts.bold, fontSize: 11 },
+  cardTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  cardBody: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 18 },
 });

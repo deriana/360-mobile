@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 
 export default function WitnessDetailScreen({ route, navigation }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
@@ -98,10 +98,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
-  avatarText: { fontWeight: '800', fontSize: fontSize.xl },
-  name: { fontSize: fontSize.lg, fontWeight: '800', marginBottom: spacing.xs },
+  avatarText: { fontFamily: fonts.extraBold, fontSize: fontSize.xl },
+  name: { fontFamily: fonts.bold, fontSize: fontSize.lg, marginBottom: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, gap: spacing.md, borderBottomWidth: 0.5 },
-  rowLabel: { fontSize: fontSize.xs, flexShrink: 0 },
-  rowValue: { fontSize: fontSize.sm, fontWeight: '600', flex: 1, textAlign: 'right' },
+  rowLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs, flexShrink: 0 },
+  rowValue: { fontFamily: fonts.semiBold, fontSize: fontSize.sm, flex: 1, textAlign: 'right' },
 });
 

@@ -11,6 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, EmptyState, Modal, Pill, PrimaryButton } from '../components/ui';
+import { fonts } from '../theme';
 import { WARTA_DPP_LIST, WartaPartai } from '../data/simpan';
 
 type CategoryFilter = 'ALL' | WartaPartai['kategori'];
@@ -366,6 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterChipText: {
+    fontFamily: fonts.medium,
     fontSize: 12,
   },
   contentScroll: {
@@ -386,8 +388,8 @@ const styles = StyleSheet.create({
     borderRadius: 3.5,
   },
   dateText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: '500',
   },
   // Hero Card Styles
   heroCard: {
@@ -397,12 +399,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   heroTitle: {
+    fontFamily: fonts.bold,
     fontSize: 16,
-    fontWeight: '800',
     lineHeight: 22,
     marginTop: 2,
   },
   heroSummary: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -422,12 +425,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroAuthor: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '700',
   },
   actionText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '700',
   },
   // Standard Card Styles
   standardCard: {
@@ -437,12 +440,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   newsTitle: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: '700',
     lineHeight: 20,
     marginTop: 2,
   },
   newsSummary: {
+    fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 17,
   },
@@ -455,14 +459,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   newsAuthor: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     flex: 1,
     marginRight: 8,
   },
   // Detail Modal Styles
   detailTitle: {
+    fontFamily: fonts.bold,
     fontSize: 17,
-    fontWeight: '800',
     lineHeight: 24,
   },
   authorityBox: {
@@ -481,13 +486,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   authorityLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: 10,
-    fontWeight: '600',
     textTransform: 'uppercase',
   },
   authorityName: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
     marginTop: 1,
   },
   divider: {
@@ -495,6 +500,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   detailBody: {
+    fontFamily: fonts.regular,
     fontSize: 13.5,
     lineHeight: 22,
   },

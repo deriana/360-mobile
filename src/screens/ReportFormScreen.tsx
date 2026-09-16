@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, DropdownPicker, EmptyState, IconButton, Modal, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
@@ -890,9 +890,9 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: 140 },
   header: { gap: 2 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subtitle: { fontSize: fontSize.xs },
-  cardTpsTitle: { fontSize: fontSize.md, fontWeight: '800', marginTop: 2 },
+  title: { fontFamily: fonts.extraBold, fontSize: fontSize.xl },
+  subtitle: { fontFamily: fonts.regular, fontSize: fontSize.xs },
+  cardTpsTitle: { fontFamily: fonts.bold, fontSize: fontSize.md, marginTop: 2 },
   modeTabPill: {
     flex: 1,
     flexDirection: 'row',
@@ -902,14 +902,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.pill,
   },
-  modeTabText: { fontSize: 12, fontWeight: '700' },
+  modeTabText: { fontFamily: fonts.bold, fontSize: 12 },
   filterPill: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.pill,
     borderWidth: 1,
   },
-  filterText: { fontSize: 11, fontWeight: '700' },
+  filterText: { fontFamily: fonts.bold, fontSize: 11 },
   summaryBox: {
     padding: spacing.xs + 2,
     borderRadius: radius.md,
@@ -917,9 +917,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  summaryText: { fontSize: 11 },
+  summaryText: { fontFamily: fonts.regular, fontSize: 11 },
   uploadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm },
-  uploadLabel: { fontSize: fontSize.xs, fontWeight: '600', flex: 1 },
+  uploadLabel: { fontFamily: fonts.semiBold, fontSize: fontSize.xs, flex: 1 },
   previewImage: { width: 44, height: 44, borderRadius: radius.sm, borderWidth: 1, borderColor: '#4F46E5' },
   previewPlaceholder: { width: 44, height: 44, borderRadius: radius.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   categoryTabPill: {
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
   },
-  categoryTabText: { fontSize: 12 },
+  categoryTabText: { fontFamily: fonts.medium, fontSize: 12 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

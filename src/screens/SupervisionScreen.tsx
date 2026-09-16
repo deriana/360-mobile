@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Input, Pill, StatusBadge } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { getUserProfile, scopeTps, scopeWitnesses } from '../utils/scope';
 import { getTpsPhoto } from '../data/images';
 import { Tps, TpsStatus } from '../types';
@@ -263,8 +263,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scopeText: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '700',
   },
   filterScrollView: {
     maxHeight: 38,
@@ -284,8 +284,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   sectionHeaderWrap: {
     flexDirection: 'row',
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionDistrictTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1,
-    fontWeight: '800',
   },
   sectionBadge: {
     paddingHorizontal: 8,
@@ -317,8 +317,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   sectionBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
   tpsCard: {
     flexDirection: 'row',
@@ -341,8 +341,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tpsNumberTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm,
-    fontWeight: '800',
   },
   badgeRow: {
     flexDirection: 'row',
@@ -350,6 +350,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tpsLocationSub: {
+    fontFamily: fonts.regular,
     fontSize: 11,
   },
   cardMetaRow: {
@@ -365,8 +366,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
-    fontWeight: '700',
   },
   quickCountRow: {
     flexDirection: 'row',
@@ -376,6 +377,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0.5,
   },
   quickCountText: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     flex: 1,
   },

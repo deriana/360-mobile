@@ -3,7 +3,7 @@ import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Pill, SectionTitle } from '../components/ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { KANTOR_SEKRETARIAT_LIST } from '../data/simpan';
 
@@ -114,10 +114,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   kantorHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  kantorNama: { fontSize: fontSize.md, fontWeight: '800' },
+  kantorNama: { fontFamily: fonts.bold, fontSize: fontSize.md },
   rowInfo: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  alamatText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
-  subInfoText: { fontSize: 11 },
+  alamatText: { fontFamily: fonts.regular, fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  subInfoText: { fontFamily: fonts.medium, fontSize: 11 },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: radius.pill,
   },
-  actionBtnText: { fontSize: 11, fontWeight: '700' },
+  actionBtnText: { fontFamily: fonts.bold, fontSize: 11 },
   emailBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   konterBadgeRow: {
     flexDirection: 'row',
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   konterBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
     flex: 1,
   },
   detailBtn: {
@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   detailBtnText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '800',
   },
   leaderRow: {
     flexDirection: 'row',
@@ -175,11 +175,11 @@ const styles = StyleSheet.create({
     borderColor: '#0066B3',
   },
   leaderName: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
   },
   leaderRole: {
+    fontFamily: fonts.semiBold,
     fontSize: 10.5,
-    fontWeight: '600',
   },
 });

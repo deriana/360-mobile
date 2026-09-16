@@ -4,7 +4,7 @@ import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/b
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
-import { iconStrokeWidth, useTheme } from '../theme';
+import { fonts, iconStrokeWidth, useTheme } from '../theme';
 import { buildDetailStack } from './DetailStack';
 
 import DashboardScreen from '../screens/DashboardScreen';
@@ -193,6 +193,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 styles.tabLabel,
                 {
                   color,
+                  fontFamily: isFocused ? fonts.bold : fonts.medium,
                   fontWeight: isFocused ? '700' : '500',
                 },
               ]}

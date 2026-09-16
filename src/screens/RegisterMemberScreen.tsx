@@ -15,7 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { Card, ConfirmDialog, Input, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
 import { scanKtpWithVisionAi } from '../utils/ocrApi';
@@ -508,13 +508,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   header: { gap: 4 },
-  title: { fontSize: fontSize.lg, fontWeight: '900' },
-  subTitle: { fontSize: fontSize.xs, lineHeight: 17 },
+  title: { fontFamily: fonts.extraBold, fontSize: fontSize.lg },
+  subTitle: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 17 },
   stepIndicatorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xs },
   stepItem: { alignItems: 'center', gap: 4, width: 84 },
   stepCircle: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  stepNum: { fontSize: 11, fontWeight: '800' },
-  stepLabel: { fontSize: 10, textAlign: 'center' },
+  stepNum: { fontFamily: fonts.bold, fontSize: 11 },
+  stepLabel: { fontFamily: fonts.medium, fontSize: 10, textAlign: 'center' },
   stepLine: { flex: 1, height: 2, marginBottom: 16, marginHorizontal: -10 },
   viewfinderHeader: {
     flexDirection: 'row',
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   aiDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00D2FF' },
-  viewfinderTitle: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
+  viewfinderTitle: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
   viewfinderBox: { width: '100%', height: 220, justifyContent: 'center', alignItems: 'center' },
   viewfinderOverlay: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', padding: spacing.md },
   scanFrame: {
@@ -539,11 +539,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     gap: 6,
   },
-  frameHint: { fontSize: 11, color: '#FFFFFF', fontWeight: '700' },
+  frameHint: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
   laserLine: { position: 'absolute', left: 0, right: 0, height: 3, shadowColor: '#00D2FF', shadowOpacity: 0.8, shadowRadius: 6 },
   viewfinderFooter: { padding: spacing.md, borderTopWidth: 1 },
   scanningStatusWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 8 },
-  scanningStatusText: { fontSize: fontSize.xs, fontWeight: '700' },
+  scanningStatusText: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   sampleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -553,15 +553,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     marginTop: 4,
   },
-  sampleBtnText: { fontSize: 11, fontWeight: '800' },
+  sampleBtnText: { fontFamily: fonts.bold, fontSize: 11 },
   benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  benefitText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  benefitText: { fontFamily: fonts.regular, fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
   verifyHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   verifyIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  verifyTitle: { fontSize: fontSize.sm, fontWeight: '800' },
-  verifySub: { fontSize: 11, marginTop: 2, lineHeight: 16 },
+  verifyTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  verifySub: { fontFamily: fonts.regular, fontSize: 11, marginTop: 2, lineHeight: 16 },
   divider: { height: 1, marginVertical: spacing.xs },
-  subSectionTitle: { fontSize: fontSize.xs, fontWeight: '800', marginBottom: 2 },
+  subSectionTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs, marginBottom: 2 },
   successCelebrationCard: {
     alignItems: 'center',
     padding: spacing.lg,
@@ -570,8 +570,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   celebrationIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  celebrationTitle: { fontSize: fontSize.lg, fontWeight: '900' },
-  celebrationSub: { fontSize: fontSize.xs, textAlign: 'center', lineHeight: 17, maxWidth: 280 },
+  celebrationTitle: { fontFamily: fonts.extraBold, fontSize: fontSize.lg },
+  celebrationSub: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', lineHeight: 17, maxWidth: 280 },
   ktaPhysicalCard: {
     backgroundColor: '#002B49',
     borderRadius: radius.xl,
@@ -582,15 +582,15 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   ktaHeaderLine: { flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.15)', paddingBottom: 8 },
-  ktaPartyTitle: { fontSize: 12, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
-  ktaPartySub: { fontSize: 8.5, color: '#93C5FD', fontWeight: '700' },
+  ktaPartyTitle: { fontFamily: fonts.extraBold, fontSize: 12, color: '#FFFFFF', letterSpacing: 0.5 },
+  ktaPartySub: { fontFamily: fonts.bold, fontSize: 8.5, color: '#93C5FD' },
   ktaChip: { backgroundColor: '#0066B3', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  ktaChipText: { fontSize: 9, fontWeight: '900', color: '#FFFFFF' },
+  ktaChipText: { fontFamily: fonts.extraBold, fontSize: 9, color: '#FFFFFF' },
   ktaBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   ktaAvatarWrap: { width: 56, height: 68, borderRadius: radius.sm, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  ktaKtaNum: { fontSize: 12, fontWeight: '900', color: '#60A5FA', letterSpacing: 0.5 },
-  ktaHolderName: { fontSize: 13, fontWeight: '900', color: '#FFFFFF' },
-  ktaMetaText: { fontSize: 9.5, color: 'rgba(255,255,255,0.8)' },
+  ktaKtaNum: { fontFamily: fonts.extraBold, fontSize: 12, color: '#60A5FA', letterSpacing: 0.5 },
+  ktaHolderName: { fontFamily: fonts.bold, fontSize: 13, color: '#FFFFFF' },
+  ktaMetaText: { fontFamily: fonts.medium, fontSize: 9.5, color: 'rgba(255,255,255,0.8)' },
   ktaFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -600,9 +600,9 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   ktaQrPlaceholder: { width: 44, height: 44, borderRadius: 4, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  ktaSigRole: { fontSize: 8, color: '#93C5FD' },
-  ktaSigName: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
-  ktaSigSec: { fontSize: 8, color: 'rgba(255,255,255,0.7)' },
+  ktaSigRole: { fontFamily: fonts.regular, fontSize: 8, color: '#93C5FD' },
+  ktaSigName: { fontFamily: fonts.bold, fontSize: 10, color: '#FFFFFF' },
+  ktaSigSec: { fontFamily: fonts.regular, fontSize: 8, color: 'rgba(255,255,255,0.7)' },
   registerOtherBtn: { alignItems: 'center', paddingVertical: 8 },
-  registerOtherText: { fontSize: fontSize.xs, fontWeight: '800' },
+  registerOtherText: { fontFamily: fonts.bold, fontSize: fontSize.xs },
 });

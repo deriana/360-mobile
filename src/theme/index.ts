@@ -100,16 +100,35 @@ export const radius = {
   pill: 999,
 } as const;
 
-// Strict typographic scale: Display / H1 / H2 / H3 / Body / BodyStrong / Label / Caption
+// Poppins Font Family Tokens
+export const fonts = {
+  regular: 'Poppins-Regular',
+  medium: 'Poppins-Medium',
+  semiBold: 'Poppins-SemiBold',
+  bold: 'Poppins-Bold',
+  extraBold: 'Poppins-ExtraBold',
+} as const;
+
+export function getFontFamily(weight?: string | number): string {
+  if (!weight) return fonts.regular;
+  const w = String(weight).toLowerCase();
+  if (w === '800' || w === '900' || w === 'heavy' || w === 'extrabold') return fonts.extraBold;
+  if (w === '700' || w === 'bold') return fonts.bold;
+  if (w === '600' || w === 'semibold') return fonts.semiBold;
+  if (w === '500' || w === 'medium') return fonts.medium;
+  return fonts.regular;
+}
+
+// Strict typographic scale with Poppins: Display / H1 / H2 / H3 / Body / BodyStrong / Label / Caption
 export const type = {
-  display: { fontSize: 32, fontWeight: '800' as const, lineHeight: 38 },
-  h1: { fontSize: 24, fontWeight: '800' as const, lineHeight: 30 },
-  h2: { fontSize: 20, fontWeight: '700' as const, lineHeight: 26 },
-  h3: { fontSize: 18, fontWeight: '700' as const, lineHeight: 24 },
-  body: { fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
-  bodyStrong: { fontSize: 16, fontWeight: '700' as const, lineHeight: 22 },
-  label: { fontSize: 14, fontWeight: '600' as const, lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '500' as const, lineHeight: 16 },
+  display: { fontFamily: fonts.extraBold, fontSize: 32, fontWeight: '800' as const, lineHeight: 38 },
+  h1: { fontFamily: fonts.bold, fontSize: 24, fontWeight: '800' as const, lineHeight: 30 },
+  h2: { fontFamily: fonts.bold, fontSize: 20, fontWeight: '700' as const, lineHeight: 26 },
+  h3: { fontFamily: fonts.semiBold, fontSize: 18, fontWeight: '700' as const, lineHeight: 24 },
+  body: { fontFamily: fonts.regular, fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  bodyStrong: { fontFamily: fonts.bold, fontSize: 16, fontWeight: '700' as const, lineHeight: 22 },
+  label: { fontFamily: fonts.semiBold, fontSize: 14, fontWeight: '600' as const, lineHeight: 18 },
+  caption: { fontFamily: fonts.medium, fontSize: 12, fontWeight: '500' as const, lineHeight: 16 },
 } as const;
 
 // Legacy numeric scale kept for existing call sites

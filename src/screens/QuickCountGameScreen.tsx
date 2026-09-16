@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { PASLON_AVATARS } from '../data/images';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { addToOfflineQueue } from '../utils/offlineQueue';
@@ -261,20 +261,20 @@ export default function QuickCountGameScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
-  title: { fontSize: fontSize.lg, fontWeight: '700' },
+  title: { fontFamily: fonts.bold, fontSize: fontSize.lg },
   candidateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatar: { width: 44, height: 44, borderRadius: radius.md },
-  candidateName: { fontSize: fontSize.md, fontWeight: '600' },
-  voteCount: { fontSize: fontSize.xl, fontWeight: '800' },
+  candidateName: { fontFamily: fonts.semiBold, fontSize: fontSize.md },
+  voteCount: { fontFamily: fonts.extraBold, fontSize: fontSize.xl },
   stepButton: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  stepButtonText: { fontWeight: '800', fontSize: fontSize.md },
-  plusButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: fontSize.md },
+  stepButtonText: { fontFamily: fonts.bold, fontSize: fontSize.md },
+  plusButtonText: { color: '#FFFFFF', fontFamily: fonts.bold, fontSize: fontSize.md },
   invalidIconWrap: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   rankBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  rankBadgeText: { color: '#FFFFFF', fontWeight: '800', fontSize: fontSize.xs },
+  rankBadgeText: { color: '#FFFFFF', fontFamily: fonts.bold, fontSize: fontSize.xs },
   rankAvatar: { width: 24, height: 24, borderRadius: 12 },
-  rankName: { flex: 1, fontSize: fontSize.sm, fontWeight: '600' },
-  rankVotes: { fontSize: fontSize.md, fontWeight: '800' },
+  rankName: { flex: 1, fontFamily: fonts.semiBold, fontSize: fontSize.sm },
+  rankVotes: { fontFamily: fonts.bold, fontSize: fontSize.md },
   rankBarTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
   rankBarFill: { height: '100%', borderRadius: 4 },
 });

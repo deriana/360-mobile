@@ -1,5 +1,23 @@
 import React, { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+
+// Set global font family defaults for React Native Text & TextInput to Poppins
+try {
+  const TextComponent = Text as any;
+  if (TextComponent.defaultProps) {
+    TextComponent.defaultProps.style = { fontFamily: 'Poppins-Regular', ...TextComponent.defaultProps.style };
+  } else {
+    TextComponent.defaultProps = { style: { fontFamily: 'Poppins-Regular' } };
+  }
+  const TextInputComponent = TextInput as any;
+  if (TextInputComponent.defaultProps) {
+    TextInputComponent.defaultProps.style = { fontFamily: 'Poppins-Regular', ...TextInputComponent.defaultProps.style };
+  } else {
+    TextInputComponent.defaultProps = { style: { fontFamily: 'Poppins-Regular' } };
+  }
+} catch (e) {
+  // safe fallback
+}
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -70,6 +88,11 @@ function AppContent() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
+    'Poppins-Regular': require('./assets/fonts/Poppins-Regular.ttf'),
+    'Poppins-Medium': require('./assets/fonts/Poppins-Medium.ttf'),
+    'Poppins-SemiBold': require('./assets/fonts/Poppins-SemiBold.ttf'),
+    'Poppins-Bold': require('./assets/fonts/Poppins-Bold.ttf'),
+    'Poppins-ExtraBold': require('./assets/fonts/Poppins-ExtraBold.ttf'),
     ...Feather.font,
   });
 

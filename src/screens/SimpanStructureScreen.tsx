@@ -12,7 +12,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill } from '../components/ui';
-import { fontSize, radius, spacing } from '../theme';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { STRUKTUR_PENGURUS, PengurusOrg } from '../data/simpan';
 import { getWitnessAvatar } from '../data/images';
 
@@ -821,6 +821,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   stepPillText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
   },
   stepChevron: {
@@ -891,19 +892,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm - 4,
   },
   categoryBadgeText: {
+    fontFamily: fonts.extraBold,
     fontSize: 9,
-    fontWeight: '800',
     letterSpacing: 0.3,
   },
   nodePeriodeText: {
+    fontFamily: fonts.semiBold,
     fontSize: 10,
-    fontWeight: '600',
   },
   nodeTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 2,
-    fontWeight: '800',
   },
   nodeScope: {
+    fontFamily: fonts.regular,
     fontSize: 10,
   },
   subordinationRow: {
@@ -913,6 +915,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subordinationText: {
+    fontFamily: fonts.regular,
     fontSize: 10,
   },
   headerRightToggle: {
@@ -927,8 +930,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   officerCountText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
   chevronCircle: {
     width: 22,
@@ -1016,8 +1019,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   conciseRoleText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   chiefPill: {
     paddingHorizontal: 5,
@@ -1025,12 +1028,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   chiefPillText: {
+    fontFamily: fonts.extraBold,
     fontSize: 8,
-    fontWeight: '800',
   },
   officerName: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
   },
   actionsCol: {
     flexDirection: 'row',
@@ -1069,10 +1072,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   diagramNodeTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1,
-    fontWeight: '800',
   },
   diagramNodeMeta: {
+    fontFamily: fonts.regular,
     fontSize: 10,
     marginTop: 1,
   },
@@ -1090,12 +1094,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   diagramLeaderRole: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
   diagramLeaderName: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '800',
   },
   diagramConnectorWrap: {
     height: 20,

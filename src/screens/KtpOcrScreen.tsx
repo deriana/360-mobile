@@ -3,7 +3,7 @@ import { Animated, Image, ImageBackground, KeyboardAvoidingView, Platform, Press
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, IconButton, Input, Modal, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { pickImage } from '../utils/pickImage';
 import { scanKtpWithVisionAi } from '../utils/ocrApi';
 
@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'center' },
   stepItem: { alignItems: 'center', gap: 4, width: 78 },
   stepCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  stepNum: { fontSize: 11, fontWeight: '800' },
-  stepLabel: { fontSize: 10.5, textAlign: 'center' },
+  stepNum: { fontFamily: fonts.bold, fontSize: 11 },
+  stepLabel: { fontFamily: fonts.medium, fontSize: 10.5, textAlign: 'center' },
   stepConnector: { flex: 1, height: 2, marginBottom: 14, marginHorizontal: -8 },
   accentStripe: { height: 3, width: '100%' },
   ktpHeaderBar: {
@@ -552,10 +552,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   headerNumBadge: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  headerNumBadgeText: { fontSize: 11, fontWeight: '800', color: '#FFFFFF' },
-  ktpHeaderTitle: { fontSize: fontSize.xs, fontWeight: '700', color: '#FFFFFF', flex: 1 },
+  headerNumBadgeText: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
+  ktpHeaderTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs, color: '#FFFFFF', flex: 1 },
   ocrBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
-  ocrBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  ocrBadgeText: { fontFamily: fonts.bold, fontSize: 10, color: '#FFFFFF' },
   ktpViewfinder: { width: '100%', height: 210, justifyContent: 'space-between' },
   ktpViewfinderEmpty: { backgroundColor: '#0F172A' },
   ktpFrameWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
@@ -572,28 +572,28 @@ const styles = StyleSheet.create({
   },
   scanIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   scanLine: { position: 'absolute', left: 4, right: 4, height: 2, borderRadius: 1, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 4 },
-  targetHint: { fontSize: 11, color: '#FFFFFF', fontWeight: '700', textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
+  targetHint: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF', textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   ktpActionFooter: { padding: spacing.md, borderTopWidth: 1 },
-  editHint: { fontSize: fontSize.xs, marginTop: 2 },
+  editHint: { fontFamily: fonts.regular, fontSize: fontSize.xs, marginTop: 2 },
   successBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md },
   successIconWrap: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  successTitle: { fontSize: fontSize.sm, fontWeight: '800' },
-  successSubtitle: { fontSize: 11, marginTop: 1 },
+  successTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  successSubtitle: { fontFamily: fonts.regular, fontSize: 11, marginTop: 1 },
   divider: { height: 1, marginTop: spacing.xs },
-  optionalLabel: { fontSize: fontSize.xs, fontWeight: '700' },
-  tipsTitle: { fontSize: fontSize.sm, fontWeight: '800', flex: 1 },
+  optionalLabel: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  tipsTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm, flex: 1 },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  tipText: { fontSize: fontSize.xs, lineHeight: 17, flex: 1 },
+  tipText: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 17, flex: 1 },
   profilePhotoRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   profilePhotoAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   profilePhotoImg: { width: '100%', height: '100%' },
-  profilePhotoLabel: { fontSize: fontSize.xs, fontWeight: '700' },
+  profilePhotoLabel: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   calendarHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  calendarMonthLabel: { fontSize: fontSize.sm, fontWeight: '800' },
+  calendarMonthLabel: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   calendarWeekRow: { flexDirection: 'row', marginTop: spacing.sm },
-  calendarWeekday: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700' },
+  calendarWeekday: { fontFamily: fonts.bold, flex: 1, textAlign: 'center', fontSize: 11 },
   calendarGrid: { marginTop: spacing.xs },
   calendarWeekCellsRow: { flexDirection: 'row' },
   calendarCell: { flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
-  calendarCellText: { fontSize: fontSize.sm, fontWeight: '600' },
+  calendarCellText: { fontFamily: fonts.semiBold, fontSize: fontSize.sm },
 });

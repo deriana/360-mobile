@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Input, Pill } from '../components/ui';
 import { PartyBadge } from '../components/PartyBadge';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { NATIONAL_PARTIES, LEGISLATIVE_MEMBERS } from '../data/legislative';
 import { getStableAvatar } from '../data/images';
 
@@ -318,8 +318,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   partyFullName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.md,
-    fontWeight: '800',
     flexShrink: 1,
   },
   partyCodePill: {
@@ -328,12 +328,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   partyCodeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
   },
   fraksiText: {
+    fontFamily: fonts.semiBold,
     fontSize: 11,
-    fontWeight: '600',
   },
   thresholdRow: {
     flexDirection: 'row',
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   thresholdText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
   metricsBar: {
     flexDirection: 'row',
@@ -360,12 +360,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metricValue: {
+    fontFamily: fonts.extraBold,
     fontSize: fontSize.md,
-    fontWeight: '900',
   },
   metricLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: 10,
-    fontWeight: '600',
   },
   metricDivider: {
     width: 1,
@@ -385,8 +385,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   chipText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   resultsInfoRow: {
     flexDirection: 'row',
@@ -396,6 +396,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   resultsCountText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
   },
   candidateCard: {
@@ -429,8 +430,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   candidateName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm,
-    fontWeight: '800',
   },
   metaBadgeRow: {
     flexDirection: 'row',
@@ -447,15 +448,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dapilText: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
-    fontWeight: '700',
   },
   dotSep: {
+    fontFamily: fonts.regular,
     fontSize: 10,
   },
   noUrutText: {
+    fontFamily: fonts.semiBold,
     fontSize: 10.5,
-    fontWeight: '600',
   },
   votesRow: {
     flexDirection: 'row',
@@ -464,11 +466,12 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   votesLabel: {
+    fontFamily: fonts.regular,
     fontSize: 10,
   },
   votesValue: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '800',
   },
   cardRightCol: {
     alignItems: 'flex-end',
@@ -486,12 +489,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   loadingMoreText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: '600',
   },
   allLoadedText: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: '600',
     textAlign: 'center',
   },
 });

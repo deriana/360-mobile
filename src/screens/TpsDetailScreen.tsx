@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Modal, PrimaryButton, SectionTitle, StatusBadge, Pill } from '../components/ui';
-import { fontSize, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, radius, shadow, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { CandidateDetailModal } from '../components/CandidateDetailModal';
 import { PartyBadge } from '../components/PartyBadge';
@@ -536,10 +536,10 @@ const styles = StyleSheet.create({
   tpsOverlay: { padding: spacing.md, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   idBadgeRow: { marginBottom: 2 },
-  tpsIdBadge: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.5 },
-  tpsTitle: { fontSize: fontSize.md + 1, fontWeight: '800' },
+  tpsIdBadge: { fontFamily: fonts.bold, fontSize: 10.5, letterSpacing: 0.5 },
+  tpsTitle: { fontFamily: fonts.bold, fontSize: fontSize.md + 1 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-  locationText: { fontSize: fontSize.xs, flex: 1 },
+  locationText: { fontFamily: fonts.medium, fontSize: fontSize.xs, flex: 1 },
   
   // 3-Column Responsive KPI Grid
   kpiContainer: {
@@ -563,16 +563,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   kpiLabel: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
-    fontWeight: '700',
   },
   kpiValue: {
+    fontFamily: fonts.extraBold,
     fontSize: fontSize.md + 2,
-    fontWeight: '800',
   },
   kpiSub: {
+    fontFamily: fonts.semiBold,
     fontSize: 9.5,
-    fontWeight: '600',
   },
   kpiDivider: {
     width: 1,
@@ -585,8 +585,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkAction: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '700',
   },
 
   // Category Tabs
@@ -606,9 +606,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   categoryTabText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
   },
   categoryGuideText: {
+    fontFamily: fonts.regular,
     fontSize: 10.5,
     marginTop: 2,
     marginBottom: 4,
@@ -632,8 +634,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
   },
   candidateAvatar: {
     width: 32,
@@ -648,14 +650,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voteName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 0.5,
-    fontWeight: '700',
     flex: 1,
     marginRight: 6,
   },
   voteValue: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   progressBarBg: {
     height: 5,
@@ -685,10 +687,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   verifiedTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1,
-    fontWeight: '800',
   },
   verifiedSub: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 15,
   },
@@ -701,6 +704,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   anomalyText: {
+    fontFamily: fonts.regular,
     fontSize: fontSize.xs,
     flex: 1,
     lineHeight: 17,
@@ -724,8 +728,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   uploadDocSmallText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
   },
   docThumbWrap: {
     width: 68,
@@ -761,8 +765,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   addDocText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
   previewImageWrap: {
     width: '100%',
@@ -789,10 +793,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   witnessName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1,
-    fontWeight: '700',
   },
   witnessSub: {
+    fontFamily: fonts.regular,
     fontSize: 11,
   },
 
@@ -801,6 +806,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   muted: {
+    fontFamily: fonts.regular,
     fontSize: fontSize.xs,
   },
 });

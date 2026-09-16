@@ -3,7 +3,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Input, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { FAQ_CATEGORIES, FAQ_ITEMS } from '../data/faq';
 
 export default function HelpCenterScreen() {
@@ -86,8 +86,8 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   faqRow: { paddingVertical: spacing.sm, borderBottomWidth: 0.5, gap: 6 },
   faqQuestionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  faqQuestion: { fontSize: fontSize.xs + 1, fontWeight: '700', flex: 1 },
-  faqAnswer: { fontSize: fontSize.xs, lineHeight: 18 },
-  contactTitle: { fontSize: fontSize.md, fontWeight: '800' },
-  contactBody: { fontSize: fontSize.xs, textAlign: 'center', lineHeight: 18 },
+  faqQuestion: { fontFamily: fonts.bold, fontSize: fontSize.xs + 1, flex: 1 },
+  faqAnswer: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 18 },
+  contactTitle: { fontFamily: fonts.bold, fontSize: fontSize.md },
+  contactBody: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', lineHeight: 18 },
 });

@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
-import { fontSize, radius, shadow, spacing } from '../theme';
+import { fontSize, fonts, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { CURRENT_KADER_KTA } from '../data/simpan';
 import QrPlaceholder from '../components/QrPlaceholder';
@@ -27,7 +27,7 @@ export default function SimpanKtaScreen() {
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.topStatusRow}>
         <Pill label="Status: Kader Aktif Terverifikasi" tone="success" icon="check-circle" />
-        <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' }}>SIPOL KPU Terdaftar</Text>
+        <Text style={{ fontFamily: fonts.semiBold, fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' }}>SIPOL KPU Terdaftar</Text>
       </View>
 
       {/* Physical-style Digital Membership Card (Visual Primary Asset) */}
@@ -177,10 +177,10 @@ export default function SimpanKtaScreen() {
             <QrPlaceholder seed={kta.noKta} size={180} />
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
-            <Text style={{ fontSize: fontSize.sm, fontWeight: '800', color: colors.text }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, fontWeight: '800', color: colors.text }}>
               {kta.nama}
             </Text>
-            <Text style={{ fontSize: fontSize.xs, color: colors.primary, fontWeight: '800', fontFamily: 'monospace' }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.primary, fontWeight: '800' }}>
               {kta.noKta}
             </Text>
             <Pill label="Keanggotaan Sah & Aktif" tone="success" icon="check-circle" style={{ marginTop: 4 }} />
@@ -227,26 +227,26 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.2)',
     paddingBottom: spacing.sm,
   },
-  ktaOrgTitle: { fontSize: 13, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
-  ktaSubTitle: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 },
+  ktaOrgTitle: { fontFamily: fonts.extraBold, fontSize: 13, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
+  ktaSubTitle: { fontFamily: fonts.semiBold, fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 },
   chipSimpan: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.pill,
   },
-  chipText: { fontSize: 10, fontWeight: '900', color: '#004F8A' },
+  chipText: { fontFamily: fonts.extraBold, fontSize: 10, fontWeight: '900', color: '#004F8A' },
   cardBody: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   photoContainer: { alignItems: 'center', gap: 4 },
   memberPhoto: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: '#FFFFFF' },
   statusBadge: { backgroundColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  statusBadgeText: { fontSize: 8, fontWeight: '800', color: '#FFFFFF' },
+  statusBadgeText: { fontFamily: fonts.bold, fontSize: 8, fontWeight: '800', color: '#FFFFFF' },
   memberInfo: { flex: 1, gap: 2 },
-  memberNoKta: { fontSize: 11, color: '#38BDF8', fontWeight: '800', fontFamily: 'monospace' },
-  memberName: { fontSize: fontSize.md, fontWeight: '800', color: '#FFFFFF' },
+  memberNoKta: { fontSize: 11, color: '#38BDF8', fontWeight: '800', fontFamily: fonts.bold },
+  memberName: { fontFamily: fonts.extraBold, fontSize: fontSize.md, fontWeight: '800', color: '#FFFFFF' },
   detailRow: { flexDirection: 'row', gap: 4 },
-  detailLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', width: 68 },
-  detailVal: { fontSize: 10, color: '#FFFFFF', fontWeight: '600', flex: 1 },
+  detailLabel: { fontFamily: fonts.medium, fontSize: 10, color: 'rgba(255,255,255,0.7)', width: 68 },
+  detailVal: { fontFamily: fonts.semiBold, fontSize: 10, color: '#FFFFFF', fontWeight: '600', flex: 1 },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.2)',
     paddingTop: spacing.xs,
   },
-  footerNote: { fontSize: 9, color: 'rgba(255,255,255,0.75)' },
+  footerNote: { fontFamily: fonts.regular, fontSize: 9, color: 'rgba(255,255,255,0.75)' },
   qrMock: {
     width: 40,
     height: 40,
@@ -277,10 +277,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     gap: spacing.md,
   },
-  infoLabel: { fontSize: fontSize.xs, width: '40%' },
-  infoValue: { fontSize: fontSize.xs, fontWeight: '700', flex: 1, textAlign: 'right' },
+  infoLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs, width: '40%' },
+  infoValue: { fontFamily: fonts.bold, fontSize: fontSize.xs, fontWeight: '700', flex: 1, textAlign: 'right' },
   benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 },
-  benefitText: { fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
+  benefitText: { fontFamily: fonts.regular, fontSize: fontSize.xs, flex: 1, lineHeight: 18 },
   qrModalBox: {
     padding: spacing.md,
     borderRadius: radius.lg,

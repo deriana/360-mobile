@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, SectionTitle } from '../components/ui';
 import { PartyBadge } from '../components/PartyBadge';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { LEGISLATIVE_MEMBERS, NATIONAL_PARTIES, getLegislativePosition } from '../data/legislative';
 import { getStableAvatar } from '../data/images';
 
@@ -171,8 +171,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   memberName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.lg,
-    fontWeight: '800',
     textAlign: 'center',
   },
   partyRow: {
@@ -182,8 +182,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   partyNameText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '700',
   },
   partyCodeBadge: {
     paddingHorizontal: 6,
@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   partyCodeText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
   },
   statsCard: {
     flexDirection: 'row',
@@ -206,12 +206,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metricValue: {
+    fontFamily: fonts.extraBold,
     fontSize: fontSize.md,
-    fontWeight: '900',
   },
   metricLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: 10,
-    fontWeight: '600',
   },
   metricDivider: {
     width: 1,
@@ -225,13 +225,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   commissionTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm,
-    fontWeight: '800',
   },
   portfolioText: {
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.xs,
     lineHeight: 18,
-    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
@@ -241,12 +241,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
   },
   rowLabel: {
+    fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     flexShrink: 0,
   },
   rowValue: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '700',
     flex: 1,
     textAlign: 'right',
   },

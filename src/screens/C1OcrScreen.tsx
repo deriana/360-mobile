@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, EmptyState, Modal, Pill, PrimaryButton, SectionTitle, Input } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { pickImage } from '../utils/pickImage';
 import { scanC1PlanoWithVisionAi, C1OcrBoxDetection } from '../utils/ocrApi';
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   header: { gap: 2 },
-  title: { fontSize: fontSize.xl, fontWeight: '800' },
-  subtitle: { fontSize: fontSize.xs },
+  title: { fontFamily: fonts.extraBold, fontSize: fontSize.xl },
+  subtitle: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   photoPlaceholder: {
     width: '100%',
     height: 150,
@@ -366,9 +366,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  photoCaption: { fontSize: fontSize.xs, fontWeight: '700' },
-  hint: { fontSize: fontSize.xs, marginBottom: spacing.xs },
-  subHeading: { fontSize: fontSize.sm, fontWeight: '700', marginTop: spacing.xs },
+  photoCaption: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  hint: { fontFamily: fonts.regular, fontSize: fontSize.xs, marginBottom: spacing.xs },
+  subHeading: { fontFamily: fonts.bold, fontSize: fontSize.sm, marginTop: spacing.xs },
   imageOverlayBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   imageOverlayFull: { width: '100%', height: '80%' },
   aiBanner: {

@@ -3,7 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
+import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_PERMISSIONS, RolePermission, getUserProfile } from '../utils/scope';
 import { getWitnessAvatar } from '../data/images';
 import { CandidateExplorerModal } from '../components/CandidateExplorerModal';
@@ -747,6 +747,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   profileHeaderName: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 1.5,
     fontWeight: '800',
     flex: 1,
@@ -757,6 +758,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   badgeIdPillText: {
+    fontFamily: fonts.extraBold,
     fontSize: 8.5,
     fontWeight: '800',
   },
@@ -767,6 +769,7 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
   },
   profileHeaderRole: {
+    fontFamily: fonts.semiBold,
     fontSize: 10.5,
     fontWeight: '700',
     flexShrink: 1,
@@ -781,10 +784,12 @@ const styles = StyleSheet.create({
     borderWidth: 0.8,
   },
   rbacText: {
+    fontFamily: fonts.bold,
     fontSize: 8.5,
     fontWeight: '800',
   },
   profileHeaderScope: {
+    fontFamily: fonts.medium,
     fontSize: 10,
   },
 
@@ -793,6 +798,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sectionHeaderTitle: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -834,11 +840,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   gridMicroBadgeText: {
+    fontFamily: fonts.extraBold,
     fontSize: 7.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   gridTileLabel: {
+    fontFamily: fonts.bold,
     fontSize: 10.5,
     fontWeight: '700',
     textAlign: 'center',
@@ -868,10 +876,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactRowTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 0.5,
     fontWeight: '700',
   },
   compactRowDesc: {
+    fontFamily: fonts.regular,
     fontSize: 10,
     lineHeight: 14,
   },
@@ -881,6 +891,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   inlineBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 8,
     fontWeight: '800',
     color: '#FFFFFF',

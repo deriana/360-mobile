@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Modal, Pill, PrimaryButton } from '../components/ui';
-import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
+import { fonts, fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
 
 export default function PaymentScreen() {
@@ -126,21 +126,21 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  statusLabelText: { fontSize: 11, fontWeight: '600' },
-  statusTitle: { fontSize: fontSize.sm, fontWeight: '800' },
+  statusLabelText: { fontFamily: fonts.semiBold, fontSize: 11 },
+  statusTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   divider: { height: 1, width: '100%', marginVertical: spacing.xs },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  detailLabel: { fontSize: fontSize.xs },
-  detailValue: { fontSize: fontSize.xs, fontWeight: '800' },
+  detailLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs },
+  detailValue: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   invoiceMetaBox: { borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, gap: spacing.sm },
   invoiceMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  invoiceMetaLabel: { fontSize: fontSize.xs, width: 110 },
-  invoiceMetaValue: { fontSize: fontSize.xs, fontWeight: '700', flex: 1 },
-  invoiceSectionLabel: { fontSize: fontSize.xs, fontWeight: '700', marginTop: spacing.xs },
+  invoiceMetaLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs, width: 110 },
+  invoiceMetaValue: { fontFamily: fonts.bold, fontSize: fontSize.xs, flex: 1 },
+  invoiceSectionLabel: { fontFamily: fonts.bold, fontSize: fontSize.xs, marginTop: spacing.xs },
   invoiceItemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5 },
-  invoiceItemLabel: { fontSize: fontSize.xs },
-  invoiceItemAmount: { fontSize: fontSize.xs, fontWeight: '700' },
+  invoiceItemLabel: { fontFamily: fonts.regular, fontSize: fontSize.xs },
+  invoiceItemAmount: { fontFamily: fonts.bold, fontSize: fontSize.xs },
   invoiceTotalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: spacing.sm, borderTopWidth: 1 },
-  invoiceTotalLabel: { fontSize: fontSize.sm, fontWeight: '800' },
-  invoiceTotalAmount: { fontSize: fontSize.md, fontWeight: '800' },
+  invoiceTotalLabel: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  invoiceTotalAmount: { fontFamily: fonts.extraBold, fontSize: fontSize.md },
 });

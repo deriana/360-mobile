@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
-import { fontSize, spacing, iconStrokeWidth } from '../theme';
+import { fonts, fontSize, spacing, iconStrokeWidth } from '../theme';
 
 export default function VerifyLetterScreen({ route }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
@@ -65,9 +65,9 @@ export default function VerifyLetterScreen({ route }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1, padding: spacing.lg },
   iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: fontSize.md, fontWeight: '800', textAlign: 'center' },
-  subtitle: { fontSize: fontSize.xs },
+  title: { fontFamily: fonts.bold, fontSize: fontSize.md, textAlign: 'center' },
+  subtitle: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   resultBox: { alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: 12, borderWidth: 1, width: '100%' },
-  resultText: { fontSize: fontSize.xs, textAlign: 'center', lineHeight: 18 },
+  resultText: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', lineHeight: 18 },
 });
 

@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
-import { fontSize, radius, spacing, iconStrokeWidth } from '../theme';
+import { fonts, fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import {
   CachedAssignmentLetter,
   getCachedAssignmentLetter,
@@ -218,16 +218,16 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   headerBlock: { alignItems: 'center', gap: 2 },
-  docTitle: { fontSize: fontSize.md, fontWeight: '800', textAlign: 'center', letterSpacing: 0.5 },
-  docSubtitle: { fontSize: fontSize.xs, textAlign: 'center' },
+  docTitle: { fontFamily: fonts.bold, fontSize: fontSize.md, textAlign: 'center', letterSpacing: 0.5 },
+  docSubtitle: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center' },
   divider: { height: 1, marginVertical: spacing.xs },
   field: { marginVertical: 2 },
-  fieldLabel: { fontSize: fontSize.xs },
-  fieldValue: { fontSize: fontSize.sm, fontWeight: '700', marginTop: 2 },
+  fieldLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs },
+  fieldValue: { fontFamily: fonts.bold, fontSize: fontSize.sm, marginTop: 2 },
   qrRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  qrLabel: { fontSize: fontSize.xs },
-  qrCode: { fontSize: fontSize.sm, fontWeight: '700' },
+  qrLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs },
+  qrCode: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   signatureBlock: { marginTop: spacing.md, alignItems: 'center', gap: 2 },
-  signName: { fontSize: fontSize.xs, fontWeight: '700' },
+  signName: { fontFamily: fonts.bold, fontSize: fontSize.xs },
 });
 

@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal } from '../components/ui';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { EmergencyCategory, EmergencySeverity } from '../types';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { pickImage } from '../utils/pickImage';
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   redAlertBadgeText: {
     color: '#FFFFFF',
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     letterSpacing: 0.4,
   },
   liveStatusPill: {
@@ -674,16 +674,17 @@ const styles = StyleSheet.create({
   },
   liveStatusText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     color: '#10B981',
     letterSpacing: 0.3,
   },
   bannerTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm + 1,
-    fontWeight: '800',
     marginTop: 2,
   },
   bannerSubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 11,
     lineHeight: 16,
   },
@@ -704,8 +705,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
 
   // Cards & Sections
@@ -720,12 +721,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitleText: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs + 2,
-    fontWeight: '800',
   },
   requiredTag: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
   },
 
   // Category Bento Grid
@@ -762,10 +763,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryCardLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.xs,
     lineHeight: 15,
   },
   categoryCardSubtitle: {
+    fontFamily: fonts.regular,
     fontSize: 9.5,
     lineHeight: 13,
   },
@@ -793,11 +796,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   severityName: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '800',
     marginTop: 2,
   },
   severityDesc: {
+    fontFamily: fonts.regular,
     fontSize: 9,
     lineHeight: 12,
   },
@@ -807,8 +811,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   templateHeaderLabel: {
+    fontFamily: fonts.bold,
     fontSize: 9,
-    fontWeight: '700',
     letterSpacing: 0.3,
   },
   templateRow: {
@@ -829,6 +833,7 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
   templateChipText: {
+    fontFamily: fonts.medium,
     fontSize: 10.5,
   },
 
@@ -841,6 +846,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   textAreaInput: {
+    fontFamily: fonts.regular,
     fontSize: fontSize.xs + 1,
     minHeight: 80,
     padding: 0,
@@ -868,10 +874,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   uploadTileTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
-    fontWeight: '800',
   },
   uploadTileSub: {
+    fontFamily: fonts.regular,
     fontSize: 9,
   },
   photoThumbGrid: {
@@ -923,8 +930,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   gpsVerifiedText: {
+    fontFamily: fonts.semiBold,
     fontSize: 10,
-    fontWeight: '600',
   },
 
   // Submit Button
@@ -943,8 +950,8 @@ const styles = StyleSheet.create({
   },
   submitEmergencyText: {
     color: '#FFFFFF',
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm,
-    fontWeight: '800',
     letterSpacing: 0.3,
   },
 

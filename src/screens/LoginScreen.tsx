@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { PrimaryButton, Input } from '../components/ui';
 import { QuickLoginPicker, QuickLoginCategory } from '../components/QuickLoginPicker';
-import { fontSize, iconStrokeWidth, radius, spacing } from '../theme';
+import { fontSize, fonts, iconStrokeWidth, radius, spacing } from '../theme';
 import { CADRE_CANDIDATE_ACCOUNTS, MOBILE_FIELD_ACCOUNTS, PENGURUS_ACCOUNTS, findAccount } from '../data/accounts';
 import { Role } from '../types';
 import { BRAND_ASSETS } from '../data/images';
@@ -196,18 +196,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   officialLogo: { width: 54, height: 78 },
-  brandTitle: { fontSize: 22, fontWeight: '900', letterSpacing: 0.8 },
+  brandTitle: { fontFamily: fonts.extraBold, fontSize: 22, fontWeight: '900', letterSpacing: 0.8 },
   partyCapsule: {
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: radius.pill,
   },
   partyCapsuleText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
-  tagline: { fontSize: 12, textAlign: 'center', maxWidth: 300, lineHeight: 16 },
+  tagline: { fontFamily: fonts.medium, fontSize: 12, textAlign: 'center', maxWidth: 300, lineHeight: 16 },
   sheet: {
     marginTop: -24,
     borderTopLeftRadius: 28,
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
-  formTitle: { fontSize: fontSize.lg, fontWeight: '800' },
+  formTitle: { fontFamily: fonts.bold, fontSize: fontSize.lg, fontWeight: '800' },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -225,15 +226,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  errorText: { fontSize: fontSize.xs, flex: 1, fontWeight: '600' },
+  errorText: { fontFamily: fonts.semiBold, fontSize: fontSize.xs, flex: 1, fontWeight: '600' },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: fontSize.xs, fontWeight: '700' },
-  footnote: { fontSize: fontSize.xs, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.md },
+  dividerText: { fontFamily: fonts.bold, fontSize: fontSize.xs, fontWeight: '700' },
+  footnote: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.md },
   registerHeaderBar: {
     paddingTop: 48,
     paddingHorizontal: spacing.md,
@@ -247,6 +248,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   backBtnText: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.sm,
     fontWeight: '700',
   },
@@ -259,10 +261,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   registerBannerTitle: {
+    fontFamily: fonts.bold,
     fontSize: fontSize.xs,
     fontWeight: '800',
   },
   registerBannerSub: {
+    fontFamily: fonts.medium,
     fontSize: 10.5,
     marginTop: 1,
   },
