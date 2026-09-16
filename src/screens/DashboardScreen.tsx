@@ -963,6 +963,200 @@ export default function DashboardScreen({ navigation }: any) {
       </Card>
 
       {/* ========================================================================= */}
+      {/* 8. ⚡ QUICK ACTION: KOTAK-KOTAK KECIL ALA BCA MOBILE YANG SANGAT BAGUS     */}
+      {/* ========================================================================= */}
+      <View style={styles.sectionWrap}>
+        <View style={styles.sectionHeaderBetween}>
+          <View>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>⚡ QUICK ACTION</Text>
+            <Text style={[styles.quickActionHeaderSub, { color: colors.textMuted }]}>
+              Akses cepat menu operasional anggota (ala BCA Mobile)
+            </Text>
+          </View>
+          <View style={[styles.bcaBrandTag, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.bcaBrandTagText, { color: colors.primary }]}>Menu Utama</Text>
+          </View>
+        </View>
+
+        {/* 4 PRIMARY BCA QUICK ACTION BUTTONS */}
+        <View style={styles.bcaFourRow}>
+          {/* 1. [ Scan QR ] */}
+          <Pressable
+            onPress={() => setShowScanModal(true)}
+            style={({ pressed }) => [
+              styles.bcaSquircleBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+            ]}
+          >
+            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#E0F2FE' }]}>
+              <Feather name="maximize" size={22} color="#0284C7" strokeWidth={2} />
+            </View>
+            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
+              Scan QR
+            </Text>
+            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
+              C1 / e-KTA
+            </Text>
+          </Pressable>
+
+          {/* 2. [ Check-in ] */}
+          <Pressable
+            onPress={() => navigation.navigate('CheckIn')}
+            style={({ pressed }) => [
+              styles.bcaSquircleBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+            ]}
+          >
+            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#ECFDF5' }]}>
+              <Feather name="map-pin" size={22} color="#10B981" strokeWidth={2} />
+            </View>
+            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
+              Check-in
+            </Text>
+            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
+              Presensi GPS
+            </Text>
+          </Pressable>
+
+          {/* 3. [ Laporkan ] */}
+          <Pressable
+            onPress={() => setShowReportModal(true)}
+            style={({ pressed }) => [
+              styles.bcaSquircleBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+            ]}
+          >
+            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#FEF2F2' }]}>
+              <Feather name="edit-3" size={22} color="#DC2626" strokeWidth={2} />
+            </View>
+            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
+              Laporkan
+            </Text>
+            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
+              C1 & SOS
+            </Text>
+          </Pressable>
+
+          {/* 4. [ Daftar Kegiatan ] */}
+          <Pressable
+            onPress={() => setShowAgendaModal(true)}
+            style={({ pressed }) => [
+              styles.bcaSquircleBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
+            ]}
+          >
+            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#F3E8FF' }]}>
+              <Feather name="calendar" size={22} color="#9333EA" strokeWidth={2} />
+            </View>
+            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
+              Kegiatan
+            </Text>
+            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
+              Daftar Ikut
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* FULL BCA MENU GRID (2-COLUMN CARDS EXACTLY AS IN WIREFRAME 2) */}
+        <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+          <View style={styles.sectionHeaderBetween}>
+            <Text style={[styles.bcaGridSectionTitle, { color: colors.text }]}>
+              Layanan Kader & Calon Parlemen
+            </Text>
+            <Text style={{ fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted }}>
+              Semua Aspek Menu
+            </Text>
+          </View>
+
+          <View style={styles.bcaGridContainer}>
+            {bcaMenuItems.map((item) => {
+              const isDanger = item.tone === 'danger';
+              const isSuccess = item.tone === 'success';
+              const isWarning = item.tone === 'warning';
+
+              const iconBg = isDanger
+                ? colors.dangerBg
+                : isSuccess
+                ? colors.successBg
+                : isWarning
+                ? colors.warningBg
+                : colors.primaryLight;
+
+              const iconColor = isDanger
+                ? colors.danger
+                : isSuccess
+                ? colors.success
+                : isWarning
+                ? colors.warning
+                : colors.primary;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={item.onPress}
+                  style={({ pressed }) => [
+                    styles.bcaMenuCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  <View style={styles.bcaMenuCardHeader}>
+                    <View style={[styles.bcaMenuIconBadge, { backgroundColor: iconBg }]}>
+                      <Feather name={item.icon} size={18} color={iconColor} strokeWidth={2} />
+                    </View>
+                    {item.badge && (
+                      <View
+                        style={[
+                          styles.bcaMicroBadge,
+                          {
+                            backgroundColor:
+                              item.tone === 'success'
+                                ? colors.successBg
+                                : item.tone === 'danger'
+                                ? colors.dangerBg
+                                : colors.primaryLight,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.bcaMicroBadgeText,
+                            {
+                              color:
+                                item.tone === 'success'
+                                  ? colors.success
+                                  : item.tone === 'danger'
+                                  ? colors.danger
+                                  : colors.primary,
+                            },
+                          ]}
+                        >
+                          {item.badge}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={{ gap: 2, marginTop: 4 }}>
+                    <Text style={[styles.bcaMenuCardTitle, { color: colors.text }]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.bcaMenuCardSub, { color: colors.textMuted }]} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+
+      {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
       {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
       {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
