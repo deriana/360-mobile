@@ -323,7 +323,20 @@ export default function DashboardScreen({ navigation }: any) {
           </Pressable>
         </View>
 
-        
+        {/* Status & Wilayah Section */}
+        <View style={[styles.statusWilayahCard, { backgroundColor: isDark ? 'rgba(0,43,82,0.45)' : '#F0F7FF', borderColor: isDark ? '#0A3D6B' : '#BAE6FD' }]}>
+          <View style={styles.statusWilayahItem}>
+            <Text style={[styles.swLabel, { color: colors.textMuted }]}>Status:</Text>
+            <View style={[styles.activeStatusPill, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
+              <View style={[styles.pulsingGreenDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.activeStatusPillText, { color: colors.success }]}>
+                🟢 ANGGOTA AKTIF
+              </Text>
+            </View>
+          </View>
+
+          
+        </View>
       </View>
 {/* ========================================================================= */}
       {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
