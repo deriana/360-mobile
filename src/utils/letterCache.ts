@@ -13,6 +13,11 @@ export interface CachedAssignmentLetter {
   digitalSealHash: string;
   cachedAt: string;
   isOfflineReady: boolean;
+  isSigned?: boolean;
+  signatureSvgPath?: string;
+  signedBy?: string;
+  signedAt?: string;
+  signatureHash?: string;
 }
 
 const STORAGE_PREFIX = '@pan360:letter:';

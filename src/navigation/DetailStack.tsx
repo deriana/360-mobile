@@ -38,6 +38,8 @@ import SimpanBacalegScreen from '../screens/SimpanBacalegScreen';
 import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import SimpanOfficeDetailScreen from '../screens/SimpanOfficeDetailScreen';
 import RegisterMemberScreen from '../screens/RegisterMemberScreen';
+import WitnessAcademyScreen from '../screens/WitnessAcademyScreen';
+import WitnessLessonScreen from '../screens/WitnessLessonScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -75,6 +77,8 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
   { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
   { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
+  { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
+  { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
 ];
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {

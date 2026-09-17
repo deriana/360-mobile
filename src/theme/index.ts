@@ -133,6 +133,7 @@ export const type = {
 
 // Legacy numeric scale kept for existing call sites
 export const fontSize = {
+  xxs: 10,
   xs: 12,
   sm: 14,
   md: 16,
