@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
+import { DigitalSignatureModal, SignatureResult } from '../components/DigitalSignatureModal';
 import { fonts, fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import {
   CachedAssignmentLetter,
@@ -24,6 +25,7 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
   const [downloading, setDownloading] = useState(false);
   const [cachedData, setCachedData] = useState<CachedAssignmentLetter | null>(null);
   const [isCached, setIsCached] = useState(false);
+  const [showSignModal, setShowSignModal] = useState(false);
   const [dialogConfig, setDialogConfig] = useState<{
     visible: boolean;
     title: string;
@@ -38,9 +40,63 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
   const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
   const letterNo = `ST/${witness.id}/PAN/2026`;
 
+  const handleConfirmSignature = async (res: SignatureResult) => {
+    setShowSignModal(false);
+    if (!witness) return;
+
+    const baseData = cachedData || {
+      witnessId: witness.id,
+      letterNo,
+      witnessName: witness.name,
+      nik: witness.nik,
+      assignedTpsId: witness.assignedTpsId,
+      tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : '-',
+      province: assignedTps?.province ?? 'Jawa Barat',
+      verificationToken: `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`,
+      verifyUrl: `https://saksi360.pan.or.id/verify/${witness.id}`,
+      digitalSealHash: `SHA256:${witness.id}:${witness.nik.slice(-4)}:DPP-PAN`,
+      cachedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+      isOfflineReady: true,
+    };
+
+    const updated: CachedAssignmentLetter = {
+      ...baseData,
+      isSigned: true,
+      signatureSvgPath: res.signaturePath,
+      signedBy: res.signedBy,
+      signedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+      signatureHash: res.signatureHash,
+    };
+
+    await saveAssignmentLetterToCache(updated);
+    setCachedData(updated);
+
+    setDialogConfig({
+      visible: true,
+      title: 'Tanda Tangan Berhasil',
+      message: `Surat tugas telah dibubuhi tanda tangan digital oleh ${res.signedBy} dengan otentikasi kriptografis ${res.signatureHash}.`,
+      tone: 'success',
+    });
+  };
+
   const handleDownload = async () => {
     setDownloading(true);
     try {
+      const signatureHtml = cachedData?.signatureSvgPath
+        ? `
+          <div style="margin: 10px auto; width: 180px; height: 50px;">
+            <svg viewBox="0 0 380 180" width="180" height="50">
+              <path d="${cachedData.signatureSvgPath}" stroke="#0066B3" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <p style="font-weight:700; font-size:13px; margin: 4px 0 2px;">${cachedData.signedBy || 'Ketua DPP PAN'}</p>
+          <p style="font-size:10px; color:#10B981; margin: 0;">✓ Kriptografis Sah: ${cachedData.signatureHash || 'SHA256:DPP-PAN'}</p>
+        `
+        : `
+          <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua DPP PAN</p>
+          <p style="font-weight:700; font-size:13px;">Ketua DPP — Partai Amanat Nasional</p>
+        `;
+
       const html = `
         <html>
           <head><meta charset="utf-8" /></head>
@@ -58,12 +114,11 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             </table>
             <div style="margin-top: 32px; text-align:center;">
               <p style="font-size:12px; color:#64748B;">Kode Otentikasi Digital</p>
-              <p style="font-weight:700;">${witness.id}-${letterNo.slice(-4)}</p>
+              <p style="font-weight:700;">${cachedData?.verificationToken ?? `${witness.id}-${letterNo.slice(-4)}`}</p>
             </div>
-            <div style="margin-top: 40px; text-align:center;">
+            <div style="margin-top: 36px; text-align:center;">
               <p style="font-size:12px; color:#64748B;">Tanda Tangan Digital Pimpinan</p>
-              <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua DPP PAN</p>
-              <p style="font-weight:700; font-size:13px;">Ketua DPP — Partai Amanat Nasional</p>
+              ${signatureHtml}
             </div>
           </body>
         </html>
@@ -164,20 +219,47 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
         </View>
 
         <View style={styles.signatureBlock}>
-          <Text style={[styles.qrLabel, { color: colors.textMuted }]}>Tanda Tangan Digital Pimpinan</Text>
-          <Svg width={160} height={50}>
-            <Path
-              d="M5 35 Q 25 5, 45 30 T 85 15 T 125 35 T 155 18"
-              stroke={colors.primary}
-              strokeWidth={2.5}
-              fill="none"
-            />
-          </Svg>
-          <Text style={[styles.signName, { color: colors.text }]}>Ketua DPP — Partai Amanat Nasional</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.qrLabel, { color: colors.textMuted }]}>Tanda Tangan Digital Pimpinan</Text>
+            {cachedData?.isSigned && (
+              <Pill label="Terbubuhi Digital" tone="success" icon="check" />
+            )}
+          </View>
+
+          <View style={[styles.signatureBox, { borderColor: colors.border, backgroundColor: colors.background }]}>
+            <Svg viewBox="0 0 380 180" width={180} height={60}>
+              <Path
+                d={
+                  cachedData?.signatureSvgPath ||
+                  'M 20 90 Q 70 20, 120 80 T 200 40 T 280 100 T 360 40'
+                }
+                stroke={colors.primary}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          </View>
+
+          <Text style={[styles.signName, { color: colors.text }]}>
+            {cachedData?.signedBy || 'Ketua DPP — Partai Amanat Nasional'}
+          </Text>
+          {cachedData?.isSigned && (
+            <Text style={{ fontSize: 10, color: colors.textMuted, textAlign: 'center' }}>
+              Otorisasi PIN Kriptografis: {cachedData.signatureHash} • {cachedData.signedAt}
+            </Text>
+          )}
         </View>
       </Card>
 
       <View style={{ gap: spacing.sm }}>
+        <PrimaryButton
+          label={cachedData?.isSigned ? 'Tanda Tangani Ulang Mandat' : 'Bubuhi TTD Digital Pimpinan'}
+          icon="edit-3"
+          variant="secondary"
+          onPress={() => setShowSignModal(true)}
+        />
         <PrimaryButton label="Unduh PDF Surat Tugas" icon="download" onPress={handleDownload} loading={downloading} />
         <PrimaryButton
           label="Verifikasi Keaslian Surat"
@@ -187,10 +269,23 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             navigation.navigate('VerifyLetter', {
               witnessId: witness.id,
               token: cachedData?.verificationToken,
+              isSigned: cachedData?.isSigned,
+              signedBy: cachedData?.signedBy,
+              signatureHash: cachedData?.signatureHash,
+              signedAt: cachedData?.signedAt,
             })
           }
         />
       </View>
+
+      <DigitalSignatureModal
+        visible={showSignModal}
+        documentTitle="Surat Tugas Digital Saksi TPS"
+        letterNumber={letterNo}
+        signerTitle="Ketua DPP / BSN PAN"
+        onClose={() => setShowSignModal(false)}
+        onConfirmSignature={handleConfirmSignature}
+      />
 
       <ConfirmDialog
         visible={dialogConfig.visible}
@@ -227,7 +322,16 @@ const styles = StyleSheet.create({
   qrRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   qrLabel: { fontFamily: fonts.medium, fontSize: fontSize.xs },
   qrCode: { fontFamily: fonts.bold, fontSize: fontSize.sm },
-  signatureBlock: { marginTop: spacing.md, alignItems: 'center', gap: 2 },
+  signatureBlock: { marginTop: spacing.md, alignItems: 'center', gap: 4 },
+  signatureBox: {
+    width: 190,
+    height: 64,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
   signName: { fontFamily: fonts.bold, fontSize: fontSize.xs },
 });
 

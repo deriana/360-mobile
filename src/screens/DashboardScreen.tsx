@@ -179,6 +179,15 @@ export default function DashboardScreen({ navigation }: any) {
       onPress: () => navigation.navigate('SimpanStructure'),
     },
     {
+      id: 'akademi',
+      icon: 'book-open',
+      title: 'Akademi Saksi BSN',
+      subtitle: 'Pelatihan & Kuis PKPU',
+      badge: 'Sertifikasi',
+      tone: 'primary',
+      onPress: () => navigation.navigate('WitnessAcademy'),
+    },
+    {
       id: 'bantuan',
       icon: 'help-circle',
       title: 'Pusat Bantuan',
@@ -897,19 +906,12 @@ export default function DashboardScreen({ navigation }: any) {
             <Pill label="Lulus 100%" tone="success" />
           </View>
           <Pressable
-            onPress={() => {
-              setDialogConfig({
-                visible: true,
-                title: 'E-Sertifikat Saksi Terverifikasi',
-                message: 'Sertifikat Kompetensi Saksi BSN PAN No. SERT-PAN-3273-08912 telah diterbitkan secara digital.',
-                tone: 'success',
-              });
-            }}
+            onPress={() => navigation.navigate('WitnessAcademy')}
             style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
           >
             <Feather name="award" size={12} color={colors.primary} />
             <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
-              Lihat E-Sertifikat Saksi BSN
+              Buka Akademi Saksi & E-Sertifikat BSN
             </Text>
           </Pressable>
         </View>
@@ -930,22 +932,11 @@ export default function DashboardScreen({ navigation }: any) {
                 </Text>
               </View>
             </View>
-            <Pill label="67% Berjalan" tone="primary" />
-          </View>
-
-          <View style={[styles.trainingProgressBarTrack, { backgroundColor: colors.border }]}>
-            <View style={[styles.trainingProgressBarFill, { width: '67%', backgroundColor: colors.primary }]} />
+            <Pill label="Sedang Belajar" tone="info" />
           </View>
 
           <Pressable
-            onPress={() => {
-              setDialogConfig({
-                visible: true,
-                title: 'Lanjutkan Modul 3',
-                message: 'Modul "Platform Perjuangan Politik & Etika Saksi PAN" siap dipelajari.',
-                tone: 'primary',
-              });
-            }}
+            onPress={() => navigation.navigate('WitnessAcademy')}
             style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
           >
             <Feather name="play-circle" size={12} color={colors.primary} />
@@ -974,7 +965,7 @@ export default function DashboardScreen({ navigation }: any) {
             <Pill label="Tersedia" tone="warning" />
           </View>
           <Pressable
-            onPress={() => navigation.navigate('HelpCenter')}
+            onPress={() => navigation.navigate('WitnessAcademy')}
             style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
           >
             <Feather name="external-link" size={12} color={colors.primary} />
@@ -983,6 +974,29 @@ export default function DashboardScreen({ navigation }: any) {
             </Text>
           </Pressable>
         </View>
+
+        <Pressable
+          onPress={() => navigation.navigate('WitnessAcademy')}
+          style={({ pressed }) => [
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              paddingVertical: 10,
+              backgroundColor: colors.primaryLight,
+              borderRadius: radius.md,
+              marginTop: 4,
+            },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <Feather name="award" size={14} color={colors.primary} />
+          <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.primary }}>
+            Buka Kurikulum Lengkap BSN PAN Witness Academy
+          </Text>
+          <Feather name="chevron-right" size={14} color={colors.primary} />
+        </Pressable>
       </Card>
 
       {/* ========================================================================= */}

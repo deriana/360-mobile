@@ -9,6 +9,11 @@ import { fonts, fontSize, spacing, iconStrokeWidth } from '../theme';
 export default function VerifyLetterScreen({ route }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
   const token = route?.params?.token || `MNDT-PAN-${witnessId}-DEMO`;
+  const isSigned = route?.params?.isSigned ?? true;
+  const signedBy = route?.params?.signedBy ?? 'Ketua DPP / BSN PAN';
+  const signatureHash = route?.params?.signatureHash ?? `SHA256:${witnessId}:DPP-PAN`;
+  const signedAt = route?.params?.signedAt ?? null;
+
   const { witnesses } = useApp();
   const { colors } = useTheme();
 
@@ -48,10 +53,25 @@ export default function VerifyLetterScreen({ route }: any) {
               Diterbitkan resmi atas nama <Text style={{ fontWeight: '800' }}>{witness.name}</Text> (NIK: {witness.nik}), terdaftar sah pada database nasional SAKSI 360.
             </Text>
             <View style={{ width: '100%', height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-            <View style={{ width: '100%', gap: 2 }}>
-              <Text style={{ fontSize: 10, color: colors.textMuted }}>Otoritas Penerbit: BSN DPP Partai Amanat Nasional</Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted }}>Otentikasi Kriptografis: SHA256:{witness.id}:DPP-PAN</Text>
-              <Text style={{ fontSize: 10, color: colors.success, fontWeight: '700' }}>✓ Sinkronisasi Offline Cache & Server Valid</Text>
+            <View style={{ width: '100%', gap: 3 }}>
+              <Text style={{ fontSize: 11, color: colors.text, fontWeight: '700' }}>
+                Otoritas Penerbit: BSN DPP Partai Amanat Nasional
+              </Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                Penandatangan: {signedBy} {signedAt ? `(${signedAt})` : ''}
+              </Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                Hash Kriptografis: {signatureHash}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Feather name="check" size={12} color={colors.success} />
+                <Text style={{ fontSize: 10, color: colors.success, fontWeight: '700' }}>
+                  {isSigned ? 'Tanda Tangan Digital Pimpinan Sah & Terverifikasi' : 'Stempel Mandat Resmi Terdaftar'}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 10, color: colors.primary }}>
+                ✓ Sinkronisasi Offline Cache & Server Pusat Valid
+              </Text>
             </View>
           </View>
         ) : (
