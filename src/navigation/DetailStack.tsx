@@ -1,8 +1,10 @@
 import React from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
 import { fonts } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
 
@@ -44,6 +46,7 @@ import WitnessLessonScreen from '../screens/WitnessLessonScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
 import TasksScreen from '../screens/TasksScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import TransparencyHubScreen from '../screens/TransparencyHubScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
@@ -80,17 +83,72 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'SimpanKta', component: SimpanKtaScreen, title: 'e-KTA Digital simPAN' },
   { name: 'SimpanStructure', component: SimpanStructureScreen, title: 'Struktur Pengurus simPAN' },
   { name: 'SimpanOffices', component: SimpanOfficesScreen, title: 'Kantor Sekretariat simPAN' },
-  { name: 'SimpanOfficeDetail', component: SimpanOfficeDetailScreen, title: 'Detail Sekretariat simPAN' },
+  { name: 'SimpanOfficeDetail', component: SimpanOfficeDetailScreen, title: 'Detail Sekretariat' },
   { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
   { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
   { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
   { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
   { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
+  { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
 ];
+
+/**
+ * Komponen header kanan yang berdiri sendiri.
+ * useNavigation() dipanggil di sini agar mendapat context Stack navigator
+ * (bukan Tab parent), sehingga navigate('Notifications') bisa ditemukan.
+ */
+function HeaderRight({
+  isDark,
+  toggleTheme,
+  unreadCount,
+  primaryColor,
+  dangerColor,
+}: {
+  isDark: boolean;
+  toggleTheme: () => void;
+  unreadCount: number;
+  primaryColor: string;
+  dangerColor: string;
+}) {
+  const nav = useNavigation<any>();
+  return (
+    <View style={headerStyles.row}>
+      {/* Bell notifikasi dengan badge jumlah belum dibaca */}
+      <Pressable
+        hitSlop={10}
+        onPress={() => nav.navigate('Notifications')}
+        style={({ pressed }) => [headerStyles.iconBtn, pressed && { opacity: 0.7 }]}
+      >
+        <View style={headerStyles.bellWrap}>
+          <Feather name="bell" size={20} color={primaryColor} strokeWidth={2} />
+          {unreadCount > 0 && (
+            <View style={[headerStyles.badge, { backgroundColor: dangerColor }]}>
+              <Text style={headerStyles.badgeText}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+
+      {/* Toggle dark / light mode */}
+      <Pressable
+        hitSlop={8}
+        onPress={toggleTheme}
+        style={({ pressed }) => [headerStyles.iconBtn, pressed && { opacity: 0.7 }]}
+      >
+        <Feather name={isDark ? 'sun' : 'moon'} size={20} color={primaryColor} strokeWidth={2} />
+      </Pressable>
+    </View>
+  );
+}
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {
   return function Navigator() {
     const { colors, isDark, toggleTheme } = useTheme();
+    const { notifications } = useApp();
+
+    const unreadCount = notifications.filter((n) => !n.read).length;
 
     const screenOptions = {
       headerStyle: { backgroundColor: colors.surface },
@@ -99,16 +157,13 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
       headerShadowVisible: false,
       contentStyle: { backgroundColor: colors.background },
       headerRight: () => (
-        <Pressable
-          hitSlop={8}
-          onPress={toggleTheme}
-          style={({ pressed }) => [
-            { paddingHorizontal: 8, paddingVertical: 4 },
-            pressed && { opacity: 0.7 },
-          ]}
-        >
-          <Feather name={isDark ? 'sun' : 'moon'} size={20} color={colors.primary} strokeWidth={2} />
-        </Pressable>
+        <HeaderRight
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          unreadCount={unreadCount}
+          primaryColor={colors.primary}
+          dangerColor={colors.danger ?? '#EF4444'}
+        />
       ),
     };
 
@@ -131,3 +186,37 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
   };
 }
 
+const headerStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingRight: 4,
+  },
+  iconBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  bellWrap: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: fonts.bold,
+    lineHeight: 11,
+  },
+});

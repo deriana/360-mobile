@@ -16,6 +16,7 @@ import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '.
 import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, getUserProfile, ROLE_ICON, ROLE_LABEL, scopeTps, scopeWitnesses } from '../utils/scope';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
+import { PORTAL_NEWS_LIST } from '../data/portalNews';
 import { maskNik } from '../utils/masking';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { MobileRole } from '../types';
@@ -246,10 +247,10 @@ export default function DashboardScreen({ navigation }: any) {
   const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !currentUser.roles.some((r) => r.role === 'WITNESS');
   const isVolunteerWithWitness = (role === 'VOLUNTEER' || role === 'RELAWAN') && currentUser.roles.some((r) => r.role === 'WITNESS');
 
-  // Quick Action items: zero redundancy with bottom tabs (Beranda, Kegiatan, Presensi, Notifikasi, Profil)
+  // Quick Action items: 4 menu esensial 1 baris per role (tanpa kabar aksi karena sudah di bottom tab)
   const getQuickMenuItems = (): BcaQuickActionItem[] => {
     if (isVolunteerOnly) {
-      // 6 menu esensial untuk Relawan Murni (Siti Rahmawati)
+      // 4 menu esensial untuk Relawan Murni (1 baris)
       return [
         {
           id: 'bursa_tugas',
@@ -285,28 +286,11 @@ export default function DashboardScreen({ navigation }: any) {
           tone: 'info',
           onPress: () => setShowCoordinatorModal(true),
         },
-        {
-          id: 'aspirasi',
-          icon: 'message-square',
-          title: 'Aspirasi Warga',
-          subtitle: 'Suara Rakyat',
-          badge: '4',
-          tone: 'info',
-          onPress: () => setShowAspirasiModal(true),
-        },
-        {
-          id: 'warta',
-          icon: 'book-open',
-          title: 'Kabar Aksi',
-          subtitle: 'Warta simPAN',
-          tone: 'primary',
-          onPress: () => navigation.navigate('SimpanNews'),
-        },
       ];
     }
 
     if (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR') {
-      // 8 items for Koordinator Lapangan
+      // 4 menu esensial untuk Koordinator Lapangan (1 baris)
       return [
         {
           id: 'supervisi',
@@ -342,42 +326,49 @@ export default function DashboardScreen({ navigation }: any) {
           tone: 'warning',
           onPress: () => navigation.navigate('Broadcast'),
         },
+      ];
+    }
+
+    if (role === 'MEMBER') {
+      // 4 menu esensial untuk Kader / Member Partai (1 baris)
+      return [
+        {
+          id: 'kta',
+          icon: 'credit-card',
+          title: 'e-KTA simPAN',
+          subtitle: 'KTA Digital',
+          tone: 'primary',
+          onPress: () => navigation.navigate('SimpanKta'),
+        },
+        {
+          id: 'akademi',
+          icon: 'award',
+          title: 'PAN Academy',
+          subtitle: 'Kaderisasi',
+          tone: 'primary',
+          onPress: () => navigation.navigate('WitnessAcademy'),
+        },
         {
           id: 'posko',
           icon: 'map-pin',
-          title: 'Posko & Kantor',
-          subtitle: 'Sekretariat PAN',
+          title: 'Kantor DPD',
+          subtitle: 'Sekretariat',
           tone: 'info',
           onPress: () => navigation.navigate('SimpanOffices'),
         },
         {
-          id: 'warta',
-          icon: 'book-open',
-          title: 'Warta simPAN',
-          subtitle: 'Kabar Partai',
+          id: 'transparansi',
+          icon: 'shield',
+          title: 'Transparansi',
+          subtitle: 'Akuntabilitas',
+          badge: 'WTP',
           tone: 'primary',
-          onPress: () => navigation.navigate('SimpanNews'),
-        },
-        {
-          id: 'struktur',
-          icon: 'layers',
-          title: 'Struktur DPD',
-          subtitle: 'Pengurus Wilayah',
-          tone: 'info',
-          onPress: () => navigation.navigate('SimpanStructure'),
-        },
-        {
-          id: 'bantuan',
-          icon: 'help-circle',
-          title: 'Pusat Bantuan',
-          subtitle: 'Panduan & SOP',
-          tone: 'info',
-          onPress: () => navigation.navigate('HelpCenter'),
+          onPress: () => navigation.navigate('TransparencyHub'),
         },
       ];
     }
 
-    // 8 items for Saksi TPS (Rudi Saputra) & multi-role volunteers with witness mandate
+    // 4 menu utama untuk Saksi TPS (Rudi Saputra) - 1 baris
     return [
       {
         id: 'mandat',
@@ -406,22 +397,6 @@ export default function DashboardScreen({ navigation }: any) {
         onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
       },
       {
-        id: 'tally',
-        icon: 'zap',
-        title: 'Hitung Bilik',
-        subtitle: 'Tally Cepat',
-        tone: 'warning',
-        onPress: () => navigation.navigate('QuickCountGame'),
-      },
-      {
-        id: 'honor',
-        icon: 'dollar-sign',
-        title: 'Honorarium',
-        subtitle: 'Uang Saku Saksi',
-        tone: 'success',
-        onPress: () => navigation.navigate('Payment'),
-      },
-      {
         id: 'darurat',
         icon: 'alert-triangle',
         title: 'Lapor Insiden',
@@ -429,22 +404,6 @@ export default function DashboardScreen({ navigation }: any) {
         badge: 'SOS',
         tone: 'danger',
         onPress: () => navigation.navigate('EmergencyForm'),
-      },
-      {
-        id: 'akademi',
-        icon: 'award',
-        title: 'Akademi Saksi',
-        subtitle: 'Bimtek BSN PAN',
-        tone: 'primary',
-        onPress: () => navigation.navigate('WitnessAcademy'),
-      },
-      {
-        id: 'bantuan',
-        icon: 'help-circle',
-        title: 'Pusat Bantuan',
-        subtitle: 'SOP & Regulasi',
-        tone: 'info',
-        onPress: () => navigation.navigate('HelpCenter'),
       },
     ];
   };
@@ -696,7 +655,6 @@ export default function DashboardScreen({ navigation }: any) {
                   onPress={item.onPress}
                   style={({ pressed }) => [
                     styles.quickGridItem,
-                    isVolunteerOnly && { width: '33.33%' },
                     pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
                   ]}
                 >
@@ -961,6 +919,85 @@ export default function DashboardScreen({ navigation }: any) {
                 </Text>
               </View>
               <Pill label={ev.isRegistered ? 'Terdaftar' : 'Buka'} tone={ev.isRegistered ? 'success' : 'info'} />
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
+      {/* 5. KABAR & BERITA TERBARU                                                 */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Feather name="book-open" size={15} color={colors.primary} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('NewsTab')} hitSlop={8}>
+            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
+          </Pressable>
+        </View>
+
+        {/* Featured News Highlight */}
+        {PORTAL_NEWS_LIST.slice(0, 1).map((news) => (
+          <Pressable
+            key={news.id}
+            onPress={() => navigation.navigate('NewsTab')}
+            style={({ pressed }) => [
+              styles.newsHighlightCard,
+              {
+                backgroundColor: isDark ? 'rgba(0, 102, 179, 0.12)' : '#F0F7FF',
+                borderColor: isDark ? '#0A3D6B' : '#BAE6FD',
+              },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.newsCatBadge, { color: news.categoryColor }]}>
+                  {news.categoryLabel.toUpperCase()}
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
+                  {news.timeAgo}
+                </Text>
+              </View>
+              <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
+                {news.title}
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
+                {news.author.name} • {news.readTime}
+              </Text>
+            </View>
+            <Image
+              source={news.localFallbackImage}
+              style={styles.newsHighlightThumb}
+              resizeMode="cover"
+            />
+          </Pressable>
+        ))}
+
+        {/* Secondary News Mini Rows */}
+        <View style={{ gap: spacing.xs }}>
+          {PORTAL_NEWS_LIST.slice(1, 3).map((item) => (
+            <Pressable
+              key={item.id}
+              onPress={() => navigation.navigate('NewsTab')}
+              style={({ pressed }) => [
+                styles.miniAgendaRow,
+                { borderColor: colors.border },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2, marginRight: 8 }}>
+                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 10.5, color: colors.textMuted }}>
+                  {item.categoryLabel} • {item.timeAgo}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={15} color={colors.textMuted} />
             </Pressable>
           ))}
         </View>
@@ -1909,6 +1946,29 @@ const styles = StyleSheet.create({
   instruksiExcerptText: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16 },
   miniAgendaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5 },
   miniAgendaTitle: { fontFamily: fonts.bold, fontSize: 11.5 },
+  newsHighlightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+  },
+  newsHighlightThumb: {
+    width: 68,
+    height: 68,
+    borderRadius: 8,
+  },
+  newsHighlightTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  newsCatBadge: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 0.4,
+  },
   // 4-Column Quick Menu Icon Grid
   quickIconGrid: {
     flexDirection: 'row',

@@ -163,18 +163,19 @@ export function Card({
 // SECTION TITLE
 // ==========================================
 export interface SectionTitleProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  title?: string;
   style?: StyleProp<TextStyle>;
   action?: React.ReactNode;
 }
 
-export function SectionTitle({ children, style, action }: SectionTitleProps) {
+export function SectionTitle({ children, title, style, action }: SectionTitleProps) {
   const { colors, fontSize, spacing } = useTheme();
 
   return (
     <View style={[styles.sectionHeader, { marginBottom: spacing.md }]}>
       <Text style={[styles.sectionTitleText, { color: colors.text, fontSize: fontSize.lg, flexShrink: 1 }, style]}>
-        {children}
+        {title || children}
       </Text>
       {action && <View style={{ marginLeft: spacing.xs }}>{action}</View>}
     </View>
@@ -252,7 +253,8 @@ export function Pill({ label, tone = 'info', icon, dot, onPress, style }: PillPr
 // PRIMARY BUTTON
 // ==========================================
 export interface PrimaryButtonProps {
-  label: string;
+  label?: string;
+  title?: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -266,6 +268,7 @@ export interface PrimaryButtonProps {
 
 export function PrimaryButton({
   label,
+  title,
   onPress,
   disabled = false,
   loading = false,
@@ -341,7 +344,7 @@ export function PrimaryButton({
             <Feather name={icon} size={iconSize.md} color={v.text} strokeWidth={iconStrokeWidth} />
           )}
           <Text style={[styles.buttonText, { color: v.text, fontSize: fontSize.md }, textStyle]}>
-            {label}
+            {label || title}
           </Text>
           {iconRight && (
             <Feather name={iconRight} size={iconSize.md} color={v.text} strokeWidth={iconStrokeWidth} />
@@ -648,6 +651,7 @@ export interface ConfirmDialogProps {
   icon?: keyof typeof Feather.glyphMap;
   tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
   confirmLabel?: string;
+  confirmText?: string;
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel?: () => void;
@@ -662,6 +666,7 @@ export function ConfirmDialog({
   icon,
   tone = 'primary',
   confirmLabel,
+  confirmText,
   cancelLabel = 'Batal',
   onConfirm,
   onCancel,
@@ -708,7 +713,7 @@ export function ConfirmDialog({
     },
   }[tone];
 
-  const resolvedConfirmLabel = confirmLabel || (singleButton ? 'Mengerti' : toneConfig.defaultConfirm);
+  const resolvedConfirmLabel = confirmLabel || confirmText || (singleButton ? 'Mengerti' : toneConfig.defaultConfirm);
 
   return (
     <Modal visible={visible} onClose={onCancel || onConfirm} variant="floating">

@@ -466,6 +466,30 @@ export default function ProfileScreen({ navigation }: any) {
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
+        {/* Transparansi & Akuntabilitas Partai */}
+        <Pressable
+          onPress={() => navigation.navigate('TransparencyHub')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+            <Feather name="shield" size={15} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Transparansi & Akuntabilitas</Text>
+              <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 8.5, color: '#059669' }}>WTP</Text>
+              </View>
+            </View>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              Struktur, Laporan Keuangan, Banpar & AD/ART
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+
         {/* Pusat Bantuan */}
         <Pressable
           onPress={() => navigation.navigate('HelpCenter')}

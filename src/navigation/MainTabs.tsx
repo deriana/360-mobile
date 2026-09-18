@@ -11,7 +11,7 @@ import { buildDetailStack } from './DetailStack';
 import DashboardScreen from '../screens/DashboardScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
 import CheckInScreen from '../screens/CheckInScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
+import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator<any>();
@@ -19,18 +19,19 @@ const Tab = createBottomTabNavigator<any>();
 const DashboardStack = buildDetailStack('Dashboard', DashboardScreen, 'Beranda');
 const ActivitiesStack = buildDetailStack('Activities', ActivitiesScreen, 'Agenda & Tugas Kegiatan');
 const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Presensi Kehadiran GPS');
-const NotificationsStack = buildDetailStack('Notifications', NotificationsScreen, 'Notifikasi');
+const NewsStack = buildDetailStack('News', SimpanNewsScreen, 'Kabar & Berita Terkini');
 const ProfileStack = buildDetailStack('Profile', ProfileScreen, 'Profil Saya');
 
 /**
  * 5 Standard Bottom Navigation Tabs:
- * BERANDA | KEGIATAN | PRESENSI (CENTER) | NOTIFIKASI | PROFIL
+ * BERANDA | KEGIATAN | PRESENSI (CENTER) | KABAR | PROFIL
+ * Notifikasi dipindahkan ke header bell icon (DetailStack.tsx)
  */
 const STANDARD_BOTTOM_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
   { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
   { name: 'CheckInTab', component: CheckInStack, label: 'Presensi', icon: 'map-pin' as const },
-  { name: 'NotificationsTab', component: NotificationsStack, label: 'Notifikasi', icon: 'bell' as const },
+  { name: 'NewsTab', component: NewsStack, label: 'Kabar', icon: 'book-open' as const },
   { name: 'ProfileTab', component: ProfileStack, label: 'Profil', icon: 'user' as const },
 ];
 
