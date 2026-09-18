@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
-import { useTheme, fonts, fontSize, radius, spacing } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { fonts, fontSize, radius, spacing } from '../theme';
 
 const { width } = Dimensions.get('window');
 const CANVAS_WIDTH = Math.min(width - 64, 380);

@@ -2,7 +2,8 @@ import React from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { fonts, useTheme } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { fonts } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
@@ -40,10 +41,16 @@ import SimpanOfficeDetailScreen from '../screens/SimpanOfficeDetailScreen';
 import RegisterMemberScreen from '../screens/RegisterMemberScreen';
 import WitnessAcademyScreen from '../screens/WitnessAcademyScreen';
 import WitnessLessonScreen from '../screens/WitnessLessonScreen';
+import ActivitiesScreen from '../screens/ActivitiesScreen';
+import TasksScreen from '../screens/TasksScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string }> = [
+  { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
+  { name: 'Tasks', component: TasksScreen, title: 'Tugas Lapangan' },
+  { name: 'Notifications', component: NotificationsScreen, title: 'Notifikasi' },
   { name: 'CheckIn', component: CheckInScreen, title: 'Presensi Kehadiran GPS' },
   { name: 'Profile', component: ProfileScreen, title: 'Kartu Petugas' },
   { name: 'Supervision', component: SupervisionScreen, title: 'Pengawasan TPS' },

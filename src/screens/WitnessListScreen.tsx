@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { EmptyState, Pill, Input } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { scopeTps, scopeWitnesses } from '../utils/scope';
-import { IMAGES, getWitnessAvatar } from '../data/images';
+import { getWitnessAvatar } from '../data/images';
 import { WitnessStatus } from '../types';
+import { maskPhone } from '../utils/masking';
 
 const STATUS_TONE: Record<WitnessStatus, 'success' | 'warning' | 'danger'> = {
   checked_in: 'success',
@@ -35,6 +36,23 @@ export default function WitnessListScreen({ navigation }: any) {
         w.phone.includes(query)
       : true,
   );
+
+  const handleSendReminder = (phone: string, name: string, tpsId: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+    const message = `Halo Sdr/i ${name}, pengingat dari Koordinator PAN: Mohon segera melakukan check-in penugasan Saksi di ${tpsId}. Terima kasih!`;
+    const url = `whatsapp://send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`);
+      }
+    }).catch(() => {
+      Linking.openURL(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`);
+    });
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -87,9 +105,29 @@ export default function WitnessListScreen({ navigation }: any) {
                     <Text style={[styles.dotSep, { color: colors.borderStrong }]}>•</Text>
                     <Feather name="phone" size={12} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
                     <Text style={[styles.tps, { color: colors.textMuted }]}>{item.phone}</Text>
+                    <Text style={[styles.tps, { color: colors.textMuted }]}>{maskPhone(item.phone)}</Text>
                   </View>
                 </View>
                 <Pill label={STATUS_TEXT[item.status]} tone={STATUS_TONE[item.status]} />
+                <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                  <Pill label={STATUS_TEXT[item.status]} tone={STATUS_TONE[item.status]} />
+                  {item.status !== 'checked_in' && (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleSendReminder(item.phone, item.name, item.assignedTpsId);
+                      }}
+                      style={({ pressed }) => [
+                        styles.reminderBtn,
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      hitSlop={8}
+                    >
+                      <Feather name="message-circle" size={12} color="#16A34A" />
+                      <Text style={styles.reminderBtnText}>Ingatkan</Text>
+                    </Pressable>
+                  )}
+                </View>
               </Pressable>
             );
           }}
@@ -123,4 +161,18 @@ const styles = StyleSheet.create({
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tps: { fontFamily: fonts.regular, fontSize: fontSize.xs },
   dotSep: { fontFamily: fonts.regular, fontSize: fontSize.xs },
+  reminderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: '#DCFCE7',
+  },
+  reminderBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: '#16A34A',
+  },
 });

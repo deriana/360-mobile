@@ -1,9 +1,10 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
+import { maskNik, maskPhone } from '../utils/masking';
 
 export default function WitnessDetailScreen({ route, navigation }: any) {
   const witnessId = route?.params?.witnessId || 'SAKSI-001';
@@ -17,6 +18,23 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
   }
 
   const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
+
+  const handleSendReminder = () => {
+    const cleanPhone = witness.phone.replace(/[^0-9]/g, '');
+    const formattedPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+    const message = `Halo Sdr/i ${witness.name}, pengingat dari Koordinator PAN: Mohon segera melakukan check-in dan persiapan penugasan Saksi di ${witness.assignedTpsId}. Terima kasih!`;
+    const url = `whatsapp://send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`);
+      }
+    }).catch(() => {
+      Linking.openURL(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`);
+    });
+  };
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -35,6 +53,8 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
         <SectionTitle>Profil Saksi</SectionTitle>
         <DetailRow label="NIK Saksi" value={witness.nik} />
         <DetailRow label="Nomor Telepon" value={witness.phone} />
+        <DetailRow label="NIK Saksi" value={maskNik(witness.nik)} />
+        <DetailRow label="Nomor Telepon" value={maskPhone(witness.phone)} />
         <DetailRow label="Alamat Domisili" value={witness.address} />
         <DetailRow label="TPS Penugasan" value={witness.assignedTpsId} />
         {assignedTps && <DetailRow label="Lokasi TPS" value={`${assignedTps.district}, ${assignedTps.regency}`} />}
@@ -52,6 +72,14 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
       )}
 
       <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+        {witness.status !== 'checked_in' && (
+          <PrimaryButton
+            label="Kirim Pengingat WhatsApp"
+            variant="outline"
+            icon="message-circle"
+            onPress={handleSendReminder}
+          />
+        )}
         <PrimaryButton
           label="Lihat Kartu Petugas"
           variant="secondary"

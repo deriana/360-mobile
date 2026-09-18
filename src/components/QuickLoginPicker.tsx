@@ -4,6 +4,7 @@ import {
   LayoutAnimation,
   Platform,
   Pressable,
+  ScrollView,
   StyleProp,
   StyleSheet,
   Text,
@@ -41,12 +42,10 @@ export interface QuickLoginPickerProps {
   title?: string;
   subtitle?: string;
   categories: QuickLoginCategory[];
-  onSelectRole: (role: Role) => void;
+  onSelectRole: (role: Role, email?: string) => void;
   defaultExpanded?: boolean;
   style?: StyleProp<ViewStyle>;
 }
-
-const TRACK_PADDING = 4;
 
 export function QuickLoginPicker({
   title = 'Login Cepat',
@@ -60,43 +59,32 @@ export function QuickLoginPicker({
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [trackWidth, setTrackWidth] = useState(0);
 
   const chevronAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
-  const indicatorAnim = useRef(new Animated.Value(0)).current;
 
   const activeCategory = categories[activeIndex] ?? categories[0];
-  const segmentWidth = trackWidth > 0 ? (trackWidth - TRACK_PADDING * 2) / categories.length : 0;
-
-  useEffect(() => {
-    Animated.timing(indicatorAnim, {
-      toValue: activeIndex,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
-  }, [activeIndex, indicatorAnim]);
 
   const toggleExpanded = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS !== 'web') {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     Animated.timing(chevronAnim, {
       toValue: expanded ? 0 : 1,
       duration: 200,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
     setExpanded((v) => !v);
   };
 
   const selectCategory = (index: number) => {
     if (index === activeIndex) return;
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS !== 'web') {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setActiveIndex(index);
   };
 
   const chevronRotate = chevronAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-  const indicatorTranslateX = indicatorAnim.interpolate({
-    inputRange: categories.map((_, i) => i),
-    outputRange: categories.map((_, i) => i * segmentWidth),
-  });
 
   if (categories.length === 0) return null;
 
@@ -125,229 +113,307 @@ export function QuickLoginPicker({
 
       {expanded && (
         <View style={[styles.panel, { paddingTop: spacing.md, gap: spacing.sm }]}>
-          {/* Segmented category switcher */}
-          <View
-            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-            style={[styles.track, { backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.pill }]}
-          >
-            {trackWidth > 0 && (
-              <Animated.View
-                style={[
-                  styles.indicator,
-                  {
-                    width: segmentWidth,
-                    backgroundColor: colors.primary,
-                    borderRadius: radius.pill,
-                    transform: [{ translateX: indicatorTranslateX }],
-                    ...shadow.sm,
-                  },
-                ]}
-              />
-            )}
+            {/* Segmented category switcher */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryScrollContent}
+              style={styles.categoryScroll}
+            >
+              {categories.map((cat, index) => {
+                const isActive = index === activeIndex;
+                return (
+                  <Pressable
+                    key={cat.key}
+                    onPress={() => selectCategory(index)}
+                    style={({ pressed }) => [
+                      styles.categoryChip,
+                      {
+                        backgroundColor: isActive ? colors.primary : colors.surface,
+                        borderColor: isActive ? colors.primary : colors.border,
+                        borderRadius: radius.pill,
+                      },
+                      isActive && shadow.sm,
+                      pressed && { opacity: 0.8 },
+                    ]}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Feather
+                      name={cat.icon}
+                      size={13}
+                      color={isActive ? colors.textInverse : colors.textMuted}
+                      strokeWidth={iconStrokeWidth}
+                    />
+                    <Text
+                      style={[
+                        styles.segmentLabel,
+                        { color: isActive ? colors.textInverse : colors.text, fontSize: fontSize.xs },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
 
-            {categories.map((cat, index) => {
-              const isActive = index === activeIndex;
-              return (
-                <Pressable
-                  key={cat.key}
-                  onPress={() => selectCategory(index)}
-                  style={styles.segment}
-                  hitSlop={4}
-                >
-                  <Feather
-                    name={cat.icon}
-                    size={13}
-                    color={isActive ? colors.textInverse : colors.textMuted}
-                    strokeWidth={iconStrokeWidth}
-                  />
-                  <Text
-                    style={[
-                      styles.segmentLabel,
-                      { color: isActive ? colors.textInverse : colors.text, fontSize: fontSize.xs },
+                    {cat.accounts.length > 0 && (
+                      <View
+                        style={[
+                          styles.countBadge,
+                          {
+                            backgroundColor: isActive ? 'rgba(255, 255, 255, 0.25)' : colors.primaryLight,
+                            borderColor: isActive ? 'rgba(255, 255, 255, 0.4)' : colors.primary,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.countBadgeText,
+                            { color: isActive ? colors.textInverse : colors.primary },
+                          ]}
+                        >
+                          {cat.accounts.length}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {/* Active category header */}
+            <View style={styles.categoryHeaderRow}>
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text style={[styles.categoryHeaderTitle, { color: colors.text, fontSize: fontSize.xs }]} numberOfLines={1}>
+                  {activeCategory.fullLabel}
+                </Text>
+              </View>
+              <View style={[styles.categoryHeaderCountBadge, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.categoryHeaderCount, { color: colors.primary }]}>
+                  {activeCategory.accounts.length} Akun Demo
+                </Text>
+              </View>
+            </View>
+
+            {/* Role list */}
+            <View style={{ gap: spacing.sm }}>
+              {activeCategory.accounts.map((account) => {
+                const roleLabel = ROLE_LABEL[account.role] ?? account.role;
+                const roleScope = ROLE_SCOPE_DESCRIPTION[account.role] ?? '';
+                const roleIcon = ROLE_ICON[account.role] ?? 'user';
+
+                return (
+                  <Pressable
+                    key={account.email || `${account.role}-${account.name}`}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    onPress={() => onSelectRole(account.role, account.email)}
+                    style={({ pressed }) => [
+                      styles.accountCard,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        borderRadius: radius.md,
+                      },
+                      pressed && { opacity: 0.8, transform: [{ scale: 0.99 }] },
                     ]}
                   >
-                    {cat.label}
-                  </Text>
+                    <View style={styles.accountCardHeader}>
+                      <View style={[styles.accountAvatar, { backgroundColor: colors.primaryLight }]}>
+                        <Feather
+                          name={roleIcon}
+                          size={16}
+                          color={colors.primary}
+                          strokeWidth={iconStrokeWidth}
+                        />
+                      </View>
 
-                  {cat.accounts.length > 0 && (
-                    <View style={[styles.countBadge, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-                      <Text style={[styles.countBadgeText, { color: colors.primary }]}>{cat.accounts.length}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.accountName, { color: colors.text }]} numberOfLines={1}>
+                          {account.name}
+                        </Text>
+                        <Text style={[styles.accountRoleBadge, { color: colors.primary }]} numberOfLines={1}>
+                          {roleLabel}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.useTag, { backgroundColor: colors.primaryLight }]}>
+                        <Text style={[styles.useTagText, { color: colors.primary }]}>Masuk</Text>
+                        <Feather name="arrow-right" size={11} color={colors.primary} strokeWidth={iconStrokeWidth} />
+                      </View>
                     </View>
-                  )}
-                </Pressable>
-              );
-            })}
+
+                    {roleScope ? (
+                      <View style={[styles.scopeContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Feather name="map-pin" size={11} color={colors.textMuted} style={{ marginTop: 1 }} />
+                        <Text style={[styles.accountScope, { color: colors.textMuted }]} numberOfLines={2}>
+                          {roleScope}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    <View style={styles.accountFooter}>
+                      <Text style={[styles.emailHint, { color: colors.textMuted }]} numberOfLines={1}>
+                        <Text style={{ fontWeight: '600' }}>Email:</Text> {account.email}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
+        )}
+      </View>
+    );
+  }
 
-          {/* Active category header */}
-          <View style={styles.categoryHeaderRow}>
-            <Text style={[styles.categoryHeaderTitle, { color: colors.text, fontSize: fontSize.xs }]}>
-              {activeCategory.fullLabel}
-            </Text>
-            <Text style={[styles.categoryHeaderCount, { color: colors.textMuted }]}>
-              {activeCategory.accounts.length} peran
-            </Text>
-          </View>
-
-          {/* Role list */}
-          <View style={{ gap: spacing.xs }}>
-            {activeCategory.accounts.map((account) => (
-              <Pressable
-                key={account.role}
-                hitSlop={4}
-                onPress={() => onSelectRole(account.role)}
-                style={({ pressed }) => [
-                  styles.accountRow,
-                  { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md },
-                  pressed && { opacity: 0.75, transform: [{ scale: 0.985 }] },
-                ]}
-              >
-                <View style={[styles.accountAvatar, { backgroundColor: colors.primaryLight }]}>
-                  <Feather
-                    name={ROLE_ICON[account.role]}
-                    size={16}
-                    color={colors.primary}
-                    strokeWidth={iconStrokeWidth}
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.accountRole, { color: colors.text }]} numberOfLines={1}>
-                    {ROLE_LABEL[account.role]}
-                  </Text>
-                  <Text style={[styles.accountScope, { color: colors.textMuted }]} numberOfLines={1}>
-                    {ROLE_SCOPE_DESCRIPTION[account.role]}
-                  </Text>
-                </View>
-
-                <View style={[styles.useTag, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.useTagText, { color: colors.primary }]}>Masuk</Text>
-                  <Feather name="arrow-right" size={11} color={colors.primary} strokeWidth={iconStrokeWidth} />
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    padding: 10,
-  },
-  triggerIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  triggerTitle: {
-    fontFamily: fonts.bold,
-    fontWeight: '800',
-  },
-  triggerSubtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 10.5,
-    marginTop: 1,
-    fontWeight: '500',
-  },
-  panel: {
-    borderTopWidth: 0,
-  },
-  track: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    padding: TRACK_PADDING,
-  },
-  indicator: {
-    position: 'absolute',
-    top: TRACK_PADDING,
-    left: TRACK_PADDING,
-    bottom: TRACK_PADDING,
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 9,
-  },
-  segmentLabel: {
-    fontFamily: fonts.bold,
-    fontWeight: '800',
-  },
-  countBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countBadgeText: {
-    fontFamily: fonts.extraBold,
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  categoryHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryHeaderTitle: {
-    fontFamily: fonts.bold,
-    fontWeight: '800',
-  },
-  categoryHeaderCount: {
-    fontFamily: fonts.semiBold,
-    fontSize: 10.5,
-    fontWeight: '600',
-  },
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    padding: 10,
-  },
-  accountAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountRole: {
-    fontFamily: fonts.bold,
-    fontSize: 12.5,
-    fontWeight: '800',
-  },
-  accountScope: {
-    fontFamily: fonts.medium,
-    fontSize: 10.5,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-  useTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  useTagText: {
-    fontFamily: fonts.bold,
-    fontSize: 10.5,
-    fontWeight: '800',
-  },
-});
+  const styles = StyleSheet.create({
+    trigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1,
+      padding: 12,
+    },
+    triggerIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    triggerTitle: {
+      fontFamily: fonts.bold,
+      fontWeight: '800',
+    },
+    triggerSubtitle: {
+      fontFamily: fonts.medium,
+      fontSize: 11,
+      marginTop: 2,
+      fontWeight: '500',
+    },
+    panel: {
+      borderTopWidth: 0,
+    },
+    categoryScroll: {
+      marginHorizontal: -2,
+    },
+    categoryScrollContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 2,
+      paddingHorizontal: 2,
+    },
+    categoryChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 7,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+    },
+    segmentLabel: {
+      fontFamily: fonts.bold,
+      fontWeight: '800',
+    },
+    countBadge: {
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 1,
+      paddingHorizontal: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    countBadgeText: {
+      fontFamily: fonts.extraBold,
+      fontSize: 9.5,
+      fontWeight: '800',
+    },
+    categoryHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 2,
+    },
+    categoryHeaderTitle: {
+      fontFamily: fonts.bold,
+      fontWeight: '800',
+    },
+    categoryHeaderCountBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    categoryHeaderCount: {
+      fontFamily: fonts.bold,
+      fontSize: 10.5,
+      fontWeight: '700',
+    },
+    accountCard: {
+      borderWidth: 1,
+      padding: 12,
+      gap: 8,
+    },
+    accountCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    accountAvatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    accountName: {
+      fontFamily: fonts.bold,
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    accountRoleBadge: {
+      fontFamily: fonts.semiBold,
+      fontSize: 11,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    scopeContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+    },
+    accountScope: {
+      flex: 1,
+      fontFamily: fonts.medium,
+      fontSize: 10.5,
+      lineHeight: 14,
+    },
+    accountFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: 'rgba(0,0,0,0.06)',
+      paddingTop: 6,
+    },
+    emailHint: {
+      fontFamily: fonts.regular,
+      fontSize: 10.5,
+    },
+    useTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    useTagText: {
+      fontFamily: fonts.bold,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+  });

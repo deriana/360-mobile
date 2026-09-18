@@ -167,7 +167,7 @@ export interface KonterLayananItem {
 
 export interface KantorSekretariat {
   id: string;
-  tingkat: 'DPP' | 'DPW' | 'DPD' | 'DPC';
+  tingkat: 'DPP' | 'DPW' | 'DPD' | 'DPC' | 'POSKO';
   namaKantor: string;
   alamat: string;
   kota: string;
@@ -424,6 +424,53 @@ export const KANTOR_SEKRETARIAT_LIST: KantorSekretariat[] = [
         estimasiProses: 'Langsung',
         deskripsi: 'Distribusi logistik saksi, pulsa data darurat, dan koordinasi Korlap Lapangan.',
         status: 'SIAGA_PEMILU',
+      },
+    ],
+  },
+  {
+    id: 'KANTOR-05',
+    tingkat: 'POSKO',
+    namaKantor: 'Posko Relawan PAN Dago Juara',
+    alamat: 'Jl. Dago Atas No. 84, Kelurahan Dago',
+    kota: 'Kota Bandung',
+    provinsi: 'Jawa Barat',
+    kodePos: '40135',
+    telepon: '0811-2233-4455',
+    whatsapp: '0811-2233-4455',
+    email: 'posko.dago@pan.or.id',
+    jamBuka: 'Setiap Hari: 08.00 - 21.00 WIB (Piket Relawan)',
+    statusGedung: 'Posko Lapangan & Titik Kumpul Warga Dago',
+    kepalaSekretariat: 'Kang Asep Ridwan',
+    jabatanKepala: 'Koordinator Lapangan Kelurahan Dago',
+    nipKepala: 'REL-PAN-DAGO-01',
+    avatarIndex: 0,
+    kontakPetugasKonter: '0811-2233-4455 (Kang Asep Ridwan / Korlap)',
+    lat: -6.8790,
+    lng: 107.6180,
+    fasilitas: [
+      'Titik Kumpul Apel Giat Sapa Warga & Bakti Sosial',
+      'Pusat Pengambilan Rompi, Topi & Atribut Relawan',
+      'Penyimpanan Logistik Brosur, Flyer Caleg & Sembako',
+      'Tempat Istirahat, Konsumsi & Charging Hp Relawan',
+    ],
+    konterLayanan: [
+      {
+        id: 'LKT-14',
+        namaLayanan: 'Posko Pengambilan Atribut & Logistik Aksi',
+        loket: 'Piket 1 — Logistik Relawan',
+        waktuOperasional: '08.00 - 18.00 WIB',
+        estimasiProses: 'Langsung',
+        deskripsi: 'Pengambilan rompi relawan, flyer sosialisasi, dan paket sembako murah baksos.',
+        status: 'BUKA',
+      },
+      {
+        id: 'LKT-15',
+        namaLayanan: 'Pusat Koordinasi & Pengaduan Warga Dago',
+        loket: 'Piket 2 — Aspirasi & Lapangan',
+        waktuOperasional: '08.00 - 21.00 WIB',
+        estimasiProses: 'Langsung',
+        deskripsi: 'Pencatatan aspirasi lisan warga dan koordinasi jadwal piket sapa warga RW 01 - RW 10.',
+        status: 'BUKA',
       },
     ],
   },

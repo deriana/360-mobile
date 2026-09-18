@@ -214,5 +214,3 @@ export const iconSize = {
 } as const;
 
 export const iconStrokeWidth = 1.75;
-
-export { useTheme, ThemeProvider, type ThemeColors, type ThemeMode } from '../context/ThemeContext';

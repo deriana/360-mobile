@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  DimensionValue,
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, ConfirmDialog, KpiCard, Modal, Pill, SectionTitle, StatusBadge } from '../components/ui';
+import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
-import { CURRENT_WITNESS_ID, ROLE_LABEL, ROLE_SCOPE_DESCRIPTION, getUserProfile, scopeTps, scopeWitnesses } from '../utils/scope';
-import { BRAND_ASSETS, IMAGES, getWitnessAvatar, getTpsPhoto } from '../data/images';
+import { CURRENT_WITNESS_ID, getUserProfile, ROLE_ICON, ROLE_LABEL, scopeTps, scopeWitnesses } from '../utils/scope';
+import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
+import { maskNik } from '../utils/masking';
 import QrPlaceholder from '../components/QrPlaceholder';
-
-const ITEMS_PER_PAGE = 5;
+import { MobileRole } from '../types';
 
 interface BcaQuickActionItem {
   id: string;
@@ -31,17 +31,39 @@ interface BcaQuickActionItem {
 }
 
 export default function DashboardScreen({ navigation }: any) {
-  const { role, tps, witnesses, payments, isOnline, unsyncedQueueCount, flushQueueNow, broadcasts } = useApp();
+  const {
+    role,
+    currentUser,
+    availableRoles,
+    switchActiveRole,
+    tps,
+    witnesses,
+    payments,
+    isOnline,
+    unsyncedQueueCount,
+    flushQueueNow,
+    events,
+    tasks,
+    volunteerOpportunities,
+    joinOpportunity,
+    applyWitnessCandidate,
+  } = useApp();
   const { colors, isDark } = useTheme();
 
   // Modals & Dialog states
   const [isSyncing, setIsSyncing] = useState(false);
   const [showKtaQrModal, setShowKtaQrModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showAgendaModal, setShowAgendaModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showCoordinatorModal, setShowCoordinatorModal] = useState(false);
+  const [showAspirasiModal, setShowAspirasiModal] = useState(false);
+  const [showCandidateConfirmDialog, setShowCandidateConfirmDialog] = useState(false);
   const [activeWartaTab, setActiveWartaTab] = useState<'instruksi' | 'agenda'>('instruksi');
-  const [showScanModal, setShowScanModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
+  const [newAspirasiTitle, setNewAspirasiTitle] = useState('');
+  const [newAspirasiDesc, setNewAspirasiDesc] = useState('');
+  const [newAspirasiResident, setNewAspirasiResident] = useState('');
+  const [selectedDetailAspirasi, setSelectedDetailAspirasi] = useState<any | null>(null);
+  const [aspirasiFilterTab, setAspirasiFilterTab] = useState<'my_input' | 'all_dago'>('my_input');
   const [dialogConfig, setDialogConfig] = useState<{
     visible: boolean;
     title: string;
@@ -49,51 +71,145 @@ export default function DashboardScreen({ navigation }: any) {
     tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
   }>({ visible: false, title: '', message: '' });
 
-  // Interactive Checklist states
-  const [taskGotvCount, setTaskGotvCount] = useState(142);
-  const [taskTallyDone, setTaskTallyDone] = useState(false);
-  const [taskDocDone, setTaskDocDone] = useState(false);
-  const [taskLogisticDone, setTaskLogisticDone] = useState(true);
-
-  // Pagination & Sorting states
-  const [tpsPage, setTpsPage] = useState(1);
-  const [witnessPage, setWitnessPage] = useState(1);
-  const [attendancePage, setAttendancePage] = useState(1);
-  const [attendanceSort, setAttendanceSort] = useState<'best' | 'worst'>('best');
+  // Data aspirasi warga wilayah dampingan Dago dengan riwayat timeline penanganan Web Command Center
+  const [aspirasiItems, setAspirasiItems] = useState([
+    {
+      id: 'ASP-01',
+      title: 'Perbaikan Lampu Jalan Gang RW 04 Dago',
+      desc: 'Warga mengusulkan penambahan 3 titik lampu PJU pada ruas gang menurun arah Posyandu demi keselamatan warga lansia dan anak-anak saat malam hari.',
+      category: 'Fasilitas Umum',
+      residentName: 'Ibu Eni & Tokoh Warga RT 02',
+      recordedBy: 'Siti Rahmawati',
+      recordedRole: 'Relawan Dampingan Dago',
+      location: 'Gang Saluyu RT 02 / RW 04, Kel. Dago',
+      date: '17 Sep 2026, 14:15 WIB',
+      status: 'Diteruskan ke Fraksi',
+      statusColor: '#0284C7',
+      assignedTo: 'Sekretariat Fraksi PAN DPRD Kota Bandung',
+      backofficeNotes: 'Telah dimasukkan ke dalam daftar Pokir (Pokok Pikiran) prioritas Dapil 3 oleh Tenaga Ahli Fraksi.',
+      timeline: [
+        {
+          stage: 'Aspirasi Dihimpun di Lapangan',
+          actor: 'Siti Rahmawati (Relawan Dago)',
+          time: '17 Sep 2026, 14:15 WIB',
+          desc: 'Aspirasi warga dicatat saat giat sapa warga door-to-door.',
+          done: true,
+        },
+        {
+          stage: 'Verifikasi Operator Posko Dago',
+          actor: 'Kang Asep Ridwan (Korlap Dago)',
+          time: '17 Sep 2026, 16:30 WIB',
+          desc: 'Lokasi dan urgensi kebutuhan PJU diverifikasi di sistem posko.',
+          done: true,
+        },
+        {
+          stage: 'Disposisi Web Command Center',
+          actor: 'Operator Fraksi PAN Bandung',
+          time: '18 Sep 2026, 09:20 WIB',
+          desc: 'Diteruskan ke meja Komisi C DPRD Kota Bandung untuk advokasi APBD-P.',
+          done: true,
+        },
+        {
+          stage: 'Realisasi / Tindak Lanjut Lapangan',
+          actor: 'Dinas Terkait & Tim Aspirasi PAN',
+          time: 'Menunggu Jadwal Survai',
+          desc: 'Survai teknis titik instalasi lampu oleh tim aspirasi dewan.',
+          done: false,
+        },
+      ],
+    },
+    {
+      id: 'ASP-02',
+      title: 'Permohonan Bantuan Posyandu Balita RW 05',
+      desc: 'Pengurus Posyandu mengajukan bantuan sarana timbangan bayi digital serta asupan makanan pendamping ASI (MPASI) untuk dimasukkan ke agenda bakti sosial PAN.',
+      category: 'Kesehatan Warga',
+      residentName: 'Kader Posyandu Mawar RW 05',
+      recordedBy: 'Siti Rahmawati',
+      recordedRole: 'Relawan Dampingan Dago',
+      location: 'Balai RW 05, Kelurahan Dago',
+      date: '16 Sep 2026, 10:30 WIB',
+      status: 'Disetujui di Agenda Baksos',
+      statusColor: '#10B981',
+      assignedTo: 'Tim Baksos & Logistik DPW PAN Jabar',
+      backofficeNotes: 'Disetujui. Bantuan paket PMT balita dan timbangan digital dialokasikan pada Baksos Minggu 21 Sep 2026.',
+      timeline: [
+        {
+          stage: 'Aspirasi Dihimpun di Lapangan',
+          actor: 'Siti Rahmawati (Relawan Dago)',
+          time: '16 Sep 2026, 10:30 WIB',
+          desc: 'Permohonan dicatat langsung saat silaturahmi balai posyandu.',
+          done: true,
+        },
+        {
+          stage: 'Review Tim Logistik Pemenangan',
+          actor: 'Biro Logistik BSN Jabar',
+          time: '16 Sep 2026, 15:45 WIB',
+          desc: 'Disetujui untuk dipaketkan bersama sembako murah Baksos Dago.',
+          done: true,
+        },
+        {
+          stage: 'Penjadwalan Serah Terima',
+          actor: 'Koordinator Acara Baksos',
+          time: '21 Sep 2026, 08:30 WIB',
+          desc: 'Penyerahan simbolis oleh caleg DPR-RI dan kader DPD di Balai Warga RW 05.',
+          done: false,
+        },
+      ],
+    },
+    {
+      id: 'ASP-03',
+      title: 'Antusiasme Pasar Tebus Sembako Murah',
+      desc: 'Warga lansia RT 04 meminta kuota sembako murah (minyak goreng dan beras) ditambah dari alokasi awal 100 paket menjadi 150 paket.',
+      category: 'Kebutuhan Pokok',
+      residentName: 'Pak Ujang (Ketua RT 04 Dago)',
+      recordedBy: 'Kang Maman (Relawan RW 04)',
+      recordedRole: 'Relawan Lapangan Dago',
+      location: 'Pemukiman RT 04 / RW 04 Dago',
+      date: '15 Sep 2026, 17:00 WIB',
+      status: 'Selesai Diproses',
+      statusColor: '#64748B',
+      assignedTo: 'Koordinator Logistik Posko Dago',
+      backofficeNotes: 'Tambahan 50 kuota sembako murah telah disetujui DPD PAN Kota Bandung.',
+      timeline: [
+        {
+          stage: 'Aspirasi Dihimpun di Lapangan',
+          actor: 'Kang Maman (Relawan RW 04)',
+          time: '15 Sep 2026, 17:00 WIB',
+          desc: 'Disampaikan saat pembagian kupon sembako.',
+          done: true,
+        },
+        {
+          stage: 'Disposisi Web Command Center',
+          actor: 'Admin Logistik Pemenangan',
+          time: '16 Sep 2026, 08:30 WIB',
+          desc: 'Alokasi kuota ditingkatkan menjadi 150 paket sembako.',
+          done: true,
+        },
+        {
+          stage: 'Selesai Diproses',
+          actor: 'Tim Posko Dago',
+          time: '16 Sep 2026, 11:00 WIB',
+          desc: 'Kupon tambahan telah disalurkan ke ketua RT 04.',
+          done: true,
+        },
+      ],
+    },
+  ]);
 
   const profile = getUserProfile(role);
+  const user = currentUser.identity;
+  const isOfficialMember = currentUser.memberships.some((m) => m.type === 'member' && m.status === 'verified');
+  const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
+  const volunteerMembership = currentUser.memberships.find((m) => m.type === 'volunteer');
   const scopedTps = scopeTps(role, tps, witnesses);
   const scopedWitnesses = scopeWitnesses(role, witnesses, scopedTps);
-
-  const checkedInCount = scopedWitnesses.filter((w) => w.status === 'checked_in').length;
-  const reportedCount = scopedTps.filter((t) => t.status === 'done').length;
 
   const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID) || witnesses[0];
   const currentTps = scopedTps[0] || tps[0];
   const currentPayment = payments?.find((p) => p.witnessId === currentWitness?.id);
 
-  // Pagination calculations
-  const totalTpsPages = Math.ceil(scopedTps.length / ITEMS_PER_PAGE);
-  const paginatedTps = scopedTps.slice((tpsPage - 1) * ITEMS_PER_PAGE, tpsPage * ITEMS_PER_PAGE);
-
-  const totalWitnessPages = Math.ceil(scopedWitnesses.length / ITEMS_PER_PAGE);
-  const paginatedWitnesses = scopedWitnesses.slice((witnessPage - 1) * ITEMS_PER_PAGE, witnessPage * ITEMS_PER_PAGE);
-
-  // Attendance breakdown
-  const attendanceByTps = [...scopedTps]
-    .map((t) => {
-      const ws = scopedWitnesses.filter((w) => w.assignedTpsId === t.id);
-      const hadir = ws.filter((w) => w.status === 'checked_in').length;
-      const total = ws.length;
-      return { tps: t, hadir, total, pct: total > 0 ? Math.round((hadir / total) * 100) : 0 };
-    })
-    .sort((a, b) => (attendanceSort === 'best' ? b.pct - a.pct : a.pct - b.pct));
-  const fullyPresentTpsCount = attendanceByTps.filter((a) => a.pct === 100).length;
-  const totalAttendancePages = Math.ceil(attendanceByTps.length / ITEMS_PER_PAGE);
-  const paginatedAttendance = attendanceByTps.slice(
-    (attendancePage - 1) * ITEMS_PER_PAGE,
-    attendancePage * ITEMS_PER_PAGE,
-  );
+  const checkedInCount = scopedWitnesses.filter((w) => w.status === 'checked_in').length;
+  const totalWitnessInScope = scopedWitnesses.length;
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -118,7 +234,7 @@ export default function DashboardScreen({ navigation }: any) {
       setDialogConfig({
         visible: true,
         title: 'Gagal Sinkron',
-        message: 'Pastikan sinyal internet seluler stabil.',
+        message: 'Pastikan koneksi internet seluler stabil.',
         tone: 'danger',
       });
     } finally {
@@ -126,177 +242,214 @@ export default function DashboardScreen({ navigation }: any) {
     }
   };
 
-  // Full-aspect BCA style menu items
-  const bcaMenuItems: BcaQuickActionItem[] = [
-    {
-      id: 'suara',
-      icon: 'bar-chart-2',
-      title: 'Simulasi Parlemen',
-      subtitle: 'Sainte-Laguë & Kursi DPR',
-      badge: '7.24%',
-      tone: 'primary',
-      onPress: () => navigation.navigate('PartyLeaderboard'),
-    },
-    {
-      id: 'bacaleg',
-      icon: 'award',
-      title: 'Berkas Caleg KPU',
-      subtitle: '7 Dokumen Terverifikasi',
-      badge: 'Lengkap',
-      tone: 'success',
-      onPress: () => navigation.navigate('SimpanBacaleg'),
-    },
-    {
-      id: 'kawal',
-      icon: 'grid',
-      title: 'Kawal TPS Dapil',
-      subtitle: 'Monitoring Saksi C1 BSN',
-      tone: 'info',
-      onPress: () => navigation.navigate('Supervision'),
-    },
-    {
-      id: 'roster',
-      icon: 'users',
-      title: 'Roster Caleg PAN',
-      subtitle: 'Daftar Calon DPR-RI Jabar 1',
-      tone: 'primary',
-      onPress: () => navigation.navigate('PartyRoster', { party: 'PAN' }),
-    },
-    {
-      id: 'kantor',
-      icon: 'map-pin',
-      title: 'Kantor & Posko',
-      subtitle: 'Layanan DPD & Sekretariat',
-      tone: 'primary',
-      onPress: () => navigation.navigate('SimpanOffices'),
-    },
-    {
-      id: 'struktur',
-      icon: 'layers',
-      title: 'Struktur Pengurus',
-      subtitle: 'Direktori DPP, DPW & DPD',
-      tone: 'primary',
-      onPress: () => navigation.navigate('SimpanStructure'),
-    },
-    {
-      id: 'akademi',
-      icon: 'book-open',
-      title: 'Akademi Saksi BSN',
-      subtitle: 'Pelatihan & Kuis PKPU',
-      badge: 'Sertifikasi',
-      tone: 'primary',
-      onPress: () => navigation.navigate('WitnessAcademy'),
-    },
-    {
-      id: 'bantuan',
-      icon: 'help-circle',
-      title: 'Pusat Bantuan',
-      subtitle: 'Pedoman KPU & SOP Saksi',
-      tone: 'info',
-      onPress: () => navigation.navigate('HelpCenter'),
-    },
-    {
-      id: 'rekrut',
-      icon: 'user-plus',
-      title: 'Rekrut Kader',
-      subtitle: 'Formulir Anggota simPAN',
-      tone: 'primary',
-      onPress: () => navigation.navigate('RegisterMember'),
-    },
-    {
-      id: 'kta',
-      icon: 'credit-card',
-      title: 'e-KTA Digital',
-      subtitle: 'Kartu Anggota simPAN',
-      tone: 'primary',
-      onPress: () => navigation.navigate('SimpanKta'),
-    },
-    {
-      id: 'tally',
-      icon: 'zap',
-      title: 'Hitung Cepat TPS',
-      subtitle: 'Tally Suara Bilik TPS',
-      tone: 'warning',
-      onPress: () => navigation.navigate('QuickCountGame'),
-    },
-    {
-      id: 'honor',
-      icon: 'dollar-sign',
-      title: 'Honorarium Saksi',
-      subtitle: 'Pencairan Mandiri / BCA',
-      tone: 'success',
-      onPress: () => navigation.navigate('Payment'),
-    },
-    {
-      id: 'darurat',
-      icon: 'alert-triangle',
-      title: 'Lapor Insiden SOS',
-      subtitle: 'Eskalasi Pelanggaran TPS',
-      tone: 'danger',
-      badge: 'Darurat',
-      onPress: () => navigation.navigate('EmergencyForm'),
-    },
-  ];
+  const isWitnessRole = role === 'WITNESS' || role === 'TPS_WITNESS';
+  const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !currentUser.roles.some((r) => r.role === 'WITNESS');
+  const isVolunteerWithWitness = (role === 'VOLUNTEER' || role === 'RELAWAN') && currentUser.roles.some((r) => r.role === 'WITNESS');
 
-  // Checklist of Member Tasks
-  const taskChecklist = [
-    {
-      id: 1,
-      title: 'Presensi Lokasi GPS di TPS (< 07:00 WIB)',
-      desc: 'Wajib berada di radius 100m dari titik TPS sebelum pemungutan suara dibuka.',
-      done: true,
-      time: '06:45 WIB • TPS 001',
-      actionLabel: 'Lihat Presensi',
-      onPress: () => navigation.navigate('CheckIn'),
-    },
-    {
-      id: 2,
-      title: 'Tunjukkan Surat Mandat Resmi DPP ke KPPS',
-      desc: 'Perlihatkan e-Mandat QR resmi bertanda tangan DPP ke petugas KPPS & Panwaslu.',
-      done: true,
-      time: 'No. 042/SM-DPP/2026',
-      actionLabel: 'Buka Surat Mandat',
-      onPress: () => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID }),
-    },
-    {
-      id: 3,
-      title: 'Kawal Pemilih & Mobilisasi Warga (GOTV)',
-      desc: 'Pantau kehadiran warga binaan di lingkungan TPS untuk memastikan suara PAN terjaga.',
-      done: taskGotvCount >= 160,
-      time: `${taskGotvCount} / 180 Pemilih Hadir (${Math.round((taskGotvCount / 180) * 100)}%)`,
-      actionLabel: '+ Tambah Kehadiran',
-      onPress: () => {
-        setTaskGotvCount((prev) => {
-          const next = Math.min(180, prev + 5);
-          setDialogConfig({
-            visible: true,
-            title: 'Kehadiran Pemilih Bertambah',
-            message: `Kehadiran pemilih binaan tercatat ${next} dari 180 pemilih (${Math.round((next / 180) * 100)}%).`,
-            tone: 'success',
-          });
-          return next;
-        });
+  // Quick Action items: zero redundancy with bottom tabs (Beranda, Kegiatan, Presensi, Notifikasi, Profil)
+  const getQuickMenuItems = (): BcaQuickActionItem[] => {
+    if (isVolunteerOnly) {
+      // 6 menu esensial untuk Relawan Murni (Siti Rahmawati)
+      return [
+        {
+          id: 'bursa_tugas',
+          icon: 'briefcase',
+          title: 'Bursa Tugas',
+          subtitle: 'Peluang Aksi',
+          badge: `${volunteerOpportunities.length}`,
+          tone: 'primary',
+          onPress: () => navigation.navigate('ActivitiesTab', { screen: 'Activities', params: { tab: 'tugas' } }),
+        },
+        {
+          id: 'akademi',
+          icon: 'award',
+          title: 'PAN Academy',
+          subtitle: 'Bimtek Relawan',
+          badge: 'Modul',
+          tone: 'primary',
+          onPress: () => navigation.navigate('WitnessAcademy'),
+        },
+        {
+          id: 'posko',
+          icon: 'map-pin',
+          title: 'Posko Relawan',
+          subtitle: 'Titik Kumpul',
+          tone: 'info',
+          onPress: () => navigation.navigate('SimpanOffices'),
+        },
+        {
+          id: 'korlap',
+          icon: 'phone-call',
+          title: 'Kontak Korlap',
+          subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
+          tone: 'info',
+          onPress: () => setShowCoordinatorModal(true),
+        },
+        {
+          id: 'aspirasi',
+          icon: 'message-square',
+          title: 'Aspirasi Warga',
+          subtitle: 'Suara Rakyat',
+          badge: '4',
+          tone: 'info',
+          onPress: () => setShowAspirasiModal(true),
+        },
+        {
+          id: 'warta',
+          icon: 'book-open',
+          title: 'Kabar Aksi',
+          subtitle: 'Warta simPAN',
+          tone: 'primary',
+          onPress: () => navigation.navigate('SimpanNews'),
+        },
+      ];
+    }
+
+    if (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR') {
+      // 8 items for Koordinator Lapangan
+      return [
+        {
+          id: 'supervisi',
+          icon: 'grid',
+          title: 'Supervisi TPS',
+          subtitle: 'Monitoring Wilayah',
+          badge: `${scopedTps.length}`,
+          tone: 'primary',
+          onPress: () => navigation.navigate('Supervision'),
+        },
+        {
+          id: 'saksi_list',
+          icon: 'users',
+          title: 'Daftar Saksi',
+          subtitle: 'Status Personel',
+          tone: 'primary',
+          onPress: () => navigation.navigate('WitnessList'),
+        },
+        {
+          id: 'darurat',
+          icon: 'alert-triangle',
+          title: 'Lapor Insiden',
+          subtitle: 'Eskalasi Cepat',
+          badge: 'SOS',
+          tone: 'danger',
+          onPress: () => navigation.navigate('EmergencyForm'),
+        },
+        {
+          id: 'broadcast',
+          icon: 'radio',
+          title: 'Broadcast Tim',
+          subtitle: 'Pesan Komando',
+          tone: 'warning',
+          onPress: () => navigation.navigate('Broadcast'),
+        },
+        {
+          id: 'posko',
+          icon: 'map-pin',
+          title: 'Posko & Kantor',
+          subtitle: 'Sekretariat PAN',
+          tone: 'info',
+          onPress: () => navigation.navigate('SimpanOffices'),
+        },
+        {
+          id: 'warta',
+          icon: 'book-open',
+          title: 'Warta simPAN',
+          subtitle: 'Kabar Partai',
+          tone: 'primary',
+          onPress: () => navigation.navigate('SimpanNews'),
+        },
+        {
+          id: 'struktur',
+          icon: 'layers',
+          title: 'Struktur DPD',
+          subtitle: 'Pengurus Wilayah',
+          tone: 'info',
+          onPress: () => navigation.navigate('SimpanStructure'),
+        },
+        {
+          id: 'bantuan',
+          icon: 'help-circle',
+          title: 'Pusat Bantuan',
+          subtitle: 'Panduan & SOP',
+          tone: 'info',
+          onPress: () => navigation.navigate('HelpCenter'),
+        },
+      ];
+    }
+
+    // 8 items for Saksi TPS (Rudi Saputra) & multi-role volunteers with witness mandate
+    return [
+      {
+        id: 'mandat',
+        icon: 'file-text',
+        title: 'Surat Mandat',
+        subtitle: 'e-Mandat KPPS',
+        badge: 'Resmi',
+        tone: 'primary',
+        onPress: () => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID }),
       },
-    },
-    {
-      id: 4,
-      title: 'Catat Tally Suara Bilik TPS & Foto Plano C1',
-      desc: 'Rekam hasil suara per TPS saat sidang hitung terbuka dimulai oleh KPPS.',
-      done: taskTallyDone,
-      time: taskTallyDone ? 'Tally Selesai' : 'Siap Pukul 13:00 WIB',
-      actionLabel: taskTallyDone ? 'Lihat Rekap Tally' : 'Buka Tally Counter',
-      onPress: () => navigation.navigate('QuickCountGame'),
-    },
-    {
-      id: 5,
-      title: 'Unggah Form C1 ke Server & Klaim Honor Saksi',
-      desc: 'Pindai lembar C1 Plano dengan AI Scanner lalu verifikasi pencairan honorarium Rp 350.000.',
-      done: Boolean(currentPayment?.status === 'paid'),
-      time: currentPayment?.status === 'paid' ? 'Lunas Rp 350.000' : 'Menunggu Unggah C1',
-      actionLabel: currentPayment?.status === 'paid' ? 'Cek Bukti Transfer' : 'Scan & Unggah C1',
-      onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
-    },
-  ];
+      {
+        id: 'lapor_c1',
+        icon: 'edit-3',
+        title: 'Entri C1 TPS',
+        subtitle: 'Formulir Suara',
+        tone: 'primary',
+        onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
+      },
+      {
+        id: 'scan_ocr',
+        icon: 'camera',
+        title: 'Scan AI C1',
+        subtitle: 'Vision Plano C1',
+        badge: 'AI',
+        tone: 'primary',
+        onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+      },
+      {
+        id: 'tally',
+        icon: 'zap',
+        title: 'Hitung Bilik',
+        subtitle: 'Tally Cepat',
+        tone: 'warning',
+        onPress: () => navigation.navigate('QuickCountGame'),
+      },
+      {
+        id: 'honor',
+        icon: 'dollar-sign',
+        title: 'Honorarium',
+        subtitle: 'Uang Saku Saksi',
+        tone: 'success',
+        onPress: () => navigation.navigate('Payment'),
+      },
+      {
+        id: 'darurat',
+        icon: 'alert-triangle',
+        title: 'Lapor Insiden',
+        subtitle: 'Sengketa & SOS',
+        badge: 'SOS',
+        tone: 'danger',
+        onPress: () => navigation.navigate('EmergencyForm'),
+      },
+      {
+        id: 'akademi',
+        icon: 'award',
+        title: 'Akademi Saksi',
+        subtitle: 'Bimtek BSN PAN',
+        tone: 'primary',
+        onPress: () => navigation.navigate('WitnessAcademy'),
+      },
+      {
+        id: 'bantuan',
+        icon: 'help-circle',
+        title: 'Pusat Bantuan',
+        subtitle: 'SOP & Regulasi',
+        tone: 'info',
+        onPress: () => navigation.navigate('HelpCenter'),
+      },
+    ];
+  };
+
+  const bcaMenuItems = getQuickMenuItems();
 
   return (
     <ScrollView
@@ -305,94 +458,8 @@ export default function DashboardScreen({ navigation }: any) {
       showsVerticalScrollIndicator={false}
     >
       {/* ========================================================================= */}
-      {/* 1. 🏠 BERANDA: PUSAT AKTIVITAS ANGGOTA (HEADER UTAMA)                     */}
+      {/* 1. HEADER: IDENTITAS PENGGUNA & MODE SAYA (ROLE STRIP)                   */}
       {/* ========================================================================= */}
-      <View style={[styles.headerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.headerTitleCol}>
-            <View style={styles.headerBadgePill}>
-            </View>
-            <Text style={[styles.welcomeGreeting, { color: colors.text }]}>
-              SELAMAT DATANG
-            </Text>
-            <Text style={[styles.welcomeAccountSub, { color: colors.textMuted }]}>
-              {profile.name} • {profile.roleLabel.split('—')[0].trim()}
-            </Text>
-          </View>
-
-          {/* Profile Avatar with Online Dot */}
-          <Pressable
-            onPress={() => navigation.navigate('Profile')}
-            style={({ pressed }) => [styles.avatarTouch, pressed && { opacity: 0.8 }]}
-          >
-            <Image source={getWitnessAvatar(1)} style={styles.avatarPhoto} />
-            <View style={[styles.onlineStatusDot, { backgroundColor: colors.success }]} />
-          </Pressable>
-        </View>
-
-        {/* Status & Wilayah Section */}
-        <View style={[styles.statusWilayahCard, { backgroundColor: isDark ? 'rgba(0,43,82,0.45)' : '#F0F7FF', borderColor: isDark ? '#0A3D6B' : '#BAE6FD' }]}>
-          {/* <View style={styles.statusWilayahItem}>
-            <Text style={[styles.swLabel, { color: colors.textMuted }]}>Status:</Text>
-            <View style={[styles.activeStatusPill, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-              <View style={[styles.pulsingGreenDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.activeStatusPillText, { color: colors.success }]}>
-                🟢 ANGGOTA AKTIF
-              </Text>
-            </View>
-          </View> */}
-
-          {/* <View style={[styles.swDivider, { backgroundColor: isDark ? '#1A5490' : '#CBD5E1' }]} /> */}
-
-          <View style={styles.statusWilayahItem}>
-            {/* <Text style={[styles.swLabel, { color: colors.textMuted }]}>Wilayah:</Text> */}
-            <Text style={[styles.swValue, { color: colors.text }]} numberOfLines={1}>
-              DPD Kabupaten Bandung
-            </Text>
-            <Text style={[styles.swSubValue, { color: colors.primary }]} numberOfLines={1}>
-              Dapil Jawa Barat I
-            </Text>
-          </View>
-        </View>
-
-        {/* e-KTA Mini Pass Action Strip */}
-        <View style={[styles.ktaMiniStrip, { backgroundColor: isDark ? 'rgba(0,26,51,0.5)' : '#FFFFFF', borderColor: colors.border }]}>
-          <View style={styles.ktaEmblemRow}>
-            <Image source={BRAND_ASSETS.official} style={styles.panEmblemSmall} resizeMode="contain" />
-            <View>
-              <Text style={[styles.ktaLabelText, { color: colors.textMuted }]}>NO. KTA RESMI simPAN</Text>
-              <Text style={[styles.ktaNumberText, { color: colors.primary }]}>32.73.01.2024.08912</Text>
-            </View>
-          </View>
-
-          <View style={styles.ktaButtonRow}>
-            <Pressable
-              onPress={() => setShowKtaQrModal(true)}
-              style={({ pressed }) => [
-                styles.ktaMiniBtnOutline,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather name="maximize" size={13} color={colors.primary} />
-              <Text style={[styles.ktaMiniBtnText, { color: colors.primary }]}>QR Pass</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => navigation.navigate('SimpanKta')}
-              style={({ pressed }) => [
-                styles.ktaMiniBtnSolid,
-                { backgroundColor: colors.primary },
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Text style={styles.ktaMiniBtnSolidText}>e-KTA</Text>
-              <Feather name="chevron-right" size={13} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
       {/* Offline Sync Banner if Needed */}
       {(!isOnline || unsyncedQueueCount > 0) && (
         <View
@@ -415,7 +482,7 @@ export default function DashboardScreen({ navigation }: any) {
                 {!isOnline ? 'Koneksi Lapangan Terputus' : `${unsyncedQueueCount} Transaksi Menunggu Sinyal`}
               </Text>
               <Text style={[styles.syncBannerSub, { color: colors.textMuted }]}>
-                Data tetap aman di HP & otomatis disinkronkan saat internet aktif.
+                Data aman tersimpan di HP & otomatis disinkronkan saat online.
               </Text>
             </View>
           </View>
@@ -443,358 +510,165 @@ export default function DashboardScreen({ navigation }: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. 📢 WARTA & AGENDA RESMI PAN (UNIFIED INFORMATION & EVENT CARD)          */}
+      {/* 1. MASTER UNIFIED CARD: IDENTITAS, ARAHAN RESMI & QUICK MENU              */}
       {/* ========================================================================= */}
-      <View style={[styles.unifiedWartaCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        {/* Header: Segmented Pills Switcher & Action Link */}
-        <View style={styles.unifiedWartaHeader}>
-          <View style={styles.unifiedSegmentTrack}>
-            <Pressable
-              onPress={() => setActiveWartaTab('instruksi')}
-              style={[
-                styles.unifiedSegmentPill,
-                activeWartaTab === 'instruksi'
-                  ? { backgroundColor: '#DC2626', borderColor: '#DC2626' }
-                  : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
-              ]}
-            >
-              <Feather
-                name="volume-2"
-                size={12}
-                color={activeWartaTab === 'instruksi' ? '#FFFFFF' : colors.textMuted}
-              />
-              <Text
-                style={[
-                  styles.unifiedSegmentText,
-                  { color: activeWartaTab === 'instruksi' ? '#FFFFFF' : colors.textMuted },
+      <View style={[styles.unifiedMasterCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* A. Header Identitas Pengguna */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerTitleCol}>
+            <Text style={[styles.welcomeGreeting, { color: colors.text }]}>
+              {isWitnessRole || isVolunteerWithWitness
+                ? 'SIAGA HARI-H'
+                : (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR')
+                ? 'KOMANDO LAPANGAN'
+                : 'SELAMAT DATANG'}
+            </Text>
+            <Text style={[styles.welcomeAccountSub, { color: colors.textMuted }]}>
+              {`Halo, ${user.name || profile.name || 'Siti Rahmawati'}`}
+            </Text>
+          </View>
+
+          {/* Profile Avatar */}
+          <Pressable
+            onPress={() => navigation.navigate('Profile')}
+            style={({ pressed }) => [styles.avatarTouch, pressed && { opacity: 0.8 }]}
+          >
+            <Image source={getWitnessAvatar(user.avatarIndex ?? profile.avatarIndex)} style={styles.avatarPhoto} />
+            <View style={[styles.onlineStatusDot, { backgroundColor: colors.success }]} />
+          </Pressable>
+        </View>
+
+        {/* B. Active Role Strip & Digital ID / QR Pass */}
+        <View
+          style={[
+            styles.statusWilayahCard,
+            { backgroundColor: isDark ? 'rgba(0,43,82,0.45)' : '#F0F7FF', borderColor: isDark ? '#0A3D6B' : '#BAE6FD' },
+          ]}
+        >
+          <View style={styles.statusWilayahItem}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={[styles.roleBadgeDot, { backgroundColor: colors.primary }]} />
+              <Text style={[styles.swRoleName, { color: colors.primary }]}>
+                {ROLE_LABEL[role] || profile.roleLabel}
+              </Text>
+            </View>
+            <Text style={[styles.swScopeText, { color: colors.textMuted }]} numberOfLines={1}>
+              {profile.scopeLocation}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              <Text style={[styles.swIdText, { color: colors.text }]}>
+                {isOfficialMember
+                  ? `e-KTA: ${officialMembership?.ktaNumber || '32.73.01.2024.08912'}`
+                  : `ID: ${volunteerMembership?.ktaNumber || 'REL-3273-2024-0042'}`}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {currentUser.roles.length > 1 && (
+              <Pressable
+                onPress={() => setShowRoleModal(true)}
+                style={({ pressed }) => [
+                  styles.switchModeBtn,
+                  { backgroundColor: colors.primaryLight },
+                  pressed && { opacity: 0.7 },
                 ]}
               >
-                Instruksi DPP
-              </Text>
-            </Pressable>
+                <Feather name="repeat" size={12} color={colors.primary} />
+                <Text style={[styles.switchModeBtnText, { color: colors.primary }]}>Mode</Text>
+              </Pressable>
+            )}
 
             <Pressable
-              onPress={() => setActiveWartaTab('agenda')}
-              style={[
-                styles.unifiedSegmentPill,
-                activeWartaTab === 'agenda'
-                  ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                  : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+              onPress={() => setShowKtaQrModal(true)}
+              style={({ pressed }) => [
+                styles.ktaMiniBtnSolid,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.85 },
               ]}
             >
-              <Feather
-                name="calendar"
-                size={12}
-                color={activeWartaTab === 'agenda' ? '#FFFFFF' : colors.textMuted}
-              />
-              <Text
-                style={[
-                  styles.unifiedSegmentText,
-                  { color: activeWartaTab === 'agenda' ? '#FFFFFF' : colors.textMuted },
-                ]}
-              >
-                Agenda Terdekat
-              </Text>
+              <Feather name="maximize" size={12} color="#FFFFFF" />
+              <Text style={styles.ktaMiniBtnSolidText}>QR Pass</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* C. Integrated Announcement Ticker Strip */}
+        <Pressable
+          onPress={() => setShowInfoModal(true)}
+          style={({ pressed }) => [
+            styles.integratedAnnouncementStrip,
+            {
+              backgroundColor: isVolunteerOnly
+                ? (isDark ? 'rgba(0, 43, 82, 0.35)' : '#F0F9FF')
+                : (isDark ? 'rgba(220, 38, 38, 0.1)' : '#FEF2F2'),
+              borderColor: isVolunteerOnly
+                ? (isDark ? '#0A3D6B' : '#BAE6FD')
+                : (isDark ? 'rgba(220, 38, 38, 0.3)' : '#FECACA'),
+            },
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <View
+            style={[
+              styles.announcementIconBoxCompact,
+              { backgroundColor: isVolunteerOnly ? colors.primaryLight : 'rgba(220, 38, 38, 0.12)' },
+            ]}
+          >
+            <Feather
+              name="volume-2"
+              size={13}
+              color={isVolunteerOnly ? colors.primary : '#DC2626'}
+            />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View
                 style={[
-                  styles.agendaBadgeCircle,
-                  {
-                    backgroundColor: activeWartaTab === 'agenda' ? 'rgba(255,255,255,0.3)' : colors.primaryLight,
-                  },
+                  styles.announcementBadgeCompact,
+                  { backgroundColor: isVolunteerOnly ? colors.primary : '#DC2626' },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.agendaBadgeCircleText,
-                    { color: activeWartaTab === 'agenda' ? '#FFFFFF' : colors.primary },
-                  ]}
-                >
-                  3
+                <Text style={styles.announcementBadgeTextCompact}>
+                  {isVolunteerOnly ? 'ARAHAN DPP PAN' : 'INSTRUKSI DPP'}
                 </Text>
               </View>
-            </Pressable>
+              <Text style={[styles.announcementDateTextCompact, { color: colors.textMuted }]}>
+                Hari Ini • 08:30 WIB
+              </Text>
+            </View>
+            <Text style={[styles.announcementHeadlineCompact, { color: colors.text }]} numberOfLines={1}>
+              {isVolunteerOnly
+                ? 'Gerakan Sapa Warga: Kenalkan Aksi Nyata PAN ke Masyarakat'
+                : 'Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara Pemilu'}
+            </Text>
           </View>
-
-          <Pressable
-            onPress={() => (activeWartaTab === 'instruksi' ? setShowInfoModal(true) : setShowAgendaModal(true))}
-            hitSlop={8}
-          >
-            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>
-              {activeWartaTab === 'instruksi' ? 'Detail' : 'Semua'}
+          <View style={styles.announcementActionBox}>
+            <Text style={[styles.announcementActionText, { color: isVolunteerOnly ? colors.primary : '#DC2626' }]}>
+              Baca
             </Text>
-          </Pressable>
-        </View>
-
-        {/* TAB 1: INSTRUKSI DPP */}
-        {activeWartaTab === 'instruksi' ? (
-          <Pressable
-            onPress={() => setShowInfoModal(true)}
-            style={({ pressed }) => [
-              styles.instruksiContentBox,
-              pressed && { opacity: 0.9 },
-            ]}
-          >
-            <View style={styles.instruksiMetaRow}>
-              <View style={styles.instruksiTagPill}>
-                <Image source={BRAND_ASSETS.official} style={{ width: 14, height: 14 }} resizeMode="contain" />
-                <Text style={styles.instruksiTagText}>ARAHAN DPP PAN & BSN</Text>
-              </View>
-              <Text style={[styles.instruksiDateText, { color: colors.textMuted }]}>Hari Ini • 08:30 WIB</Text>
-            </View>
-
-            <Text style={[styles.instruksiTitleText, { color: colors.text }]} numberOfLines={2}>
-              Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara Pemilu
-            </Text>
-
-            <Text style={[styles.instruksiExcerptText, { color: colors.textMuted }]} numberOfLines={2}>
-              Ketua Umum DPP PAN Dr. (H.C.) Zulkifli Hasan menginstruksikan seluruh kader, pengurus DPD, dan saksi TPS siaga penuh mengawal suara rakyat.
-            </Text>
-
-            <View style={[styles.linkedAgendaTeaser, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderColor: colors.border }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                <Feather name="calendar" size={12} color={colors.primary} />
-                <Text style={[styles.linkedAgendaText, { color: colors.text }]} numberOfLines={1}>
-                  Agenda Terkait: <Text style={{ fontFamily: fonts.bold }}>Bimtek Saksi C1 (21 Sep)</Text>
-                </Text>
-              </View>
-              <View style={styles.readMoreRow}>
-                <Text style={[styles.readMoreText, { color: colors.primary }]}>Baca Arahan</Text>
-                <Feather name="arrow-right" size={12} color={colors.primary} />
-              </View>
-            </View>
-          </Pressable>
-        ) : (
-          /* TAB 2: AGENDA TERDEKAT */
-          <View style={styles.agendaContentWrap}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.agendaScrollTrack}
-            >
-              {/* Agenda Card 1 */}
-              <View style={[styles.modernAgendaCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC', borderColor: colors.border }]}>
-                <View style={styles.modernAgendaHeader}>
-                  <View style={[styles.agendaPillTagModern, { backgroundColor: 'rgba(220, 38, 38, 0.1)' }]}>
-                    <Text style={[styles.agendaPillTagModernText, { color: '#DC2626' }]}>Konsolidasi DPD</Text>
-                  </View>
-                  <Text style={[styles.agendaPriorityBadge, { color: colors.textMuted }]}>Wajib Hadir</Text>
-                </View>
-                <Text style={[styles.modernAgendaTitle, { color: colors.text }]} numberOfLines={2}>
-                  Konsolidasi Akbar Kader DPD & Pemenangan Pemilu
-                </Text>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="calendar" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]}>Sabtu, 20 Sep • 09:00 WIB</Text>
-                </View>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="map-pin" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]} numberOfLines={1}>
-                    Gedung DPD PAN Kab. Bandung
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => {
-                    setDialogConfig({
-                      visible: true,
-                      title: 'Konfirmasi Kehadiran',
-                      message: 'Kehadiran Anda pada Konsolidasi Akbar DPD telah dicatat oleh sekretariat.',
-                      tone: 'success',
-                    });
-                  }}
-                  style={({ pressed }) => [
-                    styles.modernAgendaBtn,
-                    { backgroundColor: colors.primary },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={styles.modernAgendaBtnText}>Konfirmasi Hadir</Text>
-                  <Feather name="check" size={11} color="#FFFFFF" />
-                </Pressable>
-              </View>
-
-              {/* Agenda Card 2 */}
-              <View style={[styles.modernAgendaCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC', borderColor: colors.border }]}>
-                <View style={styles.modernAgendaHeader}>
-                  <View style={[styles.agendaPillTagModern, { backgroundColor: 'rgba(2, 132, 199, 0.1)' }]}>
-                    <Text style={[styles.agendaPillTagModernText, { color: '#0284C7' }]}>Bimtek Saksi C1</Text>
-                  </View>
-                  <Text style={[styles.agendaPriorityBadge, { color: colors.success }]}>Terdaftar</Text>
-                </View>
-                <Text style={[styles.modernAgendaTitle, { color: colors.text }]} numberOfLines={2}>
-                  Pelatihan Pengisian C1 Plano & Vision AI BSN
-                </Text>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="calendar" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]}>Minggu, 21 Sep • 13:00 WIB</Text>
-                </View>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="map-pin" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]} numberOfLines={1}>
-                    Posko Kawal Suara Coblong
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => navigation.navigate('ReportForm', { tpsId: 'TPS-001' })}
-                  style={({ pressed }) => [
-                    styles.modernAgendaBtn,
-                    { backgroundColor: colors.surface, borderColor: colors.primary, borderWidth: 1 },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={[styles.modernAgendaBtnText, { color: colors.primary }]}>Buka Materi Bimtek</Text>
-                  <Feather name="book-open" size={11} color={colors.primary} />
-                </Pressable>
-              </View>
-
-              {/* Agenda Card 3 */}
-              <View style={[styles.modernAgendaCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC', borderColor: colors.border }]}>
-                <View style={styles.modernAgendaHeader}>
-                  <View style={[styles.agendaPillTagModern, { backgroundColor: 'rgba(217, 119, 6, 0.1)' }]}>
-                    <Text style={[styles.agendaPillTagModernText, { color: '#D97706' }]}>Apel Akbar</Text>
-                  </View>
-                  <Text style={[styles.agendaPriorityBadge, { color: colors.textMuted }]}>Buka Kuota</Text>
-                </View>
-                <Text style={[styles.modernAgendaTitle, { color: colors.text }]} numberOfLines={2}>
-                  Apel Siaga Pengawalan Suara Saksi TPS
-                </Text>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="calendar" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]}>Rabu, 24 Sep • 07:00 WIB</Text>
-                </View>
-                <View style={styles.modernAgendaInfoRow}>
-                  <Feather name="map-pin" size={11} color={colors.primary} />
-                  <Text style={[styles.modernAgendaInfoText, { color: colors.textMuted }]} numberOfLines={1}>
-                    Lapangan Merdeka Bandung
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => setShowAgendaModal(true)}
-                  style={({ pressed }) => [
-                    styles.modernAgendaBtn,
-                    { backgroundColor: colors.primary },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={styles.modernAgendaBtnText}>Daftar Ikut</Text>
-                  <Feather name="user-plus" size={11} color="#FFFFFF" />
-                </Pressable>
-              </View>
-            </ScrollView>
+            <Feather name="chevron-right" size={12} color={isVolunteerOnly ? colors.primary : '#DC2626'} />
           </View>
-        )}
-      </View>
+        </Pressable>
 
-      {/* ========================================================================= */}
-      {/* 8. ⚡ QUICK ACTION: KOTAK-KOTAK KECIL ALA BCA MOBILE YANG SANGAT BAGUS     */}
-      {/* ========================================================================= */}
-      <View style={styles.sectionWrap}>
-        <View style={styles.sectionHeaderBetween}>
-          <View>
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Quick Menu</Text>
-          </View>
-          <View style={[styles.bcaBrandTag, { backgroundColor: colors.primaryLight }]}>
-          </View>
-        </View>
+        {/* D. Divider Tipis Minimalis */}
+        <View style={[styles.unifiedCardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]} />
 
-        {/* 4 PRIMARY BCA QUICK ACTION BUTTONS */}
-        <View style={styles.bcaFourRow}>
-          {/* 1. [ Scan QR ] */}
-          <Pressable
-            onPress={() => setShowScanModal(true)}
-            style={({ pressed }) => [
-              styles.bcaSquircleBtn,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
-            ]}
-          >
-            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#E0F2FE' }]}>
-              <Feather name="maximize" size={22} color="#0284C7" strokeWidth={2} />
-            </View>
-            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
-              Scan QR
-            </Text>
-            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
-              C1 / e-KTA
-            </Text>
-          </Pressable>
-
-          {/* 2. [ Check-in ] */}
-          <Pressable
-            onPress={() => navigation.navigate('CheckIn')}
-            style={({ pressed }) => [
-              styles.bcaSquircleBtn,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
-            ]}
-          >
-            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#ECFDF5' }]}>
-              <Feather name="map-pin" size={22} color="#10B981" strokeWidth={2} />
-            </View>
-            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
-              Check-in
-            </Text>
-            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
-              Presensi GPS
-            </Text>
-          </Pressable>
-
-          {/* 3. [ Laporkan ] */}
-          <Pressable
-            onPress={() => setShowReportModal(true)}
-            style={({ pressed }) => [
-              styles.bcaSquircleBtn,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
-            ]}
-          >
-            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#FEF2F2' }]}>
-              <Feather name="edit-3" size={22} color="#DC2626" strokeWidth={2} />
-            </View>
-            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
-              Laporkan
-            </Text>
-            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
-              C1 & SOS
-            </Text>
-          </Pressable>
-
-          {/* 4. [ Daftar Kegiatan ] */}
-          <Pressable
-            onPress={() => setShowAgendaModal(true)}
-            style={({ pressed }) => [
-              styles.bcaSquircleBtn,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
-            ]}
-          >
-            <View style={[styles.bcaSquircleIconWrap, { backgroundColor: '#F3E8FF' }]}>
-              <Feather name="calendar" size={22} color="#9333EA" strokeWidth={2} />
-            </View>
-            <Text style={[styles.bcaSquircleLabel, { color: colors.text }]} numberOfLines={1}>
-              Kegiatan
-            </Text>
-            <Text style={[styles.bcaSquircleMicro, { color: colors.textMuted }]}>
-              Daftar Ikut
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* FULL BCA MENU GRID (2-COLUMN CARDS EXACTLY AS IN WIREFRAME 2) */}
-        <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+        {/* E. Quick Menu Section */}
+        <View style={{ gap: spacing.xs, paddingTop: 2 }}>
           <View style={styles.sectionHeaderBetween}>
-            <Text style={[styles.bcaGridSectionTitle, { color: colors.text }]}>
-              Layanan Kader & Calon Parlemen
-            </Text>
-            <Text style={{ fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted }}>
-              Semua Aspek Menu
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Feather name="grid" size={14} color={colors.primary} />
+              <Text style={[styles.sectionHeadingTitle, { color: colors.text, fontSize: 13 }]}>Quick Menu</Text>
+            </View>
           </View>
 
-          <View style={styles.bcaGridContainer}>
+          <View style={styles.quickIconGrid}>
             {bcaMenuItems.map((item) => {
               const isDanger = item.tone === 'danger';
               const isSuccess = item.tone === 'success';
               const isWarning = item.tone === 'warning';
+              const isInfo = item.tone === 'info';
 
               const iconBg = isDanger
                 ? colors.dangerBg
@@ -802,6 +676,8 @@ export default function DashboardScreen({ navigation }: any) {
                 ? colors.successBg
                 : isWarning
                 ? colors.warningBg
+                : isInfo
+                ? isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE'
                 : colors.primaryLight;
 
               const iconColor = isDanger
@@ -810,6 +686,8 @@ export default function DashboardScreen({ navigation }: any) {
                 ? colors.success
                 : isWarning
                 ? colors.warning
+                : isInfo
+                ? '#0284C7'
                 : colors.primary;
 
               return (
@@ -817,56 +695,32 @@ export default function DashboardScreen({ navigation }: any) {
                   key={item.id}
                   onPress={item.onPress}
                   style={({ pressed }) => [
-                    styles.bcaMenuCard,
-                    { backgroundColor: colors.surface, borderColor: colors.border },
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                    styles.quickGridItem,
+                    isVolunteerOnly && { width: '33.33%' },
+                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
                   ]}
                 >
-                  <View style={styles.bcaMenuCardHeader}>
-                    <View style={[styles.bcaMenuIconBadge, { backgroundColor: iconBg }]}>
-                      <Feather name={item.icon} size={18} color={iconColor} strokeWidth={2} />
+                  <View style={styles.quickIconWrapper}>
+                    <View style={[styles.quickIconBox, { backgroundColor: iconBg, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                      <Feather name={item.icon} size={20} color={iconColor} strokeWidth={2} />
                     </View>
                     {item.badge && (
                       <View
                         style={[
-                          styles.bcaMicroBadge,
+                          styles.quickMicroBadge,
                           {
-                            backgroundColor:
-                              item.tone === 'success'
-                                ? colors.successBg
-                                : item.tone === 'danger'
-                                ? colors.dangerBg
-                                : colors.primaryLight,
+                            backgroundColor: isDanger ? colors.danger : colors.primary,
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.bcaMicroBadgeText,
-                            {
-                              color:
-                                item.tone === 'success'
-                                  ? colors.success
-                                  : item.tone === 'danger'
-                                  ? colors.danger
-                                  : colors.primary,
-                            },
-                          ]}
-                        >
-                          {item.badge}
-                        </Text>
+                        <Text style={styles.quickMicroBadgeText}>{item.badge}</Text>
                       </View>
                     )}
                   </View>
 
-                  <View style={{ gap: 2, marginTop: 4 }}>
-                    <Text style={[styles.bcaMenuCardTitle, { color: colors.text }]} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.bcaMenuCardSub, { color: colors.textMuted }]} numberOfLines={1}>
-                      {item.subtitle}
-                    </Text>
-                  </View>
+                  <Text style={[styles.quickItemLabel, { color: colors.text }]} numberOfLines={2}>
+                    {item.title}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -875,1822 +729,1279 @@ export default function DashboardScreen({ navigation }: any) {
       </View>
 
       {/* ========================================================================= */}
-      {/* 4. 🎓 PELATIHAN SAYA (AKADEMI SAKSI & KADER PAN)                           */}
+      {/* 3. KARTU PERAN UTAMA (CONTEXTUAL ROLE CARD) - BAB 10 & 31                 */}
       {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Pill label="SimPAN Academy" tone="primary" />
-          </View>
-          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: colors.success }}>
-            2 dari 3 Selesai
-          </Text>
-        </View>
-
-        {/* Pelatihan 1: Bimtek Saksi C1 */}
-        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
-          <View style={styles.trainingItemHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <View style={[styles.trainingIconBadge, { backgroundColor: colors.successBg }]}>
-                <Feather name="check-circle" size={16} color={colors.success} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
-                  Bimtek Saksi TPS & Vision AI C1 Plano
-                </Text>
-                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
-                  3 dari 3 Modul Selesai • Skor 96/100
-                </Text>
-              </View>
-            </View>
-            <Pill label="Lulus 100%" tone="success" />
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('WitnessAcademy')}
-            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
-          >
-            <Feather name="award" size={12} color={colors.primary} />
-            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
-              Buka Akademi Saksi & E-Sertifikat BSN
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Pelatihan 2: Kaderisasi Tingkat Pertama (In Progress) */}
-        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
-          <View style={styles.trainingItemHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <View style={[styles.trainingIconBadge, { backgroundColor: colors.primaryLight }]}>
-                <Feather name="book-open" size={16} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
-                  Kaderisasi Tingkat Pertama (KTP) simPAN
-                </Text>
-                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
-                  Modul 2 Selesai • Lanjut: Visi & Platform PAN
-                </Text>
-              </View>
-            </View>
-            <Pill label="Sedang Belajar" tone="info" />
-          </View>
-
-          <Pressable
-            onPress={() => navigation.navigate('WitnessAcademy')}
-            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
-          >
-            <Feather name="play-circle" size={12} color={colors.primary} />
-            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
-              Lanjutkan Modul 3 (Estimasi: 15 Menit)
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Pelatihan 3: SOP Sengketa */}
-        <View style={[styles.trainingItemBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F8FAFC', borderColor: colors.border }]}>
-          <View style={styles.trainingItemHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-              <View style={[styles.trainingIconBadge, { backgroundColor: colors.warningBg }]}>
-                <Feather name="shield" size={16} color={colors.warning} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.trainingItemTitle, { color: colors.text }]}>
-                  SOP Advokasi & Penanganan Sengketa Suara
-                </Text>
-                <Text style={[styles.trainingItemSub, { color: colors.textMuted }]}>
-                  Panduan Pelanggaran KPPS, Bawaslu, & MK
-                </Text>
-              </View>
-            </View>
-            <Pill label="Tersedia" tone="warning" />
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('WitnessAcademy')}
-            style={({ pressed }) => [styles.trainingActionLink, pressed && { opacity: 0.7 }]}
-          >
-            <Feather name="external-link" size={12} color={colors.primary} />
-            <Text style={[styles.trainingActionLinkText, { color: colors.primary }]}>
-              Pelajari Panduan & SOP Saksi
-            </Text>
-          </Pressable>
-        </View>
-
-        <Pressable
-          onPress={() => navigation.navigate('WitnessAcademy')}
-          style={({ pressed }) => [
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              paddingVertical: 10,
-              backgroundColor: colors.primaryLight,
-              borderRadius: radius.md,
-              marginTop: 4,
-            },
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <Feather name="award" size={14} color={colors.primary} />
-          <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.primary }}>
-            Buka Kurikulum Lengkap BSN PAN Witness Academy
-          </Text>
-          <Feather name="chevron-right" size={14} color={colors.primary} />
-        </Pressable>
-      </Card>
-
-      {/* ========================================================================= */}
-      {/* 5. 🎯 TUGAS SAYA (CHECKLIST HARIAN & HARI-H ANGGOTA)                       */}
-      {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Tugas Saya</Text>
-            <View style={[styles.counterBadge, { backgroundColor: colors.successBg }]}>
-              <Text style={[styles.counterBadgeText, { color: colors.success }]}>2 Selesai</Text>
-            </View>
-          </View>
-          <Text style={{ fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted }}>
-            Hari Pemungutan Suara
-          </Text>
-        </View>
-
-        <View style={{ gap: spacing.xs }}>
-          {taskChecklist.map((task) => (
-            <View
-              key={task.id}
-              style={[
-                styles.taskItemBox,
-                {
-                  backgroundColor: isDark ? 'rgba(0,43,82,0.35)' : '#FFFFFF',
-                  borderColor: task.done ? colors.success : colors.border,
-                },
-              ]}
-            >
-              <View style={styles.taskItemTopRow}>
-                <View
-                  style={[
-                    styles.taskCheckCircle,
-                    { backgroundColor: task.done ? colors.success : colors.border },
-                  ]}
-                >
-                  <Feather
-                    name={task.done ? 'check' : 'clock'}
-                    size={13}
-                    color={task.done ? '#FFFFFF' : colors.textMuted}
-                  />
-                </View>
-
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text
-                    style={[
-                      styles.taskTitleText,
-                      { color: colors.text, textDecorationLine: task.done ? 'none' : 'none' },
-                    ]}
-                  >
-                    {task.title}
-                  </Text>
-                  <Text style={[styles.taskDescText, { color: colors.textMuted }]}>
-                    {task.desc}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.taskFooterRow, { borderTopColor: colors.border }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="info" size={11} color={task.done ? colors.success : colors.primary} />
-                  <Text style={[styles.taskStatusNote, { color: task.done ? colors.success : colors.textMuted }]}>
-                    {task.time}
-                  </Text>
-                </View>
-
-                <Pressable
-                  onPress={task.onPress}
-                  style={({ pressed }) => [
-                    styles.taskActionButton,
-                    { backgroundColor: task.done ? colors.surface : colors.primary, borderColor: colors.border },
-                    task.done && { borderWidth: 1 },
-                    pressed && { opacity: 0.8 },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.taskActionButtonText,
-                      { color: task.done ? colors.text : '#FFFFFF' },
-                    ]}
-                  >
-                    {task.actionLabel}
-                  </Text>
-                  <Feather
-                    name="chevron-right"
-                    size={12}
-                    color={task.done ? colors.text : '#FFFFFF'}
-                  />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      {/* ========================================================================= */}
-      {/* 6. 🗳️ STATUS SAKSI (MONITORING STATUS PENUGASAN TPS SAYA)                  */}
-      {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Status Saksi</Text>
-            <Pill label="Mandat Terverifikasi" tone="success" />
-          </View>
-          <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-            TPS 001 Dago
-          </Text>
-        </View>
-
-        <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: isDark ? '#0A3D6B' : '#BAE6FD' }]}>
-          <View style={styles.witnessStatusTop}>
-            <View style={{ gap: 2, flex: 1 }}>
-              <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
-                TPS 001 — Kel. Dago, Kec. Coblong
-              </Text>
-              <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
-                Kota Bandung, Jawa Barat • DPT: 284 Pemilih
-              </Text>
-            </View>
-            <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-              <View style={[styles.pulsingGreenDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>
-                SIAGA LAPANGAN
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.wsDetailsGrid, { borderTopColor: colors.border }]}>
-            <View style={styles.wsDetailCell}>
-              <Text style={[styles.wsCellLabel, { color: colors.textMuted }]}>Koordinator TPS</Text>
-              <Text style={[styles.wsCellValue, { color: colors.text }]}>Asep Ridwan</Text>
-              <Text style={[styles.wsCellSub, { color: colors.primary }]}>0811-2233-4455</Text>
-            </View>
-            <View style={styles.wsDetailCell}>
-              <Text style={[styles.wsCellLabel, { color: colors.textMuted }]}>Surat Mandat</Text>
-              <Text style={[styles.wsCellValue, { color: colors.text }]}>042/SM-DPP/2026</Text>
-              <Text style={[styles.wsCellSub, { color: colors.success }]}>Sah KPU & Bawaslu</Text>
-            </View>
-          </View>
-
-          {/* Quick Buttons for Witness */}
-          <View style={styles.wsActionButtonsRow}>
-            <Pressable
-              onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
-              style={({ pressed }) => [
-                styles.wsBtnOutline,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Feather name="file-text" size={13} color={colors.primary} />
-              <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Buka Mandat</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
-              style={({ pressed }) => [
-                styles.wsBtnOutline,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <Feather name="map-pin" size={13} color={colors.primary} />
-              <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Info TPS</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setDialogConfig({
-                  visible: true,
-                  title: 'Kontak Koordinator',
-                  message: 'Hubungi Asep Ridwan (Koordinator TPS Kel. Dago) di nomor 0811-2233-4455 via WhatsApp atau Telepon.',
-                  tone: 'info',
-                });
-              }}
-              style={({ pressed }) => [
-                styles.wsBtnSolid,
-                { backgroundColor: colors.primary },
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Feather name="phone" size={13} color="#FFFFFF" />
-              <Text style={styles.wsBtnSolidText}>Hubungi Korlap</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Card>
-
-      {/* ========================================================================= */}
-      {/* 7. 📍 AKTIVITAS WILAYAH (LIVE REGIONAL TIMELINE)                           */}
-      {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Aktivitas Wilayah</Text>
-            <View style={[styles.counterBadge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.counterBadgeText, { color: colors.primary }]}>Live Feed</Text>
-            </View>
-          </View>
-          <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-            DPD Kab. Bandung
-          </Text>
-        </View>
-
-        <View style={{ gap: 10 }}>
-          {[
-            {
-              time: '15 Menit Lalu',
-              title: 'Saksi TPS 003 Dago Berhasil Presensi GPS',
-              desc: 'Rudi Santoso telah terverifikasi hadir di titik koordinat TPS radius 45 meter.',
-              tag: 'Presensi',
-              icon: 'map-pin' as const,
-              tone: 'success' as const,
-            },
-            {
-              time: '1 Jam Lalu',
-              title: 'Distribusi 1.200 Surat Mandat Fisik DPD',
-              desc: 'Sekretariat DPD menyelesaikan penyerahan bundel surat mandat ke 6 posko kecamatan.',
-              tag: 'Logistik',
-              icon: 'package' as const,
-              tone: 'primary' as const,
-            },
-            {
-              time: '3 Jam Lalu',
-              title: 'Posko Induk Coblong: Logistik Saksi Tiba',
-              desc: 'Paket konsumsi, vitamin, dan rompi saksi resmi siap didistribusikan ke TPS 001 - 015.',
-              tag: 'Posko',
-              icon: 'truck' as const,
-              tone: 'warning' as const,
-            },
-          ].map((act, idx) => (
-            <View key={idx} style={styles.activityFeedItem}>
-              <View style={[styles.activityIconCircle, { backgroundColor: colors.primaryLight }]}>
-                <Feather name={act.icon} size={13} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, gap: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.activityItemTitle, { color: colors.text }]}>{act.title}</Text>
-                  <Text style={[styles.activityItemTime, { color: colors.textMuted }]}>{act.time}</Text>
-                </View>
-                <Text style={[styles.activityItemDesc, { color: colors.textMuted }]}>{act.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-
-
-      {/* ========================================================================= */}
-      {/* 9. SISA-SISA ITEM YANG ADA KEBAWAH (RETAINED & REFINED WITH POPPINS)        */}
-      {/* Seluruh item historis (rekap suara, PT 4%, kecamatan, absensi saksi)       */}
-      {/* dipertahankan di bawah quick action dan dirapikan secara proporsional.     */}
-      {/* ========================================================================= */}
-      <View style={{ marginTop: spacing.sm, gap: spacing.md }}>
-        <SectionTitle style={{ marginBottom: 0 }}>
-          Detail Tabulasi & Pengawalan Suara
-        </SectionTitle>
-
-        {/* Hero Suara Caleg & Live Tabulasi C1 */}
-        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.heroHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={[styles.livePulseDot, { backgroundColor: colors.success }]} />
-              <Text style={[styles.liveTabulasiText, { color: colors.success }]}>LIVE TABULASI C1 BSN</Text>
-            </View>
-            <View style={[styles.tpsInflowBadge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.tpsInflowBadgeText, { color: colors.primary }]}>TPS Masuk: 84,2% (4.210 TPS)</Text>
-            </View>
-          </View>
-
-          <View style={{ marginTop: 4, gap: 2 }}>
-            <Text style={[styles.voteSummaryLabel, { color: colors.textMuted }]}>
-              Monitoring Suara Caleg DPR-RI Dapil Jabar I
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              <Text style={[styles.heroBigVoteNum, { color: colors.primary }]}>54.210</Text>
-              <View style={[styles.surplusPill, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-                <Feather name="trending-up" size={12} color={colors.success} />
-                <Text style={[styles.surplusPillText, { color: colors.success }]}>+2.840 Surplus Target</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={{ gap: 4, marginTop: 4 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>Target Pemenangan Dapil</Text>
-              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>109,4% (Target: 30.000)</Text>
-            </View>
-            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-              <View style={[styles.progressFillBase, { width: '91.4%', backgroundColor: colors.primary }]} />
-              <View style={[styles.progressFillSurplus, { width: '8.6%', backgroundColor: colors.success }]} />
-            </View>
-          </View>
-
-          <View style={[styles.statRow, { borderTopColor: colors.border }]}>
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>54.210</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara Caleg</Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.success }]}>128.450</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara PAN Dapil</Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.text }]}>85,6%</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>Target Masuk</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Proyeksi Kursi Parlemen Card */}
-        <Card style={{ gap: spacing.xs, backgroundColor: '#002B49', borderColor: '#0066B3' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Feather name="award" size={18} color="#60A5FA" />
-              <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: '#FFFFFF' }}>
-                Proyeksi Kursi Parlemen
-              </Text>
-            </View>
-            <Pill label="Aman Terpilih" tone="success" />
-          </View>
-          <Text style={{ fontSize: fontSize.xs, fontFamily: fonts.regular, color: '#93C5FD', lineHeight: 18 }}>
-            Berdasarkan simulasi Sainte-Laguë perolehan suara 112.450 (14,8%), Partai Amanat Nasional mengamankan Kursi Ke-3 dari total 7 Kursi DPR-RI di Dapil Jabar 1.
-          </Text>
-        </Card>
-
-        {/* Ambang Batas Parlemen (PT 4%) Indicator */}
+      {(role === 'WITNESS' || role === 'TPS_WITNESS') && (
         <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={styles.sectionHeaderBetween}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Image source={BRAND_ASSETS.official} style={{ width: 22, height: 22 }} resizeMode="contain" />
-              <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.text }}>
-                Partai PAN & Parlemen Senayan
-              </Text>
+              <Feather name="eye" size={16} color={colors.primary} />
+              <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Penugasan Saksi TPS</Text>
             </View>
-            <Pill label="Lolos PT 4%" tone="success" />
+            <Pill label="Mandat Aktif" tone="success" />
           </View>
 
-          <View style={[styles.thresholdCard, { backgroundColor: isDark ? 'rgba(0, 43, 82, 0.4)' : '#F8FAFC', borderColor: colors.border }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>Ambang Batas Parlemen (PT)</Text>
-              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>7,24% (+3,24% Margin Aman)</Text>
-            </View>
-            <View style={[styles.thresholdBarTrack, { backgroundColor: colors.border }]}>
-              <View style={[styles.thresholdBarFill, { width: '72.4%', backgroundColor: colors.success }]} />
-              <View style={[styles.thresholdMarker, { left: '40%' }]} />
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 9, fontFamily: fonts.regular, color: colors.textMuted }}>0%</Text>
-              <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: colors.textMuted, marginLeft: 28 }}>Batas PT 4,00%</Text>
-              <Text style={{ fontSize: 9, fontFamily: fonts.bold, color: colors.primary }}>PAN 7,24%</Text>
-            </View>
-          </View>
-
-          <View style={[styles.statRow, { borderTopColor: colors.border, marginTop: 2, paddingTop: spacing.xs }]}>
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.text }]}>112.450</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>Suara PAN Dapil 1</Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.primary }]}>1 Kursi</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>Potensi Dapil</Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.success }]}>48 Kursi</Text>
-              <Text style={[styles.statSub, { color: colors.textMuted }]}>DPR-RI Senayan</Text>
-            </View>
-          </View>
-
-          <Pressable
-            onPress={() => navigation.navigate('PartyLeaderboard')}
-            style={({ pressed }) => [styles.linkDetailBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-              Lihat Simulasi Sainte-Laguë Lengkap
-            </Text>
-            <Feather name="arrow-right" size={13} color={colors.primary} />
-          </Pressable>
-        </Card>
-
-        {/* Sebaran Suara per Kecamatan */}
-        <Card style={{ gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionTitle style={{ marginBottom: 0 }}>Sebaran Suara per Kecamatan</SectionTitle>
-            <View style={[styles.badgePillSmall, { backgroundColor: colors.primaryLight }]}>
-              <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.primary }}>5 Basis Utama</Text>
-            </View>
-          </View>
-
-          <View style={{ gap: spacing.sm }}>
-            {[
-              { kec: 'Kec. Coblong', suara: '8.420', pct: 25.6, barWidth: '100%', isMain: true },
-              { kec: 'Kec. Cimahi Selatan', suara: '7.880', pct: 24.0, barWidth: '93.6%', isMain: false },
-              { kec: 'Kec. Antapani', suara: '6.250', pct: 19.0, barWidth: '74.2%', isMain: false },
-              { kec: 'Kec. Sukasari', suara: '5.910', pct: 18.0, barWidth: '70.3%', isMain: false },
-              { kec: 'Kec. Cidadap & Lainnya', suara: '4.380', pct: 13.4, barWidth: '52.3%', isMain: false },
-            ].map((item, idx) => (
-              <View key={idx} style={{ gap: 4 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.text }}>{item.kec}</Text>
-                    {item.isMain && (
-                      <View style={[styles.basisBadge, { backgroundColor: colors.primaryLight }]}>
-                        <Text style={[styles.basisBadgeText, { color: colors.primary }]}>Basis Utama</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.text }}>{item.suara}</Text>
-                    <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>({item.pct}%)</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.distBarTrack, { backgroundColor: colors.border }]}>
-                  <View
-                    style={[
-                      styles.distBarFill,
-                      {
-                        width: item.barWidth as DimensionValue,
-                        backgroundColor: item.isMain ? colors.primary : isDark ? '#1D4ED8' : '#3B82F6',
-                      },
-                    ]}
-                  />
-                </View>
+          <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
+            <View style={styles.witnessStatusTop}>
+              <View style={{ gap: 2, flex: 1 }}>
+                <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
+                  TPS 001 — Kel. Dago, Kec. Coblong
+                </Text>
+                <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
+                  Kota Bandung • DPT: 284 Pemilih • Mandat: 042/SM-DPP/2026
+                </Text>
               </View>
-            ))}
-          </View>
-        </Card>
-
-        {/* Rekap Kehadiran Saksi TPS */}
-        <AttendanceStatCard
-          witnesses={scopedWitnesses}
-          fullyPresentTpsCount={fullyPresentTpsCount}
-          totalTpsCount={scopedTps.length}
-          colors={colors}
-        />
-
-        <TpsAttendanceList
-          items={paginatedAttendance}
-          currentPage={attendancePage}
-          totalPages={totalAttendancePages}
-          onPrev={() => setAttendancePage((p) => Math.max(1, p - 1))}
-          onNext={() => setAttendancePage((p) => Math.min(totalAttendancePages, p + 1))}
-          sort={attendanceSort}
-          onToggleSort={() => {
-            setAttendanceSort((s) => (s === 'best' ? 'worst' : 'best'));
-            setAttendancePage(1);
-          }}
-          navigation={navigation}
-          colors={colors}
-        />
-
-        {/* Manajemen Saksi & Daftar TPS */}
-        <Card style={{ gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Daftar TPS & Saksi Binaan ({scopedTps.length} TPS)</SectionTitle>
-          <Text style={[styles.subHint, { color: colors.textMuted }]}>
-            Menampilkan 5 dari {scopedTps.length} TPS terdaftar di wilayah penugasan:
-          </Text>
-
-          {paginatedTps.map((item, idx) => (
-            <Pressable
-              key={item.id}
-              onPress={() => navigation.navigate('TpsDetail', { tpsId: item.id })}
-              style={[styles.witnessRowItem, { borderBottomColor: colors.border }]}
-            >
-              <Image source={getTpsPhoto(idx)} style={styles.avatarImg} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.witnessName, { color: colors.text }]}>TPS {item.tpsNumber} — Kec. {item.district}</Text>
-                <Text style={[styles.witnessSub, { color: colors.textMuted }]}>Kel. {item.village || 'Dago'} • DPT: {item.dpt} Pemilih</Text>
+              <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
+                <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>SIAGA HARI-H</Text>
               </View>
-              <StatusBadge status={item.status} />
-            </Pressable>
-          ))}
+            </View>
 
-          <PaginationBar
-            currentPage={tpsPage}
-            totalPages={totalTpsPages}
-            onPrev={() => setTpsPage((p) => Math.max(1, p - 1))}
-            onNext={() => setTpsPage((p) => Math.min(totalTpsPages, p + 1))}
-          />
-        </Card>
-      </View>
-
-      {/* ========================================================================= */}
-      {/* MODALS: SCAN QR, LAPORKAN, DAFTAR KEGIATAN, INFORMASI PAN, E-KTA PASS     */}
-      {/* ========================================================================= */}
-
-      {/* 1. Modal Scan QR Options */}
-      <Modal
-        visible={showScanModal}
-        onClose={() => setShowScanModal(false)}
-        title="Pindai QR / Dokumen"
-        subtitle="Pilih jenis pemindaian kamera AI simPAN"
-      >
-        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
-          <Pressable
-            onPress={() => {
-              setShowScanModal(false);
-              navigation.navigate('ReportForm', { tpsId: 'TPS-001' });
-            }}
-            style={({ pressed }) => [
-              styles.modalOptionTile,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.modalOptionIconWrap, { backgroundColor: '#E0F2FE' }]}>
-              <Feather name="camera" size={20} color="#0284C7" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalOptionTitle, { color: colors.text }]}>Foto & Scan C1 Plano (Vision AI)</Text>
-              <Text style={[styles.modalOptionDesc, { color: colors.textMuted }]}>
-                Ekstraksi angka perolehan suara TPS otomatis dengan kecerdasan buatan.
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              setShowScanModal(false);
-              setShowKtaQrModal(true);
-            }}
-            style={({ pressed }) => [
-              styles.modalOptionTile,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.modalOptionIconWrap, { backgroundColor: '#ECFDF5' }]}>
-              <Feather name="maximize" size={20} color="#10B981" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalOptionTitle, { color: colors.text }]}>Tampilkan QR Pass e-KTA</Text>
-              <Text style={[styles.modalOptionDesc, { color: colors.textMuted }]}>
-                Validasi mandat keanggotaan resmi untuk presensi & verifikasi lapangan.
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              setShowScanModal(false);
-              navigation.navigate('KtpOcr');
-            }}
-            style={({ pressed }) => [
-              styles.modalOptionTile,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.modalOptionIconWrap, { backgroundColor: '#F3E8FF' }]}>
-              <Feather name="credit-card" size={20} color="#9333EA" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalOptionTitle, { color: colors.text }]}>Scan KTP AI (Registrasi Anggota)</Text>
-              <Text style={[styles.modalOptionDesc, { color: colors.textMuted }]}>
-                Pindai e-KTP untuk pendaftaran anggota baru atau saksi binaan.
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </Pressable>
-        </View>
-      </Modal>
-
-      {/* 2. Modal Laporkan Options */}
-      <Modal
-        visible={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        title="Pusat Pelaporan Lapangan"
-        subtitle="Kirim hasil suara atau eskalasi kendala TPS"
-      >
-        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
-          <Pressable
-            onPress={() => {
-              setShowReportModal(false);
-              navigation.navigate('ReportForm', { tpsId: 'TPS-001' });
-            }}
-            style={({ pressed }) => [
-              styles.modalOptionTile,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.modalOptionIconWrap, { backgroundColor: '#ECFDF5' }]}>
-              <Feather name="file-text" size={20} color="#10B981" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalOptionTitle, { color: colors.text }]}>Input Formulir C1 Plano</Text>
-              <Text style={[styles.modalOptionDesc, { color: colors.textMuted }]}>
-                Kirim data perolehan suara partai dan caleg DPR-RI di TPS Anda.
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              setShowReportModal(false);
-              navigation.navigate('EmergencyForm');
-            }}
-            style={({ pressed }) => [
-              styles.modalOptionTile,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={[styles.modalOptionIconWrap, { backgroundColor: '#FEF2F2' }]}>
-              <Feather name="alert-triangle" size={20} color="#DC2626" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.modalOptionTitle, { color: colors.danger }]}>Laporkan Insiden & SOS TPS</Text>
-              <Text style={[styles.modalOptionDesc, { color: colors.textMuted }]}>
-                Eskalasi temuan kecurangan, intimidasi, atau surat suara rusak.
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={16} color={colors.textMuted} />
-          </Pressable>
-        </View>
-      </Modal>
-
-      {/* 3. Modal Agenda & Daftar Kegiatan */}
-      <Modal
-        visible={showAgendaModal}
-        onClose={() => setShowAgendaModal(false)}
-        title="Daftar Kegiatan & Bimtek"
-        subtitle="Jadwal agenda resmi Partai Amanat Nasional"
-      >
-        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
-          {[
-            {
-              title: 'Konsolidasi Akbar DPD & Pemenangan Pemilu',
-              date: 'Sabtu, 20 September 2026 • 09:00 WIB',
-              loc: 'Gedung DPD PAN Kab. Bandung',
-              status: 'Wajib Hadir',
-            },
-            {
-              title: 'Bimtek Saksi C1 & Vision AI BSN',
-              date: 'Minggu, 21 September 2026 • 13:00 WIB',
-              loc: 'Kantor Posko Coblong',
-              status: 'Terdaftar',
-            },
-            {
-              title: 'Apel Akbar Pengawalan Suara Saksi TPS',
-              date: 'Rabu, 24 September 2026 • 07:00 WIB',
-              loc: 'Lapangan Merdeka Bandung',
-              status: 'Buka Pendaftaran',
-            },
-            {
-              title: 'Rapat Koordinasi Saksi TPS Kelurahan Dago',
-              date: 'Jumat, 26 September 2026 • 19:30 WIB',
-              loc: 'Ruang Rapat Online (Zoom Meeting)',
-              status: 'Tersedia',
-            },
-          ].map((item, idx) => (
-            <View
-              key={idx}
-              style={[
-                styles.agendaModalRow,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.agendaModalTitle, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.agendaModalDate, { color: colors.primary }]}>{item.date}</Text>
-                <Text style={[styles.agendaModalLoc, { color: colors.textMuted }]}>📍 {item.loc}</Text>
-              </View>
+            <View style={styles.wsActionButtonsRow}>
               <Pressable
-                onPress={() => {
-                  setShowAgendaModal(false);
-                  setDialogConfig({
-                    visible: true,
-                    title: 'Pendaftaran Berhasil',
-                    message: `Anda telah terdaftar pada agenda: ${item.title}. Informasi detail telah dikirim via notifikasi.`,
-                    tone: 'success',
-                  });
-                }}
+                onPress={() => navigation.navigate('CheckIn')}
                 style={({ pressed }) => [
-                  styles.agendaModalBtn,
+                  styles.wsBtnSolid,
                   { backgroundColor: colors.primary },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Feather name="map-pin" size={13} color="#FFFFFF" />
+                <Text style={styles.wsBtnSolidText}>Presensi GPS</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' })}
+                style={({ pressed }) => [
+                  styles.wsBtnOutline,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
                   pressed && { opacity: 0.8 },
                 ]}
               >
-                <Text style={styles.agendaModalBtnText}>Daftar</Text>
+                <Feather name="edit-3" size={13} color={colors.primary} />
+                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Lapor C1</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
+                style={({ pressed }) => [
+                  styles.wsBtnOutline,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather name="file-text" size={13} color={colors.primary} />
+                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Surat Mandat</Text>
               </Pressable>
             </View>
+          </View>
+        </Card>
+      )}
+
+      {(role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR') && (
+        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+          <View style={styles.sectionHeaderBetween}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Feather name="users" size={16} color={colors.primary} />
+              <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Supervisi Kluster TPS</Text>
+            </View>
+            <Pill label={`${scopedTps.length} TPS Terdaftar`} tone="primary" />
+          </View>
+
+          <View style={[styles.coordSummaryBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
+            <View style={styles.coordStatRow}>
+              <View style={styles.coordStatCol}>
+                <Text style={[styles.coordStatNum, { color: colors.primary }]}>{scopedTps.length}</Text>
+                <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>TPS Kluster</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.coordStatCol}>
+                <Text style={[styles.coordStatNum, { color: colors.success }]}>{checkedInCount}</Text>
+                <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>Saksi Hadir</Text>
+              </View>
+              <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+              <View style={styles.coordStatCol}>
+                <Text style={[styles.coordStatNum, { color: colors.warning }]}>
+                  {totalWitnessInScope - checkedInCount}
+                </Text>
+                <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>Belum Check-in</Text>
+              </View>
+            </View>
+
+            <View style={styles.wsActionButtonsRow}>
+              <Pressable
+                onPress={() => navigation.navigate('Supervision')}
+                style={({ pressed }) => [
+                  styles.wsBtnSolid,
+                  { backgroundColor: colors.primary },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Feather name="grid" size={13} color="#FFFFFF" />
+                <Text style={styles.wsBtnSolidText}>Pantau Kluster TPS</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => navigation.navigate('WitnessList')}
+                style={({ pressed }) => [
+                  styles.wsBtnOutline,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather name="users" size={13} color={colors.primary} />
+                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Daftar Saksi</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
+      )}
+
+      {/* Kartu Penugasan jika Relawan memegang Mandat Saksi TPS */}
+      {isVolunteerWithWitness && (
+        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+          <View style={styles.sectionHeaderBetween}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
+              <Feather name="eye" size={16} color={colors.primary} />
+              <Text style={[styles.sectionHeadingTitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+                Penugasan Relawan Saksi TPS
+              </Text>
+            </View>
+            <View style={{ flexShrink: 0 }}>
+              <Pill label="Mandat TPS Aktif" tone="primary" />
+            </View>
+          </View>
+
+          <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
+            <View style={styles.witnessStatusTop}>
+              <View style={{ gap: 2, flex: 1 }}>
+                <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
+                  TPS 001 — Kel. Dago, Kec. Coblong
+                </Text>
+                <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
+                  Kota Bandung • Mandat: 042/SM-DPP/2026
+                </Text>
+              </View>
+              <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
+                <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>SIAGA HARI-H</Text>
+              </View>
+            </View>
+
+            <View style={styles.wsActionButtonsRow}>
+              <Pressable
+                onPress={() => navigation.navigate('CheckIn')}
+                style={({ pressed }) => [
+                  styles.wsBtnSolid,
+                  { backgroundColor: colors.primary },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Feather name="map-pin" size={13} color="#FFFFFF" />
+                <Text style={styles.wsBtnSolidText}>Presensi TPS</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' })}
+                style={({ pressed }) => [
+                  styles.wsBtnOutline,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather name="edit-3" size={13} color={colors.primary} />
+                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Form C1</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
+                style={({ pressed }) => [
+                  styles.wsBtnOutline,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather name="file-text" size={13} color={colors.primary} />
+                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>E-Mandat</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. AGENDA & KEGIATAN TERDEKAT                                             */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Feather name="calendar" size={15} color={colors.primary} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Agenda Kegiatan Terdekat</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('ActivitiesTab')} hitSlop={8}>
+            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
+          </Pressable>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          {events.slice(0, 3).map((ev) => (
+            <Pressable
+              key={ev.id}
+              onPress={() => navigation.navigate('ActivitiesTab')}
+              style={({ pressed }) => [
+                styles.miniAgendaRow,
+                { borderColor: colors.border },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
+                  {ev.title}
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                  {ev.dateLabel} • {ev.location}
+                </Text>
+              </View>
+              <Pill label={ev.isRegistered ? 'Terdaftar' : 'Buka'} tone={ev.isRegistered ? 'success' : 'info'} />
+            </Pressable>
           ))}
+        </View>
+      </Card>
+
+
+      {/* Role Switcher Modal ("Mode Saya") */}
+      <Modal
+        visible={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        title="Pilih Mode Peran (Mode Saya)"
+        subtitle="Ubah konteks kerja tanpa membuat akun baru"
+      >
+        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+          {availableRoles.map((r) => {
+            const isCurrent = role === r;
+            const iconName = ROLE_ICON[r] || 'user';
+
+            return (
+              <Pressable
+                key={r}
+                onPress={() => {
+                  switchActiveRole(r as MobileRole);
+                  setShowRoleModal(false);
+                }}
+                style={({ pressed }) => [
+                  styles.roleSwitchRow,
+                  {
+                    backgroundColor: isCurrent ? (isDark ? 'rgba(0,43,82,0.6)' : '#F0F9FF') : colors.background,
+                    borderColor: isCurrent ? colors.primary : colors.border,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <View style={[styles.roleSwitchIconCircle, { backgroundColor: isCurrent ? colors.primary : colors.surface }]}>
+                  <Feather name={iconName} size={16} color={isCurrent ? '#FFFFFF' : colors.textMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.roleSwitchName, { color: isCurrent ? colors.primary : colors.text }]}>
+                    {r === 'WITNESS'
+                      ? 'Mode Saksi TPS'
+                      : r === 'TPS_COORDINATOR'
+                      ? 'Mode Koordinator TPS'
+                      : r === 'VOLUNTEER'
+                      ? 'Mode Relawan'
+                      : 'Mode Anggota'}
+                  </Text>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                    {ROLE_LABEL[r]}
+                  </Text>
+                </View>
+                {isCurrent && <Feather name="check-circle" size={18} color={colors.primary} />}
+              </Pressable>
+            );
+          })}
         </View>
       </Modal>
 
-      {/* 4. Modal Informasi PAN Lengkap */}
+      {/* Info Instruction Modal */}
       <Modal
         visible={showInfoModal}
         onClose={() => setShowInfoModal(false)}
-        title="Instruksi Resmi DPP PAN"
-        subtitle="Badan Saksi Nasional (BSN) — Surat Edaran No. 042/SE-DPP/2026"
+        title={isVolunteerOnly ? 'Arahan Resmi DPP PAN' : 'Maklumat Resmi DPP PAN'}
+        subtitle={isVolunteerOnly ? 'Gerakan Sapa Warga & Aksi Nyata Rakyat' : 'Instruksi Pemenangan & Pengawalan Pemilu'}
       >
-        <View style={{ gap: spacing.md, paddingVertical: spacing.xs }}>
-          <View style={[styles.infoBannerHighlight, { backgroundColor: colors.dangerBg, borderColor: colors.danger }]}>
-            <Feather name="shield" size={16} color={colors.danger} />
-            <Text style={[styles.infoBannerHighlightText, { color: colors.danger }]}>
-              Instruksi Wajib: Seluruh Saksi & Kader Mengawal Rekap C1 Hingga Tuntas
-            </Text>
-          </View>
-
-          <Text style={[styles.infoModalBody, { color: colors.text }]}>
-            Kepada Seluruh Pengurus DPW, DPD, DPC, DPRt, serta Saksi BSN PAN di seluruh Indonesia:
-            {'\n\n'}
-            1. Pastikan hadir di TPS sebelum pukul 07.00 WIB dan melakukan presensi GPS melalui aplikasi simPAN 360.
-            {'\n\n'}
-            2. Tunjukkan Surat Mandat Digital resmi yang telah dilengkapi e-Meterai dan QR Code DPP ke petugas KPPS.
-            {'\n\n'}
-            3. Catat setiap suara saat penghitungan suara dimulai dan lakukan pemotretan lembar C1 Plano dengan sudut tegak lurus serta pencahayaan cukup.
-            {'\n\n'}
-            4. Segera laporkan setiap dugaan pelanggaran melalui tombol "Lapor Insiden SOS" agar dapat ditangani tim advokasi hukum Bawaslu & DPP PAN.
+        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+          <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.text }}>
+            {isVolunteerOnly
+              ? 'Gerakan Sapa Warga: Kenalkan Aksi Nyata PAN ke Masyarakat'
+              : 'Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara'}
           </Text>
-
-          <Pressable
-            onPress={() => {
-              setShowInfoModal(false);
-              navigation.navigate('SimpanNews');
-            }}
-            style={({ pressed }) => [
-              styles.infoModalCloseBtn,
-              { backgroundColor: colors.primary },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Text style={styles.infoModalCloseBtnText}>Buka Warta DPP Lengkap</Text>
-            <Feather name="arrow-right" size={14} color="#FFFFFF" />
-          </Pressable>
+          <Text style={{ fontFamily: fonts.regular, fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 }}>
+            {isVolunteerOnly ? (
+              <>
+                1. Lakukan kunjungan silaturahmi sapa warga secara santun dan ramah di lingkungan Kelurahan Dago.{'\n'}
+                2. Kenalkan program aksi nyata PAN dalam membantu kebutuhan pokok rakyat dan UMKM.{'\n'}
+                3. Catat aspirasi dan kebutuhan posko warga melalui menu Bursa Tugas dan Kontak Korlap.{'\n'}
+                4. Jaga selalu etika, ketertiban, dan kehangatan dalam berinteraksi dengan warga sekitar.
+              </>
+            ) : (
+              <>
+                1. Seluruh saksi wajib hadir di TPS sebelum pukul 07:00 WIB dan melakukan presensi GPS melalui aplikasi.{'\n'}
+                2. Tunjukkan surat mandat resmi bertanda tangan digital ke petugas KPPS.{'\n'}
+                3. Catat hasil hitung suara saat sidang terbuka dan foto lembar C1 Plano dengan jelas.{'\n'}
+                4. Jika terjadi kendala intimidasi atau selisih suara, gunakan tombol Lapor SOS untuk eskalasi ke Tim Hukum BSN.
+              </>
+            )}
+          </Text>
+          <PrimaryButton label="Saya Mengerti" onPress={() => setShowInfoModal(false)} style={{ marginTop: spacing.xs }} />
         </View>
       </Modal>
 
-      {/* 5. Modal e-KTA QR Pass */}
+      {/* QR Pass Modal */}
       <Modal
         visible={showKtaQrModal}
         onClose={() => setShowKtaQrModal(false)}
-        title="e-KTA QR Pass Resmi"
-        subtitle="Partai Amanat Nasional — Verifikasi Mandat Anggota"
+        title={isOfficialMember ? 'QR Pas Digital Anggota' : 'QR Pas Relawan Simpatisan'}
+        subtitle={isOfficialMember ? 'e-KTA simPAN Terverifikasi' : 'Digital ID Relawan PAN'}
       >
         <View style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
-          <View style={[styles.qrContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <QrPlaceholder seed="32.73.01.2024.08912" size={180} />
-          </View>
-          <View style={{ alignItems: 'center', gap: 3 }}>
-            <Text style={{ fontSize: fontSize.md, fontFamily: fonts.bold, color: colors.text }}>
-              ANDRI — {profile.name}
-            </Text>
-            <Text style={{ fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary }}>
-              No. KTA: 32.73.01.2024.08912
-            </Text>
-            <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-              Anggota Aktif • DPD Kabupaten Bandung • Dapil Jawa Barat I
-            </Text>
-            <View style={{ marginTop: 6 }}>
-              <Pill label="Terdaftar SIPOL KPU RI" tone="success" icon="check-circle" />
-            </View>
-          </View>
-
-          <Pressable
+          <QrPlaceholder
+            size={180}
+            seed={
+              isOfficialMember
+                ? `PAN-${officialMembership?.ktaNumber || '32.73.01.2024.08912'}-AUTHENTICATED`
+                : `PAN-${volunteerMembership?.ktaNumber || 'REL-3273-2024-0042'}-VOLUNTEER`
+            }
+          />
+          <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, textAlign: 'center' }}>
+            {isOfficialMember
+              ? 'Pindai QR ini untuk verifikasi keanggotaan dan presensi kegiatan internal partai.'
+              : 'Pindai QR ini untuk presensi kehadiran giat posko dan kegiatan bakti relawan.'}
+          </Text>
+          <PrimaryButton
+            label={isOfficialMember ? 'Buka e-KTA Penuh' : 'Buka Profil Relawan'}
+            variant="secondary"
             onPress={() => {
               setShowKtaQrModal(false);
-              navigation.navigate('SimpanKta');
+              if (isOfficialMember) {
+                navigation.navigate('SimpanKta');
+              } else {
+                navigation.navigate('Profile');
+              }
             }}
-            style={({ pressed }) => [
-              styles.openFullKtaBtn,
-              { backgroundColor: colors.primary },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Text style={styles.openFullKtaBtnText}>Buka Kartu Fisik e-KTA</Text>
-            <Feather name="arrow-right" size={14} color="#FFFFFF" />
-          </Pressable>
+            style={{ width: '100%' }}
+          />
         </View>
       </Modal>
 
-      {/* Global Dialog Confirmation */}
+      {/* Coordinator Contact Modal */}
+      <Modal
+        visible={showCoordinatorModal}
+        onClose={() => setShowCoordinatorModal(false)}
+        title="Koordinator Wilayah Dampingan"
+        subtitle="Posko Pemenangan Kelurahan Dago"
+      >
+        <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              padding: spacing.sm,
+              backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF',
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Feather name="user-check" size={20} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.text }}>
+                {currentUser.coordinatorContact?.name || 'Asep Ridwan'}
+              </Text>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.primary }}>
+                Koordinator Lapangan Kelurahan Dago
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              gap: spacing.xs,
+              padding: spacing.sm,
+              backgroundColor: colors.surface,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Feather name="phone" size={14} color={colors.primary} />
+              <Text style={{ fontFamily: fonts.medium, fontSize: 12, color: colors.text }}>
+                {currentUser.coordinatorContact?.phone || '0811-2233-4455'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+              <Feather name="map-pin" size={14} color={colors.primary} style={{ marginTop: 2 }} />
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, flex: 1 }}>
+                {currentUser.coordinatorContact?.posko || 'Posko Kawal Suara Dago Atas No. 84, Coblong, Kota Bandung'}
+              </Text>
+            </View>
+          </View>
+
+          <PrimaryButton
+            label="Tutup"
+            onPress={() => setShowCoordinatorModal(false)}
+            style={{ marginTop: spacing.xs }}
+          />
+        </View>
+      </Modal>
+
+      {/* Candidate Confirmation Dialog */}
+      <ConfirmDialog
+        visible={showCandidateConfirmDialog}
+        title="Ajukan Diri Sebagai Calon Saksi?"
+        message="Portofolio keaktifan relawan (8 tugas selesai) dan sertifikat Bimtek PAN Academy (12 jam) Anda akan dikirimkan ke Tim BSN DPD PAN Kota Bandung untuk verifikasi dan penerbitan SK Mandat."
+        confirmLabel="Ya, Kirim Pengajuan"
+        cancelLabel="Batal"
+        tone="primary"
+        onConfirm={() => {
+          setShowCandidateConfirmDialog(false);
+          applyWitnessCandidate();
+          setDialogConfig({
+            visible: true,
+            title: 'Pengajuan Berhasil Dikirim',
+            message: 'Pengajuan Anda telah tercatat di Web Command Center BSN DPD PAN Kota Bandung. Silakan tunggu penugasan resmi.',
+            tone: 'success',
+          });
+        }}
+        onCancel={() => setShowCandidateConfirmDialog(false)}
+      />
+
+      {/* Feedback Dialog */}
       <ConfirmDialog
         visible={dialogConfig.visible}
         title={dialogConfig.title}
         message={dialogConfig.message}
-        tone={dialogConfig.tone || 'info'}
+        tone={dialogConfig.tone}
         singleButton
-        confirmLabel="OK, Mengerti"
+        confirmLabel="Tutup"
         onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
       />
+
+      {/* Aspirasi Warga Modal (List & Input Form) */}
+      <Modal
+        visible={showAspirasiModal}
+        onClose={() => setShowAspirasiModal(false)}
+        title="Aspirasi & Suara Warga"
+        subtitle="Posko Pemenangan Kelurahan Dago, Coblong"
+      >
+        <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+            {/* Form Tambah Aspirasi Cepat */}
+            <View
+              style={{
+                padding: spacing.sm,
+                backgroundColor: isDark ? 'rgba(0,43,82,0.35)' : '#F0F7FF',
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                gap: 6,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="edit-3" size={13} color={colors.primary} />
+                <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.text }}>
+                  Input Catatan Aspirasi Baru
+                </Text>
+              </View>
+
+              <TextInput
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.sm,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  fontSize: 12,
+                  fontFamily: fonts.medium,
+                  color: colors.text,
+                }}
+                placeholder="Nama warga / RT pengusul (mis: Ibu Eni RT 02)..."
+                placeholderTextColor={colors.textMuted}
+                value={newAspirasiResident}
+                onChangeText={setNewAspirasiResident}
+              />
+
+              <TextInput
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.sm,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  fontSize: 12,
+                  fontFamily: fonts.medium,
+                  color: colors.text,
+                }}
+                placeholder="Pokok usulan (mis: Perbaikan PJU gang lansia)..."
+                placeholderTextColor={colors.textMuted}
+                value={newAspirasiTitle}
+                onChangeText={setNewAspirasiTitle}
+              />
+
+              <TextInput
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.sm,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  fontSize: 11.5,
+                  fontFamily: fonts.regular,
+                  color: colors.text,
+                  minHeight: 50,
+                  textAlignVertical: 'top',
+                }}
+                placeholder="Rincian usulan & lokasi spesifik di Dago..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={2}
+                value={newAspirasiDesc}
+                onChangeText={setNewAspirasiDesc}
+              />
+
+              <PrimaryButton
+                label="Simpan Catatan Aspirasi"
+                onPress={() => {
+                  if (!newAspirasiTitle.trim()) {
+                    setDialogConfig({
+                      visible: true,
+                      title: 'Judul Wajib Diisi',
+                      message: 'Mohon tuliskan pokok aspirasi warga.',
+                      tone: 'warning',
+                    });
+                    return;
+                  }
+
+                  const newEntry = {
+                    id: `ASP-${Date.now().toString().slice(-4)}`,
+                    title: newAspirasiTitle.trim(),
+                    desc: newAspirasiDesc.trim() || 'Aspirasi warga dicatat saat kunjungan relawan ke Dago.',
+                    category: 'Aspirasi Langsung',
+                    residentName: newAspirasiResident.trim() || 'Warga Binaan Dago',
+                    recordedBy: 'Siti Rahmawati',
+                    recordedRole: 'Relawan Dampingan Dago',
+                    location: 'Kelurahan Dago, Coblong',
+                    date: '18 Sep 2026, Hari Ini',
+                    status: 'Tercatat di Posko',
+                    statusColor: '#F59E0B',
+                    assignedTo: 'Koordinator Lapangan Dago',
+                    backofficeNotes: 'Aspirasi baru masuk, menunggu verifikasi operator sebelum diteruskan ke fraksi.',
+                    timeline: [
+                      {
+                        stage: 'Aspirasi Dihimpun di Lapangan',
+                        actor: 'Siti Rahmawati (Relawan)',
+                        time: '18 Sep 2026, Baru saja',
+                        desc: 'Dicatat melalui aplikasi Simpan 360.',
+                        done: true,
+                      },
+                      {
+                        stage: 'Verifikasi Operator Posko Dago',
+                        actor: 'Kang Asep Ridwan (Korlap)',
+                        time: 'Dalam Antrean Review',
+                        desc: 'Pemeriksaan keabsahan lokasi & prioritas.',
+                        done: false,
+                      },
+                      {
+                        stage: 'Disposisi Web Command Center',
+                        actor: 'Operator Fraksi PAN',
+                        time: 'Menunggu Disposisi',
+                        desc: 'Penyerahan ke Tim Advokasi Kebijakan / Dewan.',
+                        done: false,
+                      },
+                    ],
+                  };
+
+                  setAspirasiItems((prev) => [newEntry, ...prev]);
+                  setNewAspirasiTitle('');
+                  setNewAspirasiDesc('');
+                  setNewAspirasiResident('');
+                  setDialogConfig({
+                    visible: true,
+                    title: 'Aspirasi Berhasil Disimpan',
+                    message: 'Catatan aspirasi telah tercatat dan masuk ke antrean Web Command Center Posko Dago.',
+                    tone: 'success',
+                  });
+                }}
+                style={{ marginTop: 2 }}
+              />
+            </View>
+
+            {/* Segment Filter Tab: Catatan Siti vs Semua Posko Dago */}
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                borderRadius: radius.md,
+                padding: 3,
+                marginTop: 4,
+              }}
+            >
+              <Pressable
+                onPress={() => setAspirasiFilterTab('my_input')}
+                style={[
+                  { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: radius.sm },
+                  aspirasiFilterTab === 'my_input' && { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text
+                  style={{
+                    fontFamily: aspirasiFilterTab === 'my_input' ? fonts.bold : fonts.medium,
+                    fontSize: 11,
+                    color: aspirasiFilterTab === 'my_input' ? '#FFFFFF' : colors.textMuted,
+                  }}
+                >
+                  Catatan Saya ({aspirasiItems.filter((i) => i.recordedBy.includes('Siti')).length})
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setAspirasiFilterTab('all_dago')}
+                style={[
+                  { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: radius.sm },
+                  aspirasiFilterTab === 'all_dago' && { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text
+                  style={{
+                    fontFamily: aspirasiFilterTab === 'all_dago' ? fonts.bold : fonts.medium,
+                    fontSize: 11,
+                    color: aspirasiFilterTab === 'all_dago' ? '#FFFFFF' : colors.textMuted,
+                  }}
+                >
+                  Semua Posko Dago ({aspirasiItems.length})
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* List Aspirasi Cards (Clickable for Timeline Detail) */}
+            <View style={{ gap: spacing.xs, marginTop: 4 }}>
+              {aspirasiItems
+                .filter((item) => (aspirasiFilterTab === 'my_input' ? item.recordedBy.includes('Siti') : true))
+                .map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => setSelectedDetailAspirasi(item)}
+                    style={({ pressed }) => [
+                      {
+                        padding: spacing.sm,
+                        backgroundColor: colors.surface,
+                        borderRadius: radius.md,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        gap: 5,
+                      },
+                      pressed && { opacity: 0.75 },
+                    ]}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                      <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text, flex: 1 }}>
+                        {item.title}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: isDark ? 'rgba(0,102,179,0.2)' : '#EFF6FF',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                        }}
+                      >
+                        <Text style={{ fontFamily: fonts.bold, fontSize: 9.5, color: item.statusColor || colors.primary }}>
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, lineHeight: 16 }} numberOfLines={2}>
+                      {item.desc}
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 3, paddingTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
+                      <View style={{ gap: 1 }}>
+                        <Text style={{ fontFamily: fonts.medium, fontSize: 10, color: colors.text }}>
+                          Pengusul: {item.residentName}
+                        </Text>
+                        <Text style={{ fontFamily: fonts.regular, fontSize: 9.5, color: colors.primary }}>
+                          Pencatat: {item.recordedBy}
+                        </Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: colors.primary }}>
+                          Detail & Tracking
+                        </Text>
+                        <Feather name="chevron-right" size={13} color={colors.primary} />
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+            </View>
+
+            <PrimaryButton
+              label="Tutup"
+              variant="secondary"
+              onPress={() => setShowAspirasiModal(false)}
+            />
+          </View>
+        </ScrollView>
+      </Modal>
+
+      {/* Modal Detail Aspirasi & Tracking Timeline Penanganan Web Backoffice */}
+      <Modal
+        visible={!!selectedDetailAspirasi}
+        onClose={() => setSelectedDetailAspirasi(null)}
+        title="Detail Aspirasi & Tracking"
+        subtitle={`No. Tiket: ${selectedDetailAspirasi?.id || ''}`}
+      >
+        {selectedDetailAspirasi && (
+          <ScrollView style={{ maxHeight: 480 }} showsVerticalScrollIndicator={false}>
+            <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+              {/* Header Status Banner */}
+              <View
+                style={{
+                  padding: spacing.sm,
+                  backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF',
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 4,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: colors.text, flex: 1 }}>
+                    {selectedDetailAspirasi.title}
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: colors.surface,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: selectedDetailAspirasi.statusColor || colors.primary }}>
+                      {selectedDetailAspirasi.status}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: colors.textMuted, lineHeight: 17, marginTop: 4 }}>
+                  {selectedDetailAspirasi.desc}
+                </Text>
+              </View>
+
+              {/* Data Meta Aspirasi */}
+              <View
+                style={{
+                  padding: spacing.sm,
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 6,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Feather name="user" size={13} color={colors.primary} />
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.text }}>
+                    Pengusul: <Text style={{ fontFamily: fonts.bold }}>{selectedDetailAspirasi.residentName}</Text>
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Feather name="map-pin" size={13} color={colors.primary} />
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                    Lokasi: {selectedDetailAspirasi.location}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Feather name="check-circle" size={13} color={colors.primary} />
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                    Dicatat oleh: <Text style={{ fontFamily: fonts.medium, color: colors.text }}>{selectedDetailAspirasi.recordedBy} ({selectedDetailAspirasi.recordedRole})</Text>
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Feather name="calendar" size={13} color={colors.primary} />
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                    Waktu: {selectedDetailAspirasi.date}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Catatan Tindak Lanjut Web Backoffice */}
+              {selectedDetailAspirasi.backofficeNotes && (
+                <View
+                  style={{
+                    padding: spacing.sm,
+                    backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#F0FDF4',
+                    borderRadius: radius.md,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(16,185,129,0.25)' : '#BBF7D0',
+                    gap: 3,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Feather name="info" size={13} color="#10B981" />
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: '#10B981' }}>
+                      Catatan Disposisi Web Command Center:
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text, lineHeight: 16 }}>
+                    "{selectedDetailAspirasi.backofficeNotes}"
+                  </Text>
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                    PIC: {selectedDetailAspirasi.assignedTo}
+                  </Text>
+                </View>
+              )}
+
+              {/* Timeline Tracking Penanganan Web Command Center */}
+              <View
+                style={{
+                  padding: spacing.sm,
+                  backgroundColor: colors.surface,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: spacing.xs,
+                }}
+              >
+                <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text, marginBottom: 4 }}>
+                  Tracking Penanganan Aspirasi
+                </Text>
+
+                {selectedDetailAspirasi.timeline.map((step: any, index: number) => {
+                  const isLast = index === selectedDetailAspirasi.timeline.length - 1;
+                  return (
+                    <View key={index} style={{ flexDirection: 'row', gap: 10 }}>
+                      {/* Left Track & Icon */}
+                      <View style={{ alignItems: 'center', width: 18 }}>
+                        <View
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            backgroundColor: step.done ? colors.primary : isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {step.done ? (
+                            <Feather name="check" size={10} color="#FFFFFF" strokeWidth={3} />
+                          ) : (
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted }} />
+                          )}
+                        </View>
+                        {!isLast && (
+                          <View
+                            style={{
+                              width: 2,
+                              flex: 1,
+                              backgroundColor: step.done ? colors.primary : colors.border,
+                              minHeight: 28,
+                            }}
+                          />
+                        )}
+                      </View>
+
+                      {/* Right Details */}
+                      <View style={{ flex: 1, paddingBottom: isLast ? 0 : 12, gap: 1 }}>
+                        <Text
+                          style={{
+                            fontFamily: fonts.bold,
+                            fontSize: 11.5,
+                            color: step.done ? colors.text : colors.textMuted,
+                          }}
+                        >
+                          {step.stage}
+                        </Text>
+                        <Text style={{ fontFamily: fonts.medium, fontSize: 10, color: colors.primary }}>
+                          {step.actor} • {step.time}
+                        </Text>
+                        <Text style={{ fontFamily: fonts.regular, fontSize: 10.5, color: colors.textMuted, lineHeight: 15 }}>
+                          {step.desc}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <PrimaryButton
+                label="Kembali ke Daftar"
+                onPress={() => setSelectedDetailAspirasi(null)}
+                style={{ marginTop: 4 }}
+              />
+            </View>
+          </ScrollView>
+        )}
+      </Modal>
     </ScrollView>
   );
 }
 
-// =========================================================================
-// SUB-COMPONENTS
-// =========================================================================
-
-function AttendanceStatCard({
-  witnesses,
-  fullyPresentTpsCount,
-  totalTpsCount,
-  colors,
-}: {
-  witnesses: { status: string }[];
-  fullyPresentTpsCount: number;
-  totalTpsCount: number;
-  colors: any;
-}) {
-  const total = witnesses.length;
-  const hadir = witnesses.filter((w) => w.status === 'checked_in').length;
-  const tidakHadir = total - hadir;
-  const pctHadir = total > 0 ? Math.round((hadir / total) * 100) : 0;
-
-  return (
-    <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-      <SectionTitle style={{ marginBottom: 0 }}>Kehadiran Saksi TPS</SectionTitle>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <Text style={{ fontSize: fontSize.xxl, fontFamily: fonts.bold, color: colors.success }}>
-          {pctHadir}%
-        </Text>
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ fontSize: fontSize.xs, fontFamily: fonts.medium, color: colors.textMuted }}>
-            Persentase Saksi Hadir dari {total} Saksi Binaan
-          </Text>
-          <View style={[styles.attendanceBarTrack, { backgroundColor: colors.dangerBg }]}>
-            <View style={[styles.attendanceBarFill, { width: `${pctHadir}%`, backgroundColor: colors.success }]} />
-          </View>
-        </View>
-      </View>
-      <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
-        <Pill label={`${hadir} Hadir GPS`} tone="success" />
-        <Pill label={`${tidakHadir} Belum Hadir`} tone="danger" />
-        <Pill label={`${fullyPresentTpsCount}/${totalTpsCount} TPS 100% Siaga`} tone="info" />
-      </View>
-    </Card>
-  );
-}
-
-function TpsAttendanceList({
-  items,
-  currentPage,
-  totalPages,
-  onPrev,
-  onNext,
-  sort,
-  onToggleSort,
-  navigation,
-  colors,
-}: {
-  items: Array<{ tps: { id: string; tpsNumber: number; district: string; village?: string }; hadir: number; total: number; pct: number }>;
-  currentPage: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-  sort: 'best' | 'worst';
-  onToggleSort: () => void;
-  navigation: any;
-  colors: any;
-}) {
-  return (
-    <Card style={{ gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}>
-      <SectionTitle
-        style={{ marginBottom: 0 }}
-        action={
-          <Pressable
-            onPress={onToggleSort}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-          >
-            <Feather name={sort === 'best' ? 'arrow-down' : 'arrow-up'} size={13} color={colors.primary} />
-            <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-              {sort === 'best' ? 'Terbaik Dulu' : 'Terburuk Dulu'}
-            </Text>
-          </Pressable>
-        }
-      >
-        Rekap Kehadiran per TPS
-      </SectionTitle>
-      {items.map(({ tps: t, hadir, total, pct }) => (
-        <Pressable
-          key={t.id}
-          onPress={() => navigation.navigate('TpsDetail', { tpsId: t.id })}
-          style={({ pressed }) => [styles.witnessRowItem, { borderBottomColor: colors.border }, pressed && { opacity: 0.8 }]}
-        >
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[styles.witnessName, { color: colors.text }]}>TPS {t.tpsNumber} — Kec. {t.district}</Text>
-            <Text style={[styles.witnessSub, { color: colors.textMuted }]}>Kel. {t.village || 'Dago'} • {hadir}/{total} Saksi Hadir</Text>
-          </View>
-          <Pill
-            label={pct === 100 ? '100% Hadir' : `${pct}% Hadir`}
-            tone={pct === 100 ? 'success' : pct >= 50 ? 'warning' : 'danger'}
-          />
-        </Pressable>
-      ))}
-      <PaginationBar currentPage={currentPage} totalPages={totalPages} onPrev={onPrev} onNext={onNext} />
-    </Card>
-  );
-}
-
-function PaginationBar({ currentPage, totalPages, onPrev, onNext }: { currentPage: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
-  const { colors } = useTheme();
-  if (totalPages <= 1) return null;
-  return (
-    <View style={styles.paginationRow}>
-      <Pressable
-        disabled={currentPage <= 1}
-        onPress={onPrev}
-        style={({ pressed }) => [
-          styles.pageBtn,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-          currentPage <= 1 && { opacity: 0.4 },
-          pressed && { opacity: 0.8 },
-        ]}
-      >
-        <Feather name="chevron-left" size={16} color={colors.text} />
-        <Text style={[styles.pageBtnText, { color: colors.text }]}>Prev</Text>
-      </Pressable>
-
-      <Text style={[styles.pageIndicator, { color: colors.textMuted }]}>
-        Halaman <Text style={{ fontFamily: fonts.bold, color: colors.text }}>{currentPage}</Text> dari {totalPages}
-      </Text>
-
-      <Pressable
-        disabled={currentPage >= totalPages}
-        onPress={onNext}
-        style={({ pressed }) => [
-          styles.pageBtn,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-          currentPage >= totalPages && { opacity: 0.4 },
-          pressed && { opacity: 0.8 },
-        ]}
-      >
-        <Text style={[styles.pageBtnText, { color: colors.text }]}>Next</Text>
-        <Feather name="chevron-right" size={16} color={colors.text} />
-      </Pressable>
-    </View>
-  );
-}
-
-// =========================================================================
-// STYLES (POPPINS TYPOGRAPHY & REFINED COMPONENTS)
-// =========================================================================
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxxl },
-
-  // Header & Identity Styles
-  headerCard: {
+  content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl },
+  unifiedMasterCard: {
     padding: spacing.md,
+    gap: spacing.sm + 2,
     borderRadius: radius.xl,
     borderWidth: 1,
-    gap: spacing.sm,
     ...shadow.card,
   },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  headerCard: {
+    padding: spacing.md,
     gap: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    ...shadow.card,
   },
-  headerTitleCol: {
-    flex: 1,
-    gap: 3,
-  },
-  headerBadgePill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(0,102,179,0.08)',
-  },
-  headerBadgePillText: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.4,
-  },
-  welcomeGreeting: {
-    fontSize: 18,
-    fontFamily: fonts.extraBold,
-    letterSpacing: -0.2,
-  },
-  welcomeAccountSub: {
-    fontSize: 11,
-    fontFamily: fonts.medium,
-  },
-  avatarTouch: {
-    position: 'relative',
-  },
-  avatarPhoto: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: '#0066B3',
-  },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitleCol: { gap: 2, flex: 1 },
+  welcomeGreeting: { fontFamily: fonts.extraBold, fontSize: 16, letterSpacing: 0.5 },
+  welcomeAccountSub: { fontFamily: fonts.medium, fontSize: 11 },
+  avatarTouch: { position: 'relative' },
+  avatarPhoto: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: '#0066B3' },
   onlineStatusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
     position: 'absolute',
     bottom: 0,
     right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-
-  // Status & Wilayah Box
   statusWilayahCard: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    justifyContent: 'space-between',
   },
-  statusWilayahItem: {
-    flex: 1,
-    gap: 2,
-  },
-  swLabel: {
-    fontSize: 10,
-    fontFamily: fonts.medium,
-  },
-  activeStatusPill: {
+  statusWilayahItem: { flex: 1, gap: 2 },
+  roleBadgeDot: { width: 8, height: 8, borderRadius: 4 },
+  swRoleName: { fontFamily: fonts.bold, fontSize: 12 },
+  swScopeText: { fontFamily: fonts.regular, fontSize: 10.5 },
+  swIdText: { fontFamily: fonts.semiBold, fontSize: 10.5, letterSpacing: 0.3 },
+  switchModeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
   },
-  pulsingGreenDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  activeStatusPillText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-  },
-  swDivider: {
-    width: 1,
-    height: 32,
-    marginHorizontal: spacing.sm,
-  },
-  swValue: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-  },
-  swSubValue: {
-    fontSize: 10,
-    fontFamily: fonts.semiBold,
-  },
-
-  // Mini KTA Strip
+  switchModeBtnText: { fontFamily: fonts.bold, fontSize: 11 },
   ktaMiniStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
+    alignItems: 'center',
+    padding: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  ktaEmblemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  panEmblemSmall: {
-    width: 22,
-    height: 22,
-  },
-  ktaLabelText: {
-    fontSize: 8.5,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.5,
-  },
-  ktaNumberText: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-  },
-  ktaButtonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  ktaEmblemRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  panEmblemSmall: { width: 28, height: 28 },
+  ktaLabelText: { fontFamily: fonts.bold, fontSize: 9.5, letterSpacing: 0.5 },
+  ktaNumberText: { fontFamily: fonts.extraBold, fontSize: 12 },
+  ktaButtonRow: { flexDirection: 'row', gap: 6 },
   ktaMiniBtnOutline: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
+    paddingVertical: 4,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
-  ktaMiniBtnText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-  },
+  ktaMiniBtnText: { fontFamily: fonts.bold, fontSize: 11 },
   ktaMiniBtnSolid: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.md,
   },
-  ktaMiniBtnSolidText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-    color: '#FFFFFF',
-  },
-
-  // 📢 Unified Warta & Agenda Card Styles
-  unifiedWartaCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    gap: spacing.sm,
-    ...shadow.card,
-  },
-  unifiedWartaHeader: {
+  ktaMiniBtnSolidText: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
+  syncBannerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
-  unifiedSegmentTrack: {
+  syncBannerTitle: { fontSize: 11.5, fontFamily: fonts.bold },
+  syncBannerSub: { fontSize: 9.5, fontFamily: fonts.regular },
+  syncBannerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  unifiedSegmentPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radius.pill,
-    borderWidth: 1,
   },
-  unifiedSegmentText: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-  },
-  agendaBadgeCircle: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-    minWidth: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  agendaBadgeCircleText: {
-    fontSize: 9,
-    fontFamily: fonts.bold,
-  },
-  unifiedActionLink: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-  },
-
-  // Instruksi Tab Styles
-  instruksiContentBox: {
-    gap: 6,
-  },
-  instruksiMetaRow: {
+  syncBannerBtnText: { fontSize: 10.5, fontFamily: fonts.bold, color: '#FFFFFF' },
+  announcementBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  instruksiTagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  instruksiTagText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    color: '#DC2626',
-    letterSpacing: 0.3,
-  },
-  instruksiDateText: {
-    fontSize: 10,
-    fontFamily: fonts.medium,
-  },
-  instruksiTitleText: {
-    fontSize: 13.5,
-    fontFamily: fonts.bold,
-    lineHeight: 19,
-  },
-  instruksiExcerptText: {
-    fontSize: 11,
-    fontFamily: fonts.regular,
-    lineHeight: 16,
-  },
-  linkedAgendaTeaser: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginTop: 2,
-  },
-  linkedAgendaText: {
-    fontSize: 10.5,
-    fontFamily: fonts.medium,
-  },
-  readMoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  readMoreText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-  },
-
-  // Agenda Tab Styles
-  agendaContentWrap: {
-    gap: spacing.xs,
-  },
-  agendaScrollTrack: {
-    gap: spacing.sm,
-    paddingVertical: 2,
-  },
-  modernAgendaCard: {
-    width: 220,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: spacing.sm + 2,
-    gap: 5,
-  },
-  modernAgendaHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  agendaPillTagModern: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  agendaPillTagModernText: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-  },
-  agendaPriorityBadge: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-  },
-  modernAgendaTitle: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
-    lineHeight: 16,
-  },
-  modernAgendaInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  modernAgendaInfoText: {
-    fontSize: 10,
-    fontFamily: fonts.medium,
-    flex: 1,
-  },
-  modernAgendaBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    borderRadius: radius.pill,
-    paddingVertical: 5,
-    marginTop: 3,
-  },
-  modernAgendaBtnText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    color: '#FFFFFF',
-  },
-
-  // 🎓 Pelatihan Saya Styles
-  trainingItemBox: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: 6,
-  },
-  trainingItemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  trainingIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trainingItemTitle: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
-  },
-  trainingItemSub: {
-    fontSize: 10,
-    fontFamily: fonts.regular,
-  },
-  trainingProgressBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  trainingProgressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  trainingActionLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingTop: 2,
-  },
-  trainingActionLinkText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-  },
-
-  // 🎯 Tugas Saya Styles
-  taskItemBox: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    gap: 6,
-  },
-  taskItemTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  taskCheckCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  taskTitleText: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
-  },
-  taskDescText: {
-    fontSize: 10.5,
-    fontFamily: fonts.regular,
-    lineHeight: 14,
-  },
-  taskFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 6,
-    borderTopWidth: 0.5,
-  },
-  taskStatusNote: {
-    fontSize: 10,
-    fontFamily: fonts.medium,
-  },
-  taskActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  taskActionButtonText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-  },
-
-  // 🗳️ Status Saksi Styles
-  witnessStatusBox: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-  },
-  witnessStatusTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  wsTpsTitle: {
-    fontSize: 12.5,
-    fontFamily: fonts.bold,
-  },
-  wsTpsSub: {
-    fontSize: 10.5,
-    fontFamily: fonts.regular,
-  },
-  wsStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  wsStatusBadgeText: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-  },
-  wsDetailsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 6,
-    borderTopWidth: 0.5,
-  },
-  wsDetailCell: {
-    flex: 1,
-    gap: 1,
-  },
-  wsCellLabel: {
-    fontSize: 9.5,
-    fontFamily: fonts.medium,
-  },
-  wsCellValue: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-  },
-  wsCellSub: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-  },
-  wsActionButtonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  wsBtnOutline: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 7,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  wsBtnOutlineText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-  },
-  wsBtnSolid: {
-    flex: 1.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 7,
-    borderRadius: radius.pill,
-  },
-  wsBtnSolidText: {
-    fontSize: 10.5,
-    fontFamily: fonts.bold,
-    color: '#FFFFFF',
-  },
-
-  // 📍 Aktivitas Wilayah Styles
-  activityFeedItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: 10,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 9,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
-  activityIconCircle: {
+  announcementIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(220, 38, 38, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  announcementBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  announcementBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  announcementDateText: {
+    fontFamily: fonts.regular,
+    fontSize: 9.5,
+  },
+  announcementHeadline: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+  },
+  announcementActionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingLeft: 4,
+  },
+  announcementActionText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
+  integratedAnnouncementStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  announcementIconBoxCompact: {
     width: 26,
     height: 26,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
-  activityItemTitle: {
-    fontSize: 11.5,
+  announcementBadgeCompact: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 3,
+  },
+  announcementBadgeTextCompact: {
     fontFamily: fonts.bold,
+    fontSize: 8.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.4,
+  },
+  announcementDateTextCompact: {
+    fontFamily: fonts.regular,
+    fontSize: 9,
+  },
+  announcementHeadlineCompact: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  unifiedCardDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 2,
+  },
+  sectionHeaderBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionHeadingTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
+  witnessStatusBox: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm },
+  witnessStatusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  wsTpsTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  wsTpsSub: { fontFamily: fonts.regular, fontSize: 10.5, marginTop: 1 },
+  wsStatusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1 },
+  wsStatusBadgeText: { fontFamily: fonts.bold, fontSize: 10 },
+  wsActionButtonsRow: { flexDirection: 'row', gap: spacing.xs },
+  wsBtnSolid: {
     flex: 1,
-  },
-  activityItemTime: {
-    fontSize: 9.5,
-    fontFamily: fonts.medium,
-    marginLeft: 6,
-  },
-  activityItemDesc: {
-    fontSize: 10.5,
-    fontFamily: fonts.regular,
-    lineHeight: 14,
-  },
-
-  // ⚡ QUICK ACTION: BCA STYLE STYLES
-  quickActionHeaderSub: {
-    fontSize: 10.5,
-    fontFamily: fonts.regular,
-    marginTop: 1,
-  },
-  bcaBrandTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-  },
-  bcaBrandTagText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-  },
-  bcaFourRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 6,
-  },
-  bcaSquircleBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: 3,
-    ...shadow.sm,
-  },
-  bcaSquircleIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
-  },
-  bcaSquircleLabel: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    textAlign: 'center',
-  },
-  bcaSquircleMicro: {
-    fontSize: 9,
-    fontFamily: fonts.medium,
-    textAlign: 'center',
-  },
-  bcaGridSectionTitle: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
-  },
-  bcaGridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  bcaMenuCard: {
-    width: '48.5%',
-    padding: spacing.sm,
+    gap: 5,
+    paddingVertical: 8,
     borderRadius: radius.md,
-    borderWidth: 1,
-    minHeight: 78,
-    justifyContent: 'space-between',
-    ...shadow.sm,
   },
-  bcaMenuCardHeader: {
+  wsBtnSolidText: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
+  wsBtnOutline: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
-  bcaMenuIconBadge: {
-    width: 32,
-    height: 32,
+  wsBtnOutlineText: { fontFamily: fonts.bold, fontSize: 11 },
+  coordSummaryBox: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm },
+  coordStatRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  coordStatCol: { alignItems: 'center' },
+  coordStatNum: { fontFamily: fonts.extraBold, fontSize: 20 },
+  coordStatLabel: { fontFamily: fonts.medium, fontSize: 10, marginTop: 2 },
+  statDivider: { width: 1, height: 28 },
+  unifiedWartaCard: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, gap: spacing.xs },
+  unifiedWartaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  unifiedSegmentTrack: { flexDirection: 'row', gap: 6 },
+  unifiedSegmentPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1 },
+  unifiedSegmentText: { fontFamily: fonts.bold, fontSize: 11 },
+  unifiedActionLink: { fontFamily: fonts.bold, fontSize: 11 },
+  instruksiContentBox: { gap: 3, marginTop: 4 },
+  instruksiMetaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  instruksiTagPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  instruksiTagText: { fontFamily: fonts.bold, fontSize: 10, color: '#DC2626' },
+  instruksiDateText: { fontFamily: fonts.regular, fontSize: 10 },
+  instruksiTitleText: { fontFamily: fonts.bold, fontSize: fontSize.xs, lineHeight: 18 },
+  instruksiExcerptText: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16 },
+  miniAgendaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5 },
+  miniAgendaTitle: { fontFamily: fonts.bold, fontSize: 11.5 },
+  // 4-Column Quick Menu Icon Grid
+  quickIconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    rowGap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  quickGridItem: {
+    width: '25%',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    gap: 6,
+  },
+  quickIconWrapper: {
+    position: 'relative',
+  },
+  quickIconBox: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
-  bcaMicroBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  quickMicroBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
     borderRadius: radius.pill,
   },
-  bcaMicroBadgeText: {
-    fontSize: 9,
+  quickMicroBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
     fontFamily: fonts.bold,
   },
-  bcaMenuCardTitle: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
+  quickItemLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 14,
+    paddingHorizontal: 2,
   },
-  bcaMenuCardSub: {
-    fontSize: 9.5,
-    fontFamily: fonts.regular,
+
+  sectionWrap: { gap: spacing.xs },
+  bcaGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
   },
-
-  // Sisa Item: Tabulasi & Stat Styles
-  heroCard: { padding: spacing.md, gap: spacing.xs, borderRadius: radius.lg, borderWidth: 1, ...shadow.card },
-  heroHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
-  livePulseDot: { width: 8, height: 8, borderRadius: 4 },
-  liveTabulasiText: { fontSize: 10.5, fontFamily: fonts.extraBold, letterSpacing: 0.5 },
-  tpsInflowBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
-  tpsInflowBadgeText: { fontSize: 10, fontFamily: fonts.bold },
-  voteSummaryLabel: { fontSize: 11, fontFamily: fonts.semiBold },
-  heroBigVoteNum: { fontSize: 28, fontFamily: fonts.extraBold, letterSpacing: -0.5 },
-  surplusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1 },
-  surplusPillText: { fontSize: 10, fontFamily: fonts.bold },
-  progressTrack: { height: 9, borderRadius: 4.5, flexDirection: 'row', overflow: 'hidden' },
-  progressFillBase: { height: '100%', borderTopLeftRadius: 4.5, borderBottomLeftRadius: 4.5 },
-  progressFillSurplus: { height: '100%', borderTopRightRadius: 4.5, borderBottomRightRadius: 4.5 },
-  statRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1 },
-  statBox: { alignItems: 'center' },
-  statNum: { fontSize: fontSize.md, fontFamily: fonts.bold },
-  statSub: { fontSize: 10, fontFamily: fonts.medium, marginTop: 2 },
-  divider: { width: 1, height: 26 },
-
-  // Threshold Card
-  thresholdCard: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: 6 },
-  thresholdBarTrack: { height: 8, borderRadius: 4, position: 'relative', overflow: 'hidden' },
-  thresholdBarFill: { height: '100%', borderRadius: 4 },
-  thresholdMarker: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: '#DC2626' },
-  linkDetailBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 4 },
-
-  // Sebaran Suara
-  badgePillSmall: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
-  basisBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  basisBadgeText: { fontSize: 9, fontFamily: fonts.bold },
-  distBarTrack: { height: 7, borderRadius: 3.5, width: '100%', overflow: 'hidden' },
-  distBarFill: { height: '100%', borderRadius: 3.5 },
-
-  // Attendance
-  attendanceBarTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  attendanceBarFill: { height: '100%', borderRadius: 4 },
-
-  // Witness List & TPS Rows
-  witnessRowItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs, borderBottomWidth: 0.5 },
-  avatarImg: { width: 40, height: 40, borderRadius: 20 },
-  witnessName: { fontSize: fontSize.xs, fontFamily: fonts.bold },
-  witnessSub: { fontSize: 10.5, fontFamily: fonts.medium },
-  subHint: { fontSize: fontSize.xs, fontFamily: fonts.regular, marginBottom: spacing.xs },
-
-  // Pagination
-  paginationRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.sm, marginTop: spacing.xs },
-  pageBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1 },
-  pageBtnText: { fontSize: 11, fontFamily: fonts.bold },
-  pageIndicator: { fontSize: 11, fontFamily: fonts.medium },
-
-  // Sync banner
-  syncBannerCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
-  syncBannerTitle: { fontSize: 11.5, fontFamily: fonts.bold },
-  syncBannerSub: { fontSize: 9.5, fontFamily: fonts.regular },
-  syncBannerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill },
-  syncBannerBtnText: { fontSize: 10.5, fontFamily: fonts.bold, color: '#FFFFFF' },
-
-  // Modal Custom Tiles
-  modalOptionTile: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
-  modalOptionIconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  modalOptionTitle: { fontSize: 12, fontFamily: fonts.bold },
-  modalOptionDesc: { fontSize: 10, fontFamily: fonts.regular, lineHeight: 14, marginTop: 1 },
-
-  // Agenda Modal
-  agendaModalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: 8 },
-  agendaModalTitle: { fontSize: 11.5, fontFamily: fonts.bold },
-  agendaModalDate: { fontSize: 10.5, fontFamily: fonts.semiBold },
-  agendaModalLoc: { fontSize: 9.5, fontFamily: fonts.medium },
-  agendaModalBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
-  agendaModalBtnText: { fontSize: 11, fontFamily: fonts.bold, color: '#FFFFFF' },
-
-  // Info Modal
-  infoBannerHighlight: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
-  infoBannerHighlightText: { fontSize: 11, fontFamily: fonts.bold, flex: 1 },
-  infoModalBody: { fontSize: 11.5, fontFamily: fonts.regular, lineHeight: 18 },
-  infoModalCloseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: radius.pill },
-  infoModalCloseBtnText: { fontSize: 12, fontFamily: fonts.bold, color: '#FFFFFF' },
-
-  // QR Modal
-  qrContainer: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  openFullKtaBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 20, borderRadius: radius.pill, width: '100%' },
-  openFullKtaBtnText: { fontSize: 12, fontFamily: fonts.bold, color: '#FFFFFF' },
+  bcaMenuCard: {
+    width: '48.8%',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    minHeight: 82,
+    justifyContent: 'space-between',
+  },
+  bcaMenuCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  bcaMenuIconBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  bcaMicroBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
+  bcaMicroBadgeText: { fontSize: 9, fontFamily: fonts.bold },
+  bcaMenuCardTitle: { fontSize: 11.5, fontFamily: fonts.bold },
+  bcaMenuCardSub: { fontSize: 9.5, fontFamily: fonts.regular },
+  taskMiniItem: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+  taskMiniDot: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  taskMiniTitle: { fontFamily: fonts.bold, fontSize: 11.5 },
+  roleSwitchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+  roleSwitchIconCircle: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  roleSwitchName: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  volunteerOppCard: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: 5 },
+  oppHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  oppCategoryBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
+  oppCategoryBadgeText: { fontFamily: fonts.bold, fontSize: 10 },
+  oppSlotBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
+  oppSlotBadgeText: { fontFamily: fonts.bold, fontSize: 10 },
+  oppTitleText: { fontFamily: fonts.bold, fontSize: fontSize.xs, marginTop: 2 },
+  oppDescText: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16 },
+  oppMetaWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 2 },
+  oppMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  oppMetaText: { fontFamily: fonts.medium, fontSize: 10.5 },
+  oppActionButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: radius.md, marginTop: 4 },
+  oppActionButtonText: { fontFamily: fonts.bold, fontSize: 11 },
+  candidatePrereqBox: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: 6 },
+  candidatePrereqRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  candidatePrereqText: { fontFamily: fonts.medium, fontSize: 11, flex: 1, lineHeight: 16 },
+  candidateAppliedNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+  candidateAppliedNoticeText: { fontFamily: fonts.medium, fontSize: 11, flex: 1, lineHeight: 16 },
+  candidateApplyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: radius.md },
+  candidateApplyBtnText: { fontFamily: fonts.bold, fontSize: 11.5, color: '#FFFFFF' },
 });

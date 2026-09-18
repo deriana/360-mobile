@@ -8,7 +8,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useTheme, fonts, fontSize, radius, spacing } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { AcademyModule, AcademyLesson } from '../data/witnessAcademy';
 import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';

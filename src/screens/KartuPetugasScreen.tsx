@@ -6,6 +6,7 @@ import { EmptyState } from '../components/ui';
 import { PersonnelIdCard } from '../components/PersonnelIdCard';
 import { spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
+import { maskNik, maskPhone } from '../utils/masking';
 
 type PersonType = 'witness' | 'coordinator';
 
@@ -29,6 +30,8 @@ export default function KartuPetugasScreen({ route }: any) {
           rows={[
             { icon: 'credit-card', label: 'NIK', value: coordinator.nik },
             { icon: 'phone', label: 'No. WhatsApp / HP', value: coordinator.phone },
+            { icon: 'credit-card', label: 'NIK', value: maskNik(coordinator.nik) },
+            { icon: 'phone', label: 'No. WhatsApp / HP', value: maskPhone(coordinator.phone) },
             { icon: 'map-pin', label: 'Alamat Domisili', value: coordinator.address },
             { icon: 'grid', label: 'Kluster Binaan', value: `Kec. ${coordinator.district}, ${coordinator.regency}` },
             { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI KOORDINATOR PAN', isSuccess: true },
@@ -56,6 +59,8 @@ export default function KartuPetugasScreen({ route }: any) {
         rows={[
           { icon: 'credit-card', label: 'NIK', value: witness.nik },
           { icon: 'phone', label: 'No. WhatsApp / HP', value: witness.phone },
+          { icon: 'credit-card', label: 'NIK', value: maskNik(witness.nik) },
+          { icon: 'phone', label: 'No. WhatsApp / HP', value: maskPhone(witness.phone) },
           { icon: 'map-pin', label: 'Alamat Domisili', value: witness.address },
           {
             icon: 'grid',

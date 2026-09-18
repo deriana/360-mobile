@@ -24,32 +24,34 @@ type RegisterStep = 'scan' | 'verify' | 'completed';
 
 const OCR_STEPS = ['Pindai KTP', 'Validasi Data', 'e-KTA Terbit'];
 
-export default function RegisterMemberScreen({ navigation }: any) {
+export default function RegisterMemberScreen({ route, navigation }: any) {
   const { colors } = useTheme();
-  const { login } = useApp();
+  const { login, upgradeToMember, loggedIn } = useApp();
+
+  const isUpgradeFlow = route?.params?.source === 'profile_upgrade';
 
   const [step, setStep] = useState<RegisterStep>('scan');
   const [isScanning, setIsScanning] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   // Form states extracted via AI OCR
-  const [nik, setNik] = useState('');
-  const [nama, setNama] = useState('');
-  const [tempatLahir, setTempatLahir] = useState('');
-  const [tglLahir, setTglLahir] = useState('');
-  const [jenisKelamin, setJenisKelamin] = useState('Laki-Laki');
-  const [alamat, setAlamat] = useState('');
-  const [rtRw, setRtRw] = useState('');
-  const [kelurahan, setKelurahan] = useState('');
-  const [kecamatan, setKecamatan] = useState('');
+  const [nik, setNik] = useState(route?.params?.prefillNik || '');
+  const [nama, setNama] = useState(route?.params?.prefillName || '');
+  const [tempatLahir, setTempatLahir] = useState('Bandung');
+  const [tglLahir, setTglLahir] = useState('08/04/1995');
+  const [jenisKelamin, setJenisKelamin] = useState('Perempuan');
+  const [alamat, setAlamat] = useState('Jl. Dago Atas No. 84, RT 02 / RW 04');
+  const [rtRw, setRtRw] = useState('002/004');
+  const [kelurahan, setKelurahan] = useState('Dago');
+  const [kecamatan, setKecamatan] = useState('Coblong');
   const [kota, setKota] = useState('Kota Bandung');
   const [provinsi, setProvinsi] = useState('Jawa Barat');
   const [agama, setAgama] = useState('Islam');
   const [pekerjaan, setPekerjaan] = useState('Wiraswasta');
 
   // Additional Member Information
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState(route?.params?.prefillPhone || '');
+  const [email, setEmail] = useState(route?.params?.prefillEmail || '');
   const [dpd, setDpd] = useState('DPD PAN Kota Bandung');
   const [dpc, setDpc] = useState('DPC PAN Coblong');
   const [sayapPartai, setSayapPartai] = useState('BSN PAN (Badan Saksi Nasional)');
@@ -105,8 +107,8 @@ export default function RegisterMemberScreen({ navigation }: any) {
     setIsScanning(true);
     try {
       const result = await scanKtpWithVisionAi(uri);
-      if (result.nik) setNik(result.nik);
-      if (result.nama) setNama(result.nama);
+      if (result.nik) setNik(isUpgradeFlow && route?.params?.prefillNik ? route.params.prefillNik : result.nik);
+      if (result.nama) setNama(isUpgradeFlow && route?.params?.prefillName ? route.params.prefillName : result.nama);
       if (result.tempatLahir) setTempatLahir(result.tempatLahir);
       if (result.tglLahir) setTglLahir(result.tglLahir);
       if (result.jenisKelamin) setJenisKelamin(result.jenisKelamin);
@@ -118,8 +120,8 @@ export default function RegisterMemberScreen({ navigation }: any) {
       if (result.provinsi) setProvinsi(result.provinsi);
       if (result.agama) setAgama(result.agama);
       if (result.pekerjaan) setPekerjaan(result.pekerjaan);
-      if (result.phone) setPhone(result.phone);
-      if (result.email) setEmail(result.email);
+      if (result.phone) setPhone(isUpgradeFlow && route?.params?.prefillPhone ? route.params.prefillPhone : result.phone);
+      if (result.email) setEmail(isUpgradeFlow && route?.params?.prefillEmail ? route.params.prefillEmail : result.email);
     } catch (err) {
       console.warn('[RegisterMemberScreen] Error scanning KTP:', err);
     } finally {
@@ -141,11 +143,25 @@ export default function RegisterMemberScreen({ navigation }: any) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const generatedKta = `32.73.01.2024.${randomSuffix}`;
     setNoKta(generatedKta);
+
+    // Otomatis sinkronkan status keanggotaan resmi di aplikasi jika sedang login
+    if (loggedIn) {
+      upgradeToMember(generatedKta, {
+        dpd,
+        dpc,
+        registeredAt: new Date().toISOString().split('T')[0],
+      });
+    }
+
     setStep('completed');
   };
 
   const handleLoginAsMember = () => {
-    login('KADER_ANGGOTA');
+    if (isUpgradeFlow) {
+      navigation.goBack();
+    } else {
+      login('KADER_ANGGOTA');
+    }
   };
 
   return (
@@ -468,24 +484,26 @@ export default function RegisterMemberScreen({ navigation }: any) {
               />
 
               <PrimaryButton
-                label="Masuk ke Akun Kader simPAN"
-                icon="log-in"
+                label={isUpgradeFlow ? "Kembali ke Profil Saya" : "Masuk ke Akun Kader simPAN"}
+                icon={isUpgradeFlow ? "arrow-left" : "log-in"}
                 variant="secondary"
                 onPress={handleLoginAsMember}
               />
 
-              <Pressable
-                onPress={() => {
-                  setStep('scan');
-                  setPhotoUri(null);
-                }}
-                style={({ pressed }) => [
-                  styles.registerOtherBtn,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={[styles.registerOtherText, { color: colors.primary }]}>Daftarkan Anggota Baru Lainnya</Text>
-              </Pressable>
+              {!isUpgradeFlow && (
+                <Pressable
+                  onPress={() => {
+                    setStep('scan');
+                    setPhotoUri(null);
+                  }}
+                  style={({ pressed }) => [
+                    styles.registerOtherBtn,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={[styles.registerOtherText, { color: colors.primary }]}>Daftarkan Anggota Baru Lainnya</Text>
+                </Pressable>
+              )}
             </Card>
           </View>
         )}

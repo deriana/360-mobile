@@ -6,9 +6,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
+import { maskNik, maskPhone } from '../utils/masking';
 
 export default function CoordinatorDetailScreen({ route, navigation }: any) {
-  const coordinatorId = route?.params?.coordinatorId || 'COORD-1';
+  const coordinatorId = route?.params?.coordinatorId || 'KORLAP-001';
   const { coordinators, witnesses, tps } = useApp();
   const { colors } = useTheme();
 
@@ -39,6 +40,8 @@ export default function CoordinatorDetailScreen({ route, navigation }: any) {
         <SectionTitle>Profil Koordinator</SectionTitle>
         <DetailRow label="NIK" value={coordinator.nik} />
         <DetailRow label="Nomor Telepon" value={coordinator.phone} />
+        <DetailRow label="NIK" value={maskNik(coordinator.nik)} />
+        <DetailRow label="Nomor Telepon" value={maskPhone(coordinator.phone)} />
         <DetailRow label="Alamat Domisili" value={coordinator.address} />
         <DetailRow label="Kluster Binaan" value={`Kec. ${coordinator.district}, ${coordinator.regency}`} />
       </Card>

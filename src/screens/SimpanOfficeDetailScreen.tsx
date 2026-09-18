@@ -177,11 +177,15 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
         </View>
       </Card>
 
-      {/* Konter Pelayanan simPAN Terpadu */}
+      {/* Konter / Fungsi Layanan Posko */}
       <View style={{ gap: spacing.xs }}>
-        <SectionTitle style={{ marginBottom: 2 }}>Konter Pelayanan Terpadu simPAN</SectionTitle>
+        <SectionTitle style={{ marginBottom: 2 }}>
+          {kantor.tingkat === 'POSKO' ? 'Layanan & Fungsi Posko Relawan' : 'Konter Pelayanan Terpadu simPAN'}
+        </SectionTitle>
         <Text style={[styles.subHint, { color: colors.textMuted }]}>
-          Layanan tatap muka dan bantuan teknis yang tersedia di sekretariat ini.
+          {kantor.tingkat === 'POSKO'
+            ? 'Aktivitas lapangan, pengambilan atribut, dan koordinasi relawan di posko ini.'
+            : 'Layanan tatap muka dan bantuan teknis yang tersedia di sekretariat ini.'}
         </Text>
 
         <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
@@ -220,11 +224,15 @@ export default function SimpanOfficeDetailScreen({ route, navigation }: any) {
         </View>
       </View>
 
-      {/* Fasilitas Gedung */}
+      {/* Fasilitas Posko / Gedung */}
       <Card style={{ gap: spacing.sm }}>
-        <SectionTitle style={{ marginBottom: 0 }}>Fasilitas & Sarana Kantor</SectionTitle>
+        <SectionTitle style={{ marginBottom: 0 }}>
+          {kantor.tingkat === 'POSKO' ? 'Fasilitas & Sarana Posko' : 'Fasilitas & Sarana Kantor'}
+        </SectionTitle>
         <Text style={[styles.subHint, { color: colors.textMuted }]}>
-          Sarana penunjang kegiatan konsolidasi, rapat pleno, dan posko pemilu.
+          {kantor.tingkat === 'POSKO'
+            ? 'Sarana pendukung operasional relawan, titik istirahat, dan logistik lapangan.'
+            : 'Sarana penunjang kegiatan konsolidasi, rapat pleno, dan posko pemilu.'}
         </Text>
 
         <View style={styles.fasilitasGrid}>

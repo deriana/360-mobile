@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -19,8 +19,9 @@ import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, KpiCard, Modal, Pill, PrimaryButton } from '../components/ui';
+import QrPlaceholder from '../components/QrPlaceholder';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
-import { CURRENT_WITNESS_ID } from '../utils/scope';
+import { CURRENT_WITNESS_ID, ROLE_LABEL } from '../utils/scope';
 import { getWitnessAvatar } from '../data/images';
 import { addToOfflineQueue } from '../utils/offlineQueue';
 import { CheckInPayload } from '../types';
@@ -37,9 +38,7 @@ interface GeoPoint {
 // coordinates come from a real source.
 const GEOFENCE_RADIUS_M = 100;
 
-const STEPS = ['Selfie', 'Lokasi GPS', 'Konfirmasi'];
-
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -49,13 +48,13 @@ function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function StepProgress({ activeIndex }: { activeIndex: number }) {
+function StepProgress({ steps, activeIndex }: { steps: string[]; activeIndex: number }) {
   const { colors } = useTheme();
   return (
     <View style={styles.stepRow}>
-      {STEPS.map((label, i) => (
+      {steps.map((label, i) => (
         <React.Fragment key={label}>
-          <View style={styles.stepItem}>
+          <View style={[styles.stepItem, { width: steps.length === 2 ? 110 : 78 }]}>
             <View
               style={[
                 styles.stepCircle,
@@ -80,7 +79,7 @@ function StepProgress({ activeIndex }: { activeIndex: number }) {
               {label}
             </Text>
           </View>
-          {i < STEPS.length - 1 && (
+          {i < steps.length - 1 && (
             <View style={[styles.stepConnector, { backgroundColor: i < activeIndex ? colors.primary : colors.border }]} />
           )}
         </React.Fragment>
@@ -94,48 +93,126 @@ function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | n
   return `<!DOCTYPE html>
 <html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" onerror="this.onerror=null;document.body.classList.add('no-cdn')" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  html,body,#map{height:100%;margin:0;padding:0;background:#0F172A;font-family:-apple-system,BlinkMacSystemFont,sans-serif;}
-  .pulse-dot{width:18px;height:18px;border-radius:50%;background:#0066B3;border:3px solid #fff;box-shadow:0 0 0 0 rgba(0,102,179,0.7);animation:pulse 2s infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,102,179,0.6);}70%{box-shadow:0 0 0 20px rgba(0,102,179,0);}100%{box-shadow:0 0 0 0 rgba(0,102,179,0);}}
-  .offline-grid{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:#0F172A;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
-  .no-cdn .offline-grid{display:flex;}
-  .radar-ring{width:110px;height:110px;border-radius:55px;border:2px dashed #0066B3;display:flex;align-items:center;justify-content:center;margin-bottom:6px;}
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body, #map { width:100%; height:100%; background:#0B1E33; }
+  .leaflet-control-attribution, .leaflet-control-zoom { display:none !important; }
+  .radar-fallback {
+    width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; background:radial-gradient(circle at center, #0F2D4A 0%, #061524 100%);
+    color:#93C5FD; font-family:sans-serif; text-align:center; padding:12px;
+  }
+  .radar-ring {
+    width:70px; height:70px; border-radius:35px; border:2px solid #0066B3;
+    display:flex; align-items:center; justify-content:center; margin-bottom:8px;
+    box-shadow: 0 0 16px rgba(0, 102, 179, 0.4);
+    animation: pulse 2s infinite ease-in-out;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.96); opacity:0.8; }
+    50% { transform: scale(1.04); opacity:1; }
+    100% { transform: scale(0.96); opacity:0.8; }
+  }
 </style>
 </head><body>
 <div id="map"></div>
-<div class="offline-grid" id="fallbackGrid">
-  <div class="radar-ring"><div class="pulse-dot"></div></div>
-  <div style="font-weight:800;font-size:13px;color:#38BDF8;letter-spacing:0.5px;">KOORDINAT GPS TERKUNCI</div>
-  <div style="font-size:12px;color:#E2E8F0;font-family:monospace;">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
-  <div style="font-size:10px;color:#94A3B8;">Akurasi Presisi: &plusmn;${Math.round(accuracy || 15)} meter</div>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="document.body.classList.add('no-cdn')"></script>
 <script>
   try {
-    if (typeof L !== 'undefined') {
-      var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${lat}, ${lng}], 17);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      L.circle([${lat}, ${lng}], { radius: ${accuracy || 25}, color: '#0066B3', fillColor: '#0066B3', fillOpacity: 0.15 }).addTo(map);
-      var userIcon = L.divIcon({ className: '', html: '<div class="pulse-dot"></div>', iconSize: [18, 18] });
-      L.marker([${lat}, ${lng}], { icon: userIcon }).addTo(map);
-    } else {
-      document.body.classList.add('no-cdn');
-    }
+    var map = L.map('map', { zoomControl:false, attributionControl:false }).setView([${lat}, ${lng}], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    var marker = L.circleMarker([${lat}, ${lng}], {
+      radius: 8,
+      fillColor: '#0066B3',
+      color: '#FFFFFF',
+      weight: 2.5,
+      opacity: 1,
+      fillOpacity: 0.95
+    }).addTo(map);
+    var circle = L.circle([${lat}, ${lng}], {
+      radius: ${GEOFENCE_RADIUS_M},
+      color: '#0066B3',
+      fillColor: '#0066B3',
+      fillOpacity: 0.15,
+      weight: 1.5,
+      dashArray: '4, 6'
+    }).addTo(map);
   } catch(e) {
-    document.body.classList.add('no-cdn');
+    document.body.innerHTML = '<div class="radar-fallback"><div class="radar-ring">📍</div><b style="font-size:12px;color:#FFFFFF">Radar GPS Geofence Aktif</b><span style="font-size:10px;margin-top:2px;color:#94A3B8">Koordinat: ${lat.toFixed(4)}, ${lng.toFixed(4)} • Radius ${GEOFENCE_RADIUS_M}m</span></div>';
   }
 </script>
 </body></html>`;
 }
 
-export default function CheckInScreen() {
-  const { witnesses, tps, checkInWitness } = useApp();
-  const { colors } = useTheme();
-  const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID)!;
-  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
-  const isCheckedIn = witness.status === 'checked_in';
+export default function CheckInScreen({ route, navigation }: any) {
+  const { role, currentUser, witnesses, tps, events, checkInWitness, checkInEvent, poskoCheckIn, checkInPosko } = useApp();
+  const { colors, isDark } = useTheme();
+  const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID) || witnesses[0];
+  const assignedTps = tps.find((t) => t.id === witness?.assignedTpsId);
+
+  const isWitnessUser = role === 'WITNESS' || role === 'TPS_WITNESS' || currentUser.roles.some((r) => r.role === 'WITNESS');
+  const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !isWitnessUser;
+
+  // Filter agenda yang didaftarkan relawan (sesuai state di ActivitiesScreen)
+  const registeredEvents = useMemo(() => {
+    return events.filter((ev) => {
+      const isReg = Boolean(ev.isRegistered || ev.attended);
+      if (!isReg) return false;
+      if (isVolunteerOnly && ev.targetAudience) {
+        return ev.targetAudience === 'ALL' || ev.targetAudience === 'VOLUNTEER';
+      }
+      return true;
+    });
+  }, [events, isVolunteerOnly]);
+
+  type CheckInTargetType = 'tps' | 'event' | 'posko';
+  const initialTargetType = (route?.params?.targetType as CheckInTargetType) || (isWitnessUser ? 'tps' : 'event');
+  const initialEventId = (route?.params?.eventId as string) || (registeredEvents[0]?.id || events[0]?.id || '');
+
+  const [targetType, setTargetType] = useState<CheckInTargetType>(initialTargetType);
+  const [selectedEventId, setSelectedEventId] = useState<string>(initialEventId);
+  const selectedEvent = events.find((e) => e.id === selectedEventId) || registeredEvents[0] || events[0];
+  const [ticketModalVisible, setTicketModalVisible] = useState(false);
+  const [eventPickerModalVisible, setEventPickerModalVisible] = useState(false);
+
+  // Sync state if navigation params change dynamically while screen is mounted
+  useEffect(() => {
+    if (route?.params?.targetType) {
+      setTargetType(route.params.targetType);
+    }
+    if (route?.params?.eventId && events.some((e) => e.id === route.params.eventId)) {
+      setSelectedEventId(route.params.eventId);
+    }
+  }, [route?.params?.targetType, route?.params?.eventId, events]);
+
+  // Keep selectedEventId pointed to a valid registered event if available
+  useEffect(() => {
+    if (targetType === 'event' && registeredEvents.length > 0 && !registeredEvents.some((e) => e.id === selectedEventId)) {
+      setSelectedEventId(registeredEvents[0].id);
+    }
+  }, [registeredEvents, targetType, selectedEventId]);
+
+  const isTargetCheckedIn =
+    targetType === 'tps'
+      ? witness?.status === 'checked_in'
+      : targetType === 'event'
+      ? Boolean(selectedEvent?.attended)
+      : poskoCheckIn.checkedIn;
+
+  const currentCheckInTime =
+    targetType === 'tps'
+      ? witness?.checkInTime
+      : targetType === 'event'
+      ? (selectedEvent?.attended ? '08:15' : null)
+      : poskoCheckIn.time;
+
+  const currentTargetLocationLabel =
+    targetType === 'tps'
+      ? (assignedTps ? `TPS ${assignedTps.tpsNumber} ${assignedTps.district}, ${assignedTps.regency}` : 'Lokasi TPS')
+      : targetType === 'event'
+      ? `${selectedEvent?.title || 'Kegiatan'} — ${selectedEvent?.location || 'Bandung'}`
+      : poskoCheckIn.poskoName;
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -167,20 +244,30 @@ export default function CheckInScreen() {
     }
   }, [justConfirmed, successScale]);
 
-  const activeStepIndex = isCheckedIn ? 3 : !photoUri ? 0 : !location ? 1 : 2;
+  // Steps definition: Witness requires selfie (3 steps), Volunteer only needs GPS & Confirmation (2 steps)
+  const steps = targetType === 'tps' ? ['Selfie Saksi', 'Lokasi GPS', 'Konfirmasi'] : ['Lokasi GPS', 'Konfirmasi'];
+  const activeStepIndex =
+    targetType === 'tps'
+      ? isTargetCheckedIn ? 3 : !photoUri ? 0 : !location ? 1 : 2
+      : isTargetCheckedIn ? 2 : !location ? 0 : 1;
 
-  // ponytail: TPS coordinates are random mock data unrelated to any real
-  // location, so anchor the geofence to a point near the device's own first
-  // GPS fix instead — keeps "distance to TPS" believably close for the demo.
-  // Swap for assignedTps.lat/lng once TPS coordinates are real.
+  // Anchor geofence near user's GPS for realistic demo
   const tpsAnchorRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  const distanceToTps = location && tpsAnchorRef.current
-    ? haversineMeters(location.lat, location.lng, tpsAnchorRef.current.lat, tpsAnchorRef.current.lng)
-    : null;
-  const insideGeofence = distanceToTps !== null && distanceToTps <= GEOFENCE_RADIUS_M;
-  const isOutside = distanceToTps !== null && !insideGeofence;
+  const distanceToTarget =
+    targetType === 'tps'
+      ? (location && tpsAnchorRef.current ? haversineMeters(location.lat, location.lng, tpsAnchorRef.current.lat, tpsAnchorRef.current.lng) : null)
+      : (location ? 28 : null);
+
+  const insideGeofence = distanceToTarget !== null && distanceToTarget <= GEOFENCE_RADIUS_M;
+  const isOutside = distanceToTarget !== null && !insideGeofence;
   const isOverrideValid = overrideNote.trim().length >= 10;
+
+  // For witness: photo is mandatory. For volunteer: photo is optional documentation!
+  const canConfirm =
+    targetType === 'tps'
+      ? !!photoUri && !!location && (!isOutside || isOverrideValid)
+      : !!location && (!isOutside || isOverrideValid);
 
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -188,7 +275,6 @@ export default function CheckInScreen() {
     setLocating(true);
     setLocationError(null);
     try {
-      // 1. Periksa izin lokasi
       const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
       let finalStatus = existingStatus;
       if (existingStatus !== 'granted') {
@@ -202,17 +288,13 @@ export default function CheckInScreen() {
         return;
       }
 
-      // 2. Periksa apakah GPS / Location Services aktif di perangkat
       try {
         const providerStatus = await Location.getProviderStatusAsync();
         if (!providerStatus.locationServicesEnabled && Platform.OS === 'android') {
           await Location.enableNetworkProviderAsync();
         }
-      } catch (e) {
-        // Abaikan jika ditutup user
-      }
+      } catch (e) {}
 
-      // 3. FAST PATH: Ambil posisi terakhir yang tersimpan di Google Play Services / GPS cache
       try {
         const lastKnown = await Location.getLastKnownPositionAsync({});
         if (lastKnown) {
@@ -226,11 +308,8 @@ export default function CheckInScreen() {
           });
           setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
         }
-      } catch (e) {
-        // Lanjutkan ke pembacaan langsung
-      }
+      } catch (e) {}
 
-      // 4. Pembacaan satelit GPS aktif dengan batas waktu 7 detik agar tidak hang
       try {
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('GPS timeout')), 7000)
@@ -251,10 +330,9 @@ export default function CheckInScreen() {
         setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
         setLocationError(null);
       } catch (posErr) {
-        // Jika pembacaan baru gagal tapi sudah ada lokasi dari cache, pertahankan
         setLocation((prev) => {
           if (!prev) {
-            setLocationError('Sinyal satelit GPS belum terkunci. Pastikan Anda berada di luar ruangan atau gunakan opsi Simulasi TPS.');
+            setLocationError('Sinyal satelit GPS belum terkunci. Pastikan Anda berada di luar ruangan atau gunakan opsi Simulasi.');
           }
           return prev;
         });
@@ -271,12 +349,22 @@ export default function CheckInScreen() {
     }
   };
 
-  const useTpsSimulatedLocation = () => {
-    const lat = assignedTps?.lat ?? -6.8833;
-    const lng = assignedTps?.lng ?? 107.6167;
+  const useSimulatedLocation = () => {
+    let lat = -6.8833;
+    let lng = 107.6167;
+    if (targetType === 'tps' && assignedTps) {
+      lat = assignedTps.lat;
+      lng = assignedTps.lng;
+    } else if (targetType === 'event') {
+      lat = -6.8850;
+      lng = 107.6150;
+    } else {
+      lat = -6.8810;
+      lng = 107.6180;
+    }
     tpsAnchorRef.current = { lat, lng };
     setLocation({
-      lat: lat + 0.0002, // ~25 meter dalam radius TPS
+      lat: lat + 0.0002,
       lng: lng + 0.0001,
       accuracy: 15,
     });
@@ -292,7 +380,6 @@ export default function CheckInScreen() {
   const openCamera = () => setCameraModalVisible(true);
 
   const takePhoto = async () => {
-    // Quality 0.35 menjamin kompresi optimal foto selfie < 200KB (~90KB s/d 160KB)
     const photo = await cameraRef.current?.takePictureAsync({ quality: 0.35, skipProcessing: true });
     if (photo) {
       setPhotoUri(photo.uri);
@@ -304,7 +391,11 @@ export default function CheckInScreen() {
   };
 
   const handleCheckIn = () => {
-    if (!photoUri || !location) return;
+    if (targetType === 'tps') {
+      if (!photoUri || !location) return;
+    } else {
+      if (!location) return;
+    }
     if (isOutside && !isOverrideValid) return;
 
     setSubmitting(true);
@@ -312,439 +403,874 @@ export default function CheckInScreen() {
 
     const payload: CheckInPayload = {
       witnessId: witness.id,
-      tpsId: witness.assignedTpsId,
+      tpsId: targetType === 'tps' ? witness.assignedTpsId : undefined,
+      eventId: targetType === 'event' ? selectedEvent?.id : undefined,
       lat: location.lat,
       lng: location.lng,
-      distanceMeters: Math.round(distanceToTps ?? 0),
+      distanceMeters: Math.round(distanceToTarget ?? 0),
       insideGeofence: !isOutside,
       overrideNote: isOutside ? overrideNote.trim() : undefined,
-      selfieUrl: photoUri,
-      photoSizeBytes: approxKb * 1024,
+      selfieUrl: photoUri || undefined,
+      photoSizeBytes: photoUri ? approxKb * 1024 : undefined,
       timestamp: new Date().toISOString(),
-      locationLabel: assignedTps
-        ? `TPS ${assignedTps.tpsNumber} ${assignedTps.district}, ${assignedTps.regency}`
-        : 'Lokasi GPS Aktual',
+      locationLabel: currentTargetLocationLabel,
     };
 
-    // Rekam transaksi presensi ke antrean offline persisten
-    addToOfflineQueue('check_in', payload);
-
-    setTimeout(() => {
-      checkInWitness(witness.id, {
-        lat: location.lat,
-        lng: location.lng,
-        distanceMeters: Math.round(distanceToTps ?? 0),
-        insideGeofence: !isOutside,
-        overrideNote: isOutside ? overrideNote.trim() : undefined,
-        locationLabel: assignedTps
-          ? `Dekat TPS ${assignedTps.tpsNumber} ${assignedTps.district}${isOutside ? ' (Pengecualian Luar Radius)' : ' (Sesuai Geofence)'}`
-          : 'Lokasi GPS Aktual',
-      });
-      setSubmitting(false);
-      setJustConfirmed(true);
-    }, 800);
+    if (targetType === 'tps') {
+      addToOfflineQueue('check_in', payload);
+      setTimeout(() => {
+        checkInWitness(witness.id, {
+          lat: location.lat,
+          lng: location.lng,
+          distanceMeters: Math.round(distanceToTarget ?? 0),
+          insideGeofence: !isOutside,
+          overrideNote: isOutside ? overrideNote.trim() : undefined,
+          locationLabel: assignedTps
+            ? `Dekat TPS ${assignedTps.tpsNumber} ${assignedTps.district}${isOutside ? ' (Pengecualian Luar Radius)' : ' (Sesuai Geofence)'}`
+            : 'Lokasi GPS Aktual',
+        });
+        setSubmitting(false);
+        setJustConfirmed(true);
+      }, 800);
+    } else if (targetType === 'event') {
+      setTimeout(() => {
+        if (selectedEvent) {
+          checkInEvent(selectedEvent.id, payload);
+        }
+        setSubmitting(false);
+        setJustConfirmed(true);
+      }, 800);
+    } else {
+      setTimeout(() => {
+        checkInPosko(currentTargetLocationLabel, payload);
+        setSubmitting(false);
+        setJustConfirmed(true);
+      }, 800);
+    }
   };
 
-  const timelineItems = [
-    { key: 'selfie', label: 'Foto Selfie Diambil', icon: 'camera' as const, done: !!photoUri, time: photoTakenAt },
-    { key: 'gps', label: 'Lokasi GPS Terdeteksi', icon: 'map-pin' as const, done: !!location, time: locationFetchedAt },
-    { key: 'confirm', label: 'Presensi Dikonfirmasi', icon: 'check-square' as const, done: isCheckedIn, time: witness.checkInTime },
-  ];
-
-  const canConfirm = !!photoUri && !!location && (!isOutside || isOverrideValid);
+  const timelineItems =
+    targetType === 'tps'
+      ? [
+          { key: 'selfie', label: 'Foto Selfie Saksi Diambil', icon: 'camera' as const, done: !!photoUri, time: photoTakenAt },
+          { key: 'gps', label: 'Lokasi GPS TPS Terkunci', icon: 'map-pin' as const, done: !!location, time: locationFetchedAt },
+          {
+            key: 'confirm',
+            label: 'Presensi Saksi Dikonfirmasi',
+            icon: 'check-square' as const,
+            done: isTargetCheckedIn,
+            time: currentCheckInTime,
+          },
+        ]
+      : [
+          { key: 'gps', label: 'Titik Lokasi GPS Terkunci', icon: 'map-pin' as const, done: !!location, time: locationFetchedAt },
+          ...(photoUri
+            ? [{ key: 'photo', label: 'Dokumentasi Lapangan Dilampirkan', icon: 'camera' as const, done: true, time: photoTakenAt }]
+            : []),
+          {
+            key: 'confirm',
+            label: `Presensi ${targetType === 'event' ? 'Kegiatan' : 'Posko'} Dikonfirmasi`,
+            icon: 'check-square' as const,
+            done: isTargetCheckedIn,
+            time: currentCheckInTime,
+          },
+        ];
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      {/* Header: Greeting, Live Clock, Status */}
+      {/* Header: Greeting & Modern Live Clock Badge */}
       <View style={styles.headerTopRow}>
         <View style={styles.headerLeftRow}>
-          <Image source={getWitnessAvatar(0)} style={styles.avatarImg} />
-          <View>
-            <Text style={[styles.greetingText, { color: colors.text }]}>Halo, {witness.name.split(' ')[0]}</Text>
-            <Text style={[styles.roleText, { color: colors.textMuted }]}>Saksi Resmi TPS</Text>
+          <Image source={getWitnessAvatar(currentUser.identity.avatarIndex ?? 0)} style={styles.avatarImg} />
+          <View style={{ gap: 2 }}>
+            <Text style={[styles.greetingText, { color: colors.text }]}>
+              Halo, {(currentUser.identity.name || witness.name).split(' ')[0]}
+            </Text>
+            <View style={[styles.rolePill, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.rolePillText, { color: colors.primary }]}>
+                {ROLE_LABEL[role] || 'Relawan Lapangan'}
+              </Text>
+            </View>
           </View>
         </View>
-        <View style={[styles.clockBox, { backgroundColor: '#0F172A' }]}>
-          <Text style={styles.clockTime}>{clockTime}</Text>
-          <Text style={styles.clockDate}>{clockDate}</Text>
+
+        <View style={[styles.modernClockBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9', borderColor: colors.border }]}>
+          <Text style={[styles.modernClockTime, { color: colors.text }]}>{clockTime}</Text>
+          <Text style={[styles.modernClockDate, { color: colors.textMuted }]}>{clockDate}</Text>
         </View>
       </View>
 
-      <Pill
-        label={isCheckedIn ? `Presensi Pukul ${witness.checkInTime}` : 'Belum Presensi'}
-        tone={isCheckedIn ? 'success' : 'warning'}
-        icon={isCheckedIn ? 'check-circle' : 'clock'}
-        style={{ alignSelf: 'flex-start' }}
-      />
-
-      <StepProgress activeIndex={activeStepIndex} />
-
-      {/* Compact Photo Card — full camera lives in its own fullscreen modal */}
-      <Card style={{ gap: spacing.sm }}>
-        <View style={styles.photoCardHeaderRow}>
-          <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
-            <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>1</Text>
-          </View>
-          <Text style={[styles.photoCardTitle, { color: colors.text }]}>Foto Selfie Kehadiran</Text>
-        </View>
-
-        <View style={styles.photoCardBody}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.photoThumbSmall} />
-          ) : (
-            <View style={[styles.photoPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Feather name="camera" size={22} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
-            </View>
-          )}
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[styles.photoStatusTitle, { color: colors.text }]}>{photoUri ? 'Foto Siap' : 'Belum Ada Foto'}</Text>
-            <Text style={[styles.photoStatusSub, { color: colors.textMuted }]}>
-              {photoUri ? `Diambil pukul ${photoTakenAt}` : 'Ambil selfie sebagai bukti kehadiran'}
-            </Text>
-            {photoUri && photoSizeKb && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Pill
-                  label={`Kompresi < 200KB (~${photoSizeKb} KB)`}
-                  tone="success"
-                  icon="check-circle"
-                />
-              </View>
-            )}
-          </View>
-          <PrimaryButton
-            label={photoUri ? 'Ambil Ulang' : 'Ambil Foto'}
-            icon={photoUri ? 'refresh-ccw' : 'camera'}
-            variant={photoUri ? 'secondary' : 'primary'}
-            onPress={openCamera}
-            fullWidth={false}
+      {/* Target Presensi Switcher (Saksi TPS / Event Kegiatan / Posko) */}
+      <Card style={{ gap: spacing.xs, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>
+            Pilih Target Presensi Lapangan
+          </Text>
+          <Pill
+            label={isTargetCheckedIn ? `Tercatat: ${currentCheckInTime || 'Hadir'}` : 'Belum Presensi'}
+            tone={isTargetCheckedIn ? 'success' : 'warning'}
+            icon={isTargetCheckedIn ? 'check-circle' : 'clock'}
           />
         </View>
-      </Card>
 
-      {/* Geo-Fenced Location Hub */}
-      <Card style={styles.masterUnifiedCard}>
-        <View style={[styles.accentStripe, { backgroundColor: colors.primary }]} />
-        <View style={[styles.mapHeaderBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
-            <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>2</Text>
-          </View>
-          <Text style={[styles.mapHeaderTitle, { color: colors.text }]}>Peta Lokasi & Radius Geofence</Text>
-          <View
-            style={[
-              styles.geofenceBadge,
-              { backgroundColor: distanceToTps === null ? colors.border : insideGeofence ? colors.successBg : colors.warningBg },
-            ]}
-          >
-            <View
+        <View style={styles.targetTrack}>
+          {isWitnessUser && (
+            <Pressable
+              onPress={() => setTargetType('tps')}
               style={[
-                styles.geofenceDot,
-                { backgroundColor: distanceToTps === null ? colors.textMuted : insideGeofence ? colors.success : colors.warning },
-              ]}
-            />
-            <Text
-              style={[
-                styles.geofenceText,
-                { color: distanceToTps === null ? colors.textMuted : insideGeofence ? colors.success : colors.warning },
+                styles.targetPill,
+                targetType === 'tps'
+                  ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                  : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
               ]}
             >
-              {distanceToTps === null
-                ? 'Mencari GPS...'
-                : insideGeofence
-                ? `Dalam Radius TPS (${Math.round(distanceToTps)}m)`
-                : `Di Luar Radius (${Math.round(distanceToTps)}m)`}
+              <Feather name="home" size={13} color={targetType === 'tps' ? '#FFFFFF' : colors.textMuted} />
+              <Text style={[styles.targetText, { color: targetType === 'tps' ? '#FFFFFF' : colors.textMuted }]}>
+                Saksi TPS
+              </Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            onPress={() => setTargetType('event')}
+            style={[
+              styles.targetPill,
+              targetType === 'event'
+                ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+            ]}
+          >
+            <Feather name="calendar" size={13} color={targetType === 'event' ? '#FFFFFF' : colors.textMuted} />
+            <Text style={[styles.targetText, { color: targetType === 'event' ? '#FFFFFF' : colors.textMuted }]}>
+              Event & Kegiatan
             </Text>
-          </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setTargetType('posko')}
+            style={[
+              styles.targetPill,
+              targetType === 'posko'
+                ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+            ]}
+          >
+            <Feather name="map-pin" size={13} color={targetType === 'posko' ? '#FFFFFF' : colors.textMuted} />
+            <Text style={[styles.targetText, { color: targetType === 'posko' ? '#FFFFFF' : colors.textMuted }]}>
+              Posko Lapangan
+            </Text>
+          </Pressable>
         </View>
 
-        {location ? (
-          <>
-            <WebView
-              source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
-              style={styles.largeMapCanvas}
-              originWhitelist={['*']}
-            />
-            <View style={styles.chipsRow}>
-              <Pill icon="map-pin" label={`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`} tone="neutral" />
-              <Pill icon="crosshair" label={location.accuracy ? `± ${Math.round(location.accuracy)}m` : '—'} tone="neutral" />
-              {assignedTps && <Pill icon="home" label={`TPS ${assignedTps.tpsNumber} — ${assignedTps.district}`} tone="primary" />}
-              <Pressable
-                onPress={fetchLocation}
-                disabled={locating}
-                style={({ pressed }) => [
-                  styles.refreshGpsBtn,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.7 },
+        {/* Pemilihan Event Terdaftar (Sesuai State Kegiatan ActivitiesScreen) */}
+        {targetType === 'event' && (
+          <View style={{ marginTop: spacing.xs, gap: 8 }}>
+            {registeredEvents.length === 0 ? (
+              // Empty State jika belum ada agenda yang di-RSVP oleh relawan
+              <View
+                style={[
+                  styles.emptyRegisteredBox,
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border },
                 ]}
               >
-                <Feather name="refresh-cw" size={12} color={colors.primary} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>Segarkan</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <View style={[styles.largeMapCanvas, styles.centered, { padding: spacing.lg }]}>
-            {locating ? (
-              <View style={{ alignItems: 'center', gap: spacing.sm }}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.text }}>
-                  Menghubungkan ke Sinyal GPS...
-                </Text>
-                <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center' }}>
-                  Sedang mengambil koordinat satelit terkini untuk TPS Anda.
-                </Text>
+                <Feather name="calendar" size={24} color={colors.textMuted} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.emptyRegisteredTitle, { color: colors.text }]}>
+                    Belum Ada Agenda yang Anda Ikuti
+                  </Text>
+                  <Text style={[styles.emptyRegisteredSubtitle, { color: colors.textMuted }]}>
+                    Daftar keikutsertaan (RSVP) agenda relawan terlebih dahulu melalui menu Kegiatan.
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => navigation.navigate('ActivitiesTab', { screen: 'Activities', params: { tab: 'agenda' } })}
+                  style={[styles.emptyActionBtn, { backgroundColor: colors.primary }]}
+                >
+                  <Text style={styles.emptyActionBtnText}>Buka Kegiatan</Text>
+                  <Feather name="chevron-right" size={13} color="#FFFFFF" />
+                </Pressable>
               </View>
             ) : (
-              <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 330 }}>
-                <View style={[styles.gpsErrorIconWrap, { backgroundColor: colors.warningBg }]}>
-                  <Feather name="map-pin" size={24} color={colors.warning} />
+              // Kartu Agenda Terpilih (Bersih, Scannable & Bebas Truncation)
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted }}>
+                    Agenda Terdaftar ({registeredEvents.length}):
+                  </Text>
+                  {registeredEvents.length > 1 && (
+                    <Pressable
+                      onPress={() => setEventPickerModalVisible(true)}
+                      style={({ pressed }) => [
+                        styles.changeEventBtn,
+                        { borderColor: colors.primary, backgroundColor: isDark ? 'rgba(0,102,179,0.15)' : '#F0F9FF' },
+                        pressed && { opacity: 0.8 },
+                      ]}
+                    >
+                      <Feather name="repeat" size={11} color={colors.primary} />
+                      <Text style={[styles.changeEventBtnText, { color: colors.primary }]}>
+                        Ganti Agenda ({registeredEvents.length})
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
-                <Text style={{ fontSize: fontSize.sm, fontWeight: '800', color: colors.text, textAlign: 'center' }}>
-                  GPS Belum Terdeteksi
-                </Text>
-                <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center', lineHeight: 16 }}>
-                  {locationError || 'Pastikan GPS pada HP Anda sudah aktif dalam mode Akurasi Tinggi dan izin lokasi telah disetujui.'}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <PrimaryButton
-                    label="Ambil GPS Ulang"
-                    icon="refresh-cw"
-                    variant="primary"
-                    onPress={fetchLocation}
-                    fullWidth={false}
-                  />
-                  <PrimaryButton
-                    label="Gunakan Titik TPS (Simulasi)"
-                    icon="check-circle"
-                    variant="secondary"
-                    onPress={useTpsSimulatedLocation}
-                    fullWidth={false}
-                  />
-                </View>
+
+                <Pressable
+                  onPress={() => {
+                    if (registeredEvents.length > 1) {
+                      setEventPickerModalVisible(true);
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    styles.selectedEventCard,
+                    {
+                      backgroundColor: isDark ? 'rgba(0,102,179,0.12)' : '#F8FAFC',
+                      borderColor: selectedEvent?.attended ? colors.success : colors.primary,
+                    },
+                    pressed && registeredEvents.length > 1 && { opacity: 0.9 },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.eventCategoryTag, { color: colors.primary, backgroundColor: isDark ? 'rgba(0,102,179,0.25)' : '#E0F2FE' }]}>
+                        {selectedEvent?.category || 'Kegiatan'}
+                      </Text>
+                      {selectedEvent?.priorityNote && (
+                        <Text style={[styles.eventPriorityTag, { color: colors.textMuted }]}>
+                          • {selectedEvent.priorityNote}
+                        </Text>
+                      )}
+                    </View>
+                    <Pill
+                      label={selectedEvent?.attended ? 'Sudah Hadir' : 'Terdaftar RSVP'}
+                      tone={selectedEvent?.attended ? 'success' : 'primary'}
+                      icon={selectedEvent?.attended ? 'check-circle' : 'user-check'}
+                    />
+                  </View>
+
+                  <Text style={[styles.selectedEventTitle, { color: colors.text }]} numberOfLines={2}>
+                    {selectedEvent?.title}
+                  </Text>
+
+                  <View style={styles.selectedEventMetaRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="calendar" size={11} color={colors.textMuted} />
+                      <Text style={[styles.selectedEventMetaText, { color: colors.textMuted }]} numberOfLines={1}>
+                        {selectedEvent?.dateLabel} • {selectedEvent?.timeLabel}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="map-pin" size={11} color={colors.textMuted} />
+                      <Text style={[styles.selectedEventMetaText, { color: colors.textMuted }]} numberOfLines={1}>
+                        {selectedEvent?.location}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
               </View>
             )}
           </View>
         )}
 
-        {/* Verification & Confirmation */}
-        <View style={[styles.infoFooterBlock, { backgroundColor: colors.surface }]}>
-          <View style={styles.infoHeaderRow}>
-            <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>3</Text>
+        {targetType === 'posko' && (
+          <View style={[styles.targetInfoBanner, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F0F9FF', borderColor: colors.border }]}>
+            <Feather name="map-pin" size={16} color={colors.primary} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>
+                {poskoCheckIn.poskoName}
+              </Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                Kel. Dago, Kec. Coblong • Koordinator: {currentUser.coordinatorContact?.name || 'Asep Ridwan'}
+              </Text>
             </View>
-            <Text style={[styles.infoHeaderTitle, { color: colors.text }]}>Verifikasi & Konfirmasi</Text>
           </View>
+        )}
 
-          {isCheckedIn ? (
-            <View style={styles.checkedInDetailsWrap}>
-              <View style={[styles.successBanner, { backgroundColor: colors.successBg }]}>
-                <View style={[styles.successIconWrap, { backgroundColor: colors.success }]}>
-                  <Feather name="check" size={18} color="#FFFFFF" strokeWidth={iconStrokeWidth} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.successTitle, { color: colors.success }]}>Presensi Terverifikasi</Text>
-                  <Text style={[styles.successSubtitle, { color: colors.textMuted }]}>Sesuai koordinat & foto lapangan</Text>
-                </View>
-              </View>
-              <View style={[styles.infoRow, { borderBottomColor: colors.border, marginTop: spacing.xs }]}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Lokasi Presensi</Text>
-                <Text style={[styles.value, { color: colors.text }]}>{witness.checkInLocation}</Text>
-              </View>
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Koordinat GeoGPS</Text>
-                <Text style={[styles.value, { color: colors.text }]}>
-                  {witness.checkInLat?.toFixed(4)}, {witness.checkInLng?.toFixed(4)}
-                </Text>
-              </View>
-              {witness.overrideNote && (
-                <View style={[styles.infoRow, { borderBottomColor: colors.border, alignItems: 'flex-start' }]}>
-                  <Text style={[styles.label, { color: colors.warning }]}>Pengecualian</Text>
-                  <Text style={[styles.value, { color: colors.warning, flex: 1, textAlign: 'right' }]}>
-                    {witness.overrideNote}
-                  </Text>
-                </View>
-              )}
+        {targetType === 'tps' && assignedTps && (
+          <View style={[styles.targetInfoBanner, { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F0F9FF', borderColor: colors.border }]}>
+            <Feather name="home" size={16} color={colors.primary} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>
+                TPS {assignedTps.tpsNumber} — Kel. {assignedTps.district}, {assignedTps.regency}
+              </Text>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                DPT: 284 Pemilih • Radius Geofence Validasi: 100 meter
+              </Text>
             </View>
-          ) : (
-            <>
-              {(!photoUri || !location) && (
-                <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, marginBottom: spacing.xs }}>
-                  {!photoUri ? 'Ambil foto selfie terlebih dahulu.' : 'Menunggu koordinat GPS...'}
+          </View>
+        )}
+      </Card>
+
+      {/* ========================================================================= */}
+      {/* STATE 1: SUDAH PRESENSI (STREAMLINED & ELEGANT ATTENDANCE PASS)           */}
+      {/* ========================================================================= */}
+      {isTargetCheckedIn ? (
+        <View style={{ gap: spacing.sm }}>
+          <Card
+            style={[
+              styles.compactPassCard,
+              {
+                backgroundColor: isDark ? 'rgba(16,185,129,0.06)' : '#F0FDF4',
+                borderColor: isDark ? 'rgba(34,197,94,0.3)' : '#BBF7D0',
+              },
+            ]}
+          >
+            {/* Header: Status Chip + Jam Presensi */}
+            <View style={styles.compactPassHeader}>
+              <View style={[styles.compactStatusChip, { backgroundColor: isDark ? 'rgba(34,197,94,0.2)' : '#DCFCE7' }]}>
+                <Feather name="check-circle" size={13} color={colors.success} />
+                <Text style={[styles.compactStatusText, { color: colors.success }]}>
+                  Presensi Terverifikasi
                 </Text>
-              )}
+              </View>
+              <Text style={[styles.compactTimeText, { color: colors.textMuted }]}>
+                {clockDate} • {currentCheckInTime || '08:15'} WIB
+              </Text>
+            </View>
 
-              {location && distanceToTps !== null && !insideGeofence && (
-                <View
-                  style={{
-                    backgroundColor: colors.dangerBg,
-                    borderColor: colors.danger,
-                    borderWidth: 1,
-                    borderRadius: radius.md,
-                    padding: spacing.sm,
-                    marginBottom: spacing.sm,
-                    gap: 6,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Feather name="alert-triangle" size={16} color={colors.danger} strokeWidth={iconStrokeWidth} />
-                    <Text style={{ fontSize: fontSize.xs, fontWeight: '800', color: colors.danger }}>
-                      Strict Geofence: Di Luar Radius (~{Math.round(distanceToTps)}m &gt; 100m)
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: fontSize.xs, color: colors.text, lineHeight: 16 }}>
-                    Saksi berada di luar batas 100 meter dari titik TPS. Wajib mengisi alasan resmi (min. 10 karakter) sebelum presensi dapat diproses:
-                  </Text>
+            {/* Target Title & Lokasi Lengkap */}
+            <View style={{ gap: 3 }}>
+              <Text style={[styles.compactTargetTitle, { color: colors.text }]} numberOfLines={2}>
+                {targetType === 'tps'
+                  ? `TPS ${assignedTps?.tpsNumber ?? ''} — ${assignedTps?.district}, ${assignedTps?.regency}`
+                  : targetType === 'event'
+                  ? selectedEvent?.title
+                  : poskoCheckIn.poskoName}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="map-pin" size={12} color={colors.textMuted} />
+                <Text style={[styles.compactTargetSubtitle, { color: colors.textMuted }]} numberOfLines={1}>
+                  {targetType === 'tps'
+                    ? `${assignedTps?.district}, ${assignedTps?.regency}`
+                    : targetType === 'event'
+                    ? selectedEvent?.location
+                    : 'Kel. Dago, Kec. Coblong, Bandung'}
+                </Text>
+              </View>
+            </View>
 
-                  {/* Preset chips */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 2 }}>
-                    {[
-                      'Posko Kelurahan',
-                      'Sinyal Bilik Blank Spot',
-                      'Antrean Membludak',
-                      'Logistik Formulir',
-                    ].map((tag) => (
-                      <Pressable
-                        key={tag}
-                        onPress={() => setOverrideNote(`Petugas bertugas di ${tag}`)}
-                        style={({ pressed }) => [
-                          {
-                            backgroundColor: colors.surface,
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            borderRadius: radius.sm,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                          },
-                          pressed && { opacity: 0.7 },
-                        ]}
-                      >
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary }}>
-                          + {tag}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <TextInput
-                    value={overrideNote}
-                    onChangeText={setOverrideNote}
-                    placeholder="Contoh: Mengambil logistik formulir C1 di posko kelurahan..."
-                    placeholderTextColor={colors.textMuted}
-                    multiline
-                    style={{
-                      backgroundColor: colors.surface,
-                      color: colors.text,
-                      fontSize: fontSize.xs,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: isOverrideValid ? colors.success : colors.border,
-                      padding: spacing.xs,
-                      minHeight: 46,
-                      textAlignVertical: 'top',
-                    }}
-                  />
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 10, color: isOverrideValid ? colors.success : colors.danger }}>
-                      {isOverrideValid ? '✓ Catatan memenuhi syarat' : 'Wajib minimal 10 karakter'}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: colors.textMuted }}>
-                      {overrideNote.trim().length} / 10
-                    </Text>
-                  </View>
+            {/* Ringkasan Validasi 2-Kolom Ringkas (Tanpa Koordinat Teknis Mentah) */}
+            <View style={[styles.compactMetaRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]}>
+              <View style={styles.compactMetaCol}>
+                <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Waktu Hadir</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="clock" size={11} color={colors.primary} />
+                  <Text style={[styles.compactMetaValue, { color: colors.text }]}>{currentCheckInTime || '08:15'} WIB</Text>
                 </View>
-              )}
+              </View>
 
-              <PrimaryButton
-                label={
-                  !canConfirm
-                    ? !photoUri
-                      ? 'Lengkapi Foto Selfie'
-                      : !location
-                      ? 'Menunggu GPS'
-                      : 'Lengkapi Alasan Pengecualian'
-                    : isOutside
-                    ? 'Kirim Presensi (Catatan Pengecualian)'
-                    : 'Konfirmasi Presensi Sesuai Geofence'
-                }
-                icon="check-square"
-                onPress={handleCheckIn}
-                loading={submitting}
-                disabled={!canConfirm}
-                style={[
-                  { marginTop: spacing.xs },
-                  canConfirm && {
-                    shadowColor: colors.primary,
-                    shadowOpacity: 0.45,
-                    shadowRadius: 14,
-                    shadowOffset: { width: 0, height: 6 },
-                    elevation: 8,
-                  },
+              <View style={[styles.compactMetaDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]} />
+
+              <View style={styles.compactMetaCol}>
+                <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Status Lokasi</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="navigation" size={11} color={colors.success} />
+                  <Text style={[styles.compactMetaValue, { color: colors.success }]}>
+                    Dalam Radius ({Math.round(distanceToTarget ?? 28)}m)
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Embedded Mini Map Preview (Menyatu di dalam kartu bukti kehadiran) */}
+            {location && (
+              <View style={[styles.compactMapWrap, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#CBD5E1' }]}>
+                <WebView
+                  source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
+                  style={{ width: '100%', height: 105 }}
+                  originWhitelist={['*']}
+                />
+                <View style={[styles.mapOverlayPill, { backgroundColor: isDark ? 'rgba(6,21,36,0.85)' : 'rgba(255,255,255,0.92)' }]}>
+                  <Feather name="lock" size={10} color={colors.success} />
+                  <Text style={[styles.mapOverlayText, { color: colors.text }]}>Titik Lokasi Terkunci</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Tombol Tiket QR Presensi Digital (Khusus Event) */}
+            {targetType === 'event' && (
+              <Pressable
+                onPress={() => setTicketModalVisible(true)}
+                style={({ pressed }) => [
+                  styles.compactQrBtn,
+                  { backgroundColor: colors.primary },
+                  pressed && { opacity: 0.88 },
                 ]}
-              />
-            </>
-          )}
-        </View>
-      </Card>
+              >
+                <Feather name="maximize" size={14} color="#FFFFFF" />
+                <Text style={styles.compactQrBtnText}>Buka Tiket QR Presensi Digital</Text>
+              </Pressable>
+            )}
+          </Card>
 
-      {/* Quick Stats */}
-      <View style={styles.statGrid}>
-        <KpiCard
-          label="Jarak ke TPS"
-          value={distanceToTps !== null ? `${Math.round(distanceToTps)}m` : '—'}
-          icon="map-pin"
-          tone={distanceToTps !== null ? (insideGeofence ? colors.success : colors.warning) : undefined}
-          style={styles.statGridItem}
-        />
-        <KpiCard
-          label="Akurasi GPS"
-          value={location?.accuracy ? `±${Math.round(location.accuracy)}m` : '—'}
-          icon="crosshair"
-          style={styles.statGridItem}
-        />
-        <KpiCard
-          label="Waktu Presensi"
-          value={witness.checkInTime ?? '—'}
-          icon="clock"
-          style={styles.statGridItem}
-        />
-        <KpiCard
-          label="Status Presensi"
-          value={isCheckedIn ? 'Terverifikasi' : 'Belum'}
-          icon="shield"
-          tone={isCheckedIn ? colors.success : colors.warning}
-          style={styles.statGridItem}
-        />
-      </View>
-
-      {/* Activity Timeline */}
-      <Card style={{ gap: spacing.sm }}>
-        <Text style={[styles.timelineTitle, { color: colors.text }]}>Aktivitas Presensi Hari Ini</Text>
-        {timelineItems.map((item, idx) => (
-          <View key={item.key} style={styles.timelineRow}>
-            <View style={styles.timelineRail}>
-              <View style={[styles.timelineDot, { backgroundColor: item.done ? colors.primary : colors.border }]}>
-                <Feather name={item.done ? 'check' : item.icon} size={11} color={item.done ? '#FFFFFF' : colors.textMuted} strokeWidth={iconStrokeWidth} />
+          {/* Activity Timeline Ringkas */}
+          <Card style={{ gap: spacing.xs, paddingVertical: spacing.sm }}>
+            <Text style={[styles.timelineTitle, { color: colors.text, fontSize: 12 }]}>Riwayat Aktivitas Kehadiran</Text>
+            {timelineItems.map((item, idx) => (
+              <View key={item.key} style={styles.timelineRow}>
+                <View style={styles.timelineRail}>
+                  <View style={[styles.timelineDot, { backgroundColor: item.done ? colors.primary : colors.border }]}>
+                    <Feather name={item.done ? 'check' : item.icon} size={10} color={item.done ? '#FFFFFF' : colors.textMuted} strokeWidth={iconStrokeWidth} />
+                  </View>
+                  {idx < timelineItems.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
+                </View>
+                <View style={{ flex: 1, paddingBottom: spacing.xs }}>
+                  <Text style={[styles.timelineLabel, { color: item.done ? colors.text : colors.textMuted, fontSize: 11 }]}>{item.label}</Text>
+                  <Text style={[styles.timelineTime, { color: colors.textMuted, fontSize: 10 }]}>{item.time ?? 'Tercatat'}</Text>
+                </View>
               </View>
-              {idx < timelineItems.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
+            ))}
+          </Card>
+        </View>
+      ) : (
+        /* ========================================================================= */
+        /* STATE 2: BELUM PRESENSI (ACTION-READY, STREAMLINED FLOW)                  */
+        /* ========================================================================= */
+        <View style={{ gap: spacing.md }}>
+          {/* Banner Opsi Tiket QR Cepat untuk Event */}
+          {targetType === 'event' && selectedEvent && (
+            <View
+              style={[
+                styles.qrPassBanner,
+                { backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F0F9FF', borderColor: colors.border },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11.5, color: colors.text }}>
+                  Ada Meja Registrasi Panitia di Pintu Masuk?
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 10.5, color: colors.textMuted }}>
+                  Tunjukkan Tiket QR Presensi digital Anda untuk absensi instan tanpa GPS.
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setTicketModalVisible(true)}
+                style={({ pressed }) => [
+                  styles.qrPassBtn,
+                  { backgroundColor: colors.primary },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <Feather name="maximize" size={12} color="#FFFFFF" />
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' }}>Buka Tiket</Text>
+              </Pressable>
             </View>
-            <View style={{ flex: 1, paddingBottom: spacing.md }}>
-              <Text style={[styles.timelineLabel, { color: item.done ? colors.text : colors.textMuted }]}>{item.label}</Text>
-              <Text style={[styles.timelineTime, { color: colors.textMuted }]}>{item.time ?? 'Menunggu...'}</Text>
-            </View>
-          </View>
-        ))}
-      </Card>
+          )}
 
+          {/* Jika Saksi TPS: Foto Selfie Wajib */}
+          {targetType === 'tps' && (
+            <Card style={{ gap: spacing.sm }}>
+              <View style={styles.photoCardHeaderRow}>
+                <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
+                  <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>1</Text>
+                </View>
+                <Text style={[styles.photoCardTitle, { color: colors.text }]}>Foto Selfie Kehadiran Saksi (Wajib)</Text>
+              </View>
+
+              <View style={styles.photoCardBody}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.photoThumbSmall} />
+                ) : (
+                  <View style={[styles.photoPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Feather name="camera" size={22} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.photoStatusTitle, { color: colors.text }]}>{photoUri ? 'Foto Siap' : 'Belum Ada Foto'}</Text>
+                  <Text style={[styles.photoStatusSub, { color: colors.textMuted }]}>
+                    {photoUri ? `Diambil pukul ${photoTakenAt}` : 'Ambil selfie wajah saksi pemegang mandat'}
+                  </Text>
+                  {photoUri && photoSizeKb && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Pill
+                        label={`Kompresi < 200KB (~${photoSizeKb} KB)`}
+                        tone="success"
+                        icon="check-circle"
+                      />
+                    </View>
+                  )}
+                </View>
+                <PrimaryButton
+                  label={photoUri ? 'Ambil Ulang' : 'Ambil Foto'}
+                  icon={photoUri ? 'refresh-ccw' : 'camera'}
+                  variant={photoUri ? 'secondary' : 'primary'}
+                  onPress={openCamera}
+                  fullWidth={false}
+                />
+              </View>
+            </Card>
+          )}
+
+          {/* Peta Lokasi & Geofence GPS */}
+          <Card style={styles.masterUnifiedCard}>
+            <View style={[styles.accentStripe, { backgroundColor: colors.primary }]} />
+            <View style={[styles.mapHeaderBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+              <View style={[styles.headerNumBadge, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.headerNumBadgeText, { color: colors.primary }]}>
+                  {targetType === 'tps' ? 2 : 1}
+                </Text>
+              </View>
+              <Text style={[styles.mapHeaderTitle, { color: colors.text }]}>
+                {targetType === 'tps' ? 'Peta Geofence TPS 100m' : 'Peta Lokasi GPS Terkini'}
+              </Text>
+              <View
+                style={[
+                  styles.geofenceBadge,
+                  { backgroundColor: distanceToTarget === null ? colors.border : insideGeofence ? colors.successBg : colors.warningBg },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.geofenceDot,
+                    { backgroundColor: distanceToTarget === null ? colors.textMuted : insideGeofence ? colors.success : colors.warning },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.geofenceText,
+                    { color: distanceToTarget === null ? colors.textMuted : insideGeofence ? colors.success : colors.warning },
+                  ]}
+                >
+                  {distanceToTarget === null
+                    ? 'Mencari GPS...'
+                    : insideGeofence
+                    ? `Dalam Radius (${Math.round(distanceToTarget)}m)`
+                    : `Di Luar Radius (${Math.round(distanceToTarget)}m)`}
+                </Text>
+              </View>
+            </View>
+
+            {location ? (
+              <>
+                <WebView
+                  source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
+                  style={styles.largeMapCanvas}
+                  originWhitelist={['*']}
+                />
+                <View style={styles.chipsRow}>
+                  <Pill icon="map-pin" label={`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`} tone="neutral" />
+                  <Pill icon="crosshair" label={location.accuracy ? `± ${Math.round(location.accuracy)}m` : '—'} tone="neutral" />
+                  <Pressable
+                    onPress={fetchLocation}
+                    disabled={locating}
+                    style={({ pressed }) => [
+                      styles.refreshGpsBtn,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Feather name="refresh-cw" size={12} color={colors.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>Segarkan</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <View style={[styles.largeMapCanvas, styles.centered, { padding: spacing.lg }]}>
+                {locating ? (
+                  <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={{ fontSize: fontSize.sm, fontWeight: '700', color: colors.text }}>
+                      Menghubungkan ke Sinyal GPS...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ alignItems: 'center', gap: spacing.sm, maxWidth: 330 }}>
+                    <View style={[styles.gpsErrorIconWrap, { backgroundColor: colors.warningBg }]}>
+                      <Feather name="map-pin" size={24} color={colors.warning} />
+                    </View>
+                    <Text style={{ fontSize: fontSize.sm, fontWeight: '800', color: colors.text, textAlign: 'center' }}>
+                      GPS Belum Terdeteksi
+                    </Text>
+                    <Text style={{ fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center', lineHeight: 16 }}>
+                      {locationError || 'Pastikan GPS HP aktif dan izin lokasi telah disetujui.'}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <PrimaryButton
+                        label="Ambil GPS Ulang"
+                        icon="refresh-cw"
+                        variant="primary"
+                        onPress={fetchLocation}
+                        fullWidth={false}
+                      />
+                      <PrimaryButton
+                        label="Titik Target (Simulasi)"
+                        icon="check-circle"
+                        variant="secondary"
+                        onPress={useSimulatedLocation}
+                        fullWidth={false}
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </Card>
+
+          {/* Foto Dokumentasi Lapangan (Opsional untuk Relawan) */}
+          {targetType !== 'tps' && (
+            <Card style={{ gap: spacing.xs, backgroundColor: colors.surface, borderColor: colors.border }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Feather name="camera" size={13} color={colors.primary} />
+                  <Text style={{ fontFamily: fonts.bold, fontSize: 11.5, color: colors.text }}>
+                    Foto Dokumentasi Kegiatan (Opsional)
+                  </Text>
+                </View>
+                {photoUri && (
+                  <Pressable onPress={() => { setPhotoUri(null); setPhotoTakenAt(null); }}>
+                    <Text style={{ fontFamily: fonts.semiBold, fontSize: 10.5, color: colors.danger }}>Hapus</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              <View style={styles.photoCardBody}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.photoThumbSmall} />
+                ) : (
+                  <View style={[styles.photoPlaceholder, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Feather name="image" size={18} color={colors.textMuted} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.photoStatusTitle, { color: colors.text }]}>
+                    {photoUri ? 'Foto Terlampir' : 'Tanpa Lampiran Foto'}
+                  </Text>
+                  <Text style={[styles.photoStatusSub, { color: colors.textMuted }]}>
+                    {photoUri ? `Diambil pukul ${photoTakenAt} (${photoSizeKb} KB)` : 'Bisa langsung konfirmasi kehadiran via GPS tanpa foto'}
+                  </Text>
+                </View>
+                <PrimaryButton
+                  label={photoUri ? 'Ganti Foto' : 'Ambil Foto'}
+                  icon="camera"
+                  variant={photoUri ? 'secondary' : 'outline'}
+                  onPress={openCamera}
+                  fullWidth={false}
+                />
+              </View>
+            </Card>
+          )}
+
+          {/* Peringatan Luar Geofence (Jika Di Luar 100m) */}
+          {location && distanceToTarget !== null && !insideGeofence && (
+            <View
+              style={{
+                backgroundColor: colors.dangerBg,
+                borderColor: colors.danger,
+                borderWidth: 1,
+                borderRadius: radius.md,
+                padding: spacing.sm,
+                gap: 6,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Feather name="alert-triangle" size={15} color={colors.danger} />
+                <Text style={{ fontSize: fontSize.xs, fontWeight: '800', color: colors.danger }}>
+                  Di Luar Radius (~{Math.round(distanceToTarget)}m &gt; 100m)
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, color: colors.text, lineHeight: 15 }}>
+                Posisi Anda berada di luar radius 100 meter dari titik target. Wajib mengisi alasan resmi:
+              </Text>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 2 }}>
+                {['Posko Kelurahan', 'Sinyal Blank Spot', 'Antrean Membludak', 'Tugas Tambahan'].map((tag) => (
+                  <Pressable
+                    key={tag}
+                    onPress={() => setOverrideNote(`Petugas bertugas di ${tag}`)}
+                    style={({ pressed }) => [
+                      {
+                        backgroundColor: colors.surface,
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: radius.sm,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.primary }}>+ {tag}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <TextInput
+                value={overrideNote}
+                onChangeText={setOverrideNote}
+                placeholder="Contoh: Mengambil logistik formulir di posko ranting..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                style={{
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  fontSize: fontSize.xs,
+                  borderRadius: radius.sm,
+                  borderWidth: 1,
+                  borderColor: isOverrideValid ? colors.success : colors.border,
+                  padding: spacing.xs,
+                  minHeight: 44,
+                  textAlignVertical: 'top',
+                }}
+              />
+            </View>
+          )}
+
+          {/* Primary Action Button: Konfirmasi Kehadiran */}
+          <PrimaryButton
+            label={
+              !canConfirm
+                ? targetType === 'tps' && !photoUri
+                  ? 'Lengkapi Foto Selfie Wajah'
+                  : !location
+                  ? 'Menunggu Koordinat GPS...'
+                  : 'Lengkapi Alasan Pengecualian'
+                : isOutside
+                ? 'Kirim Presensi (Catatan Pengecualian)'
+                : targetType === 'tps'
+                ? 'Konfirmasi Presensi Saksi TPS'
+                : targetType === 'event'
+                ? 'Konfirmasi Kehadiran Kegiatan'
+                : 'Konfirmasi Kehadiran Posko'
+            }
+            icon="check-square"
+            onPress={handleCheckIn}
+            loading={submitting}
+            disabled={!canConfirm}
+            style={[
+              { height: 50 },
+              canConfirm && {
+                shadowColor: colors.primary,
+                shadowOpacity: 0.35,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 6,
+              },
+            ]}
+          />
+        </View>
+      )}
+
+      {/* Modal Dialog Sukses */}
       <Modal visible={justConfirmed} onClose={() => setJustConfirmed(false)} variant="floating">
         <View style={styles.successModalBody}>
           <Animated.View style={[styles.successCheckCircle, { backgroundColor: colors.successBg, transform: [{ scale: successScale }] }]}>
             <Feather name="check" size={36} color={colors.success} strokeWidth={2.5} />
           </Animated.View>
-          <Text style={[styles.successModalTitle, { color: colors.text }]}>Presensi Berhasil!</Text>
+          <Text style={[styles.successModalTitle, { color: colors.text }]}>
+            {targetType === 'tps'
+              ? 'Presensi Saksi Terverifikasi!'
+              : targetType === 'event'
+              ? 'Presensi Kegiatan Berhasil!'
+              : 'Presensi Posko Berhasil!'}
+          </Text>
           <Text style={[styles.successModalSub, { color: colors.textMuted }]}>
-            Kehadiran Anda di TPS sudah tercatat & terverifikasi.
+            {targetType === 'tps'
+              ? `Kehadiran Anda di TPS ${assignedTps?.tpsNumber ?? ''} sudah tercatat & terverifikasi.`
+              : targetType === 'event'
+              ? `Kehadiran Anda pada agenda "${selectedEvent?.title}" telah berhasil tercatat.`
+              : `Presensi kehadiran piket Anda di "${currentTargetLocationLabel}" telah berhasil tercatat.`}
           </Text>
           <PrimaryButton label="Tutup" onPress={() => setJustConfirmed(false)} style={{ marginTop: spacing.sm }} />
         </View>
+      </Modal>
+
+      {/* Ticket Modal for Event (QR Pass Presensi Digital) */}
+      <Modal
+        visible={ticketModalVisible}
+        onClose={() => setTicketModalVisible(false)}
+        title="Tiket Presensi Kegiatan"
+        subtitle={selectedEvent?.title}
+      >
+        {selectedEvent && (
+          <View style={{ gap: spacing.md, alignItems: 'center', paddingVertical: spacing.sm }}>
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.text, textAlign: 'center' }}>
+                {selectedEvent.title}
+              </Text>
+              <Text style={{ fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.primary }}>
+                {selectedEvent.dateLabel} • {selectedEvent.timeLabel}
+              </Text>
+            </View>
+
+            <QrPlaceholder size={180} seed={`TICKET-PAN-${selectedEvent.id}-${currentUser.identity.id}`} />
+
+            <View style={[styles.targetInfoBanner, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
+              <Feather name="info" size={14} color={colors.primary} />
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, flex: 1 }}>
+                Tunjukkan QR Code ini kepada panitia penerima tamu di pintu masuk untuk absensi digital langsung.
+              </Text>
+            </View>
+
+            <PrimaryButton
+              label="Tutup Tiket"
+              variant="secondary"
+              onPress={() => setTicketModalVisible(false)}
+              style={{ width: '100%' }}
+            />
+          </View>
+        )}
+      </Modal>
+
+      {/* Modal Pemilihan Agenda Terdaftar */}
+      <Modal
+        visible={eventPickerModalVisible}
+        onClose={() => setEventPickerModalVisible(false)}
+        title="Pilih Agenda Terdaftar"
+        subtitle="Daftar agenda yang telah Anda ikuti"
+      >
+        <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+          <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+            {registeredEvents.map((ev) => {
+              const isSelected = ev.id === selectedEventId;
+              return (
+                <Pressable
+                  key={ev.id}
+                  onPress={() => {
+                    setSelectedEventId(ev.id);
+                    setEventPickerModalVisible(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.eventPickerItem,
+                    {
+                      backgroundColor: isSelected
+                        ? isDark ? 'rgba(0,102,179,0.2)' : '#F0F9FF'
+                        : isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: colors.primary }}>
+                      {ev.category}
+                    </Text>
+                    <Pill
+                      label={ev.attended ? 'Sudah Hadir' : 'Terdaftar RSVP'}
+                      tone={ev.attended ? 'success' : 'primary'}
+                      icon={ev.attended ? 'check-circle' : 'user-check'}
+                    />
+                  </View>
+                  <Text style={[styles.eventPickerTitle, { color: colors.text }]}>
+                    {ev.title}
+                  </Text>
+                  <View style={{ gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="calendar" size={11} color={colors.textMuted} />
+                      <Text style={[styles.eventPickerMeta, { color: colors.textMuted }]}>
+                        {ev.dateLabel} • {ev.timeLabel}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="map-pin" size={11} color={colors.textMuted} />
+                      <Text style={[styles.eventPickerMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                        {ev.location}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
       </Modal>
 
       {/* Fullscreen Camera */}
@@ -777,7 +1303,11 @@ export default function CheckInScreen() {
                 >
                   <View style={styles.shutterInnerRing} />
                 </Pressable>
-                <Text style={styles.shutterHint}>Posisikan Wajah Saksi Sesuai Kerangka</Text>
+                <Text style={styles.shutterHint}>
+                  {targetType === 'tps'
+                    ? 'Posisikan Wajah Saksi Sesuai Kerangka'
+                    : 'Posisikan Objek / Suasana Sesuai Kerangka'}
+                </Text>
               </View>
             </CameraView>
           )}
@@ -794,26 +1324,24 @@ const styles = StyleSheet.create({
   headerLeftRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatarImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#0066B3' },
   greetingText: { fontFamily: fonts.bold, fontSize: fontSize.md },
-  roleText: { fontFamily: fonts.medium, fontSize: 11 },
-  clockBox: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.md, alignItems: 'flex-end' },
-  clockTime: { fontFamily: fonts.bold, fontSize: fontSize.md, color: '#FFFFFF', fontVariant: ['tabular-nums'] },
-  clockDate: { fontFamily: fonts.regular, fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
-  stepRow: { flexDirection: 'row', alignItems: 'center' },
-  stepItem: { alignItems: 'center', gap: 4, width: 78 },
-  stepCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  stepNum: { fontFamily: fonts.bold, fontSize: 11 },
-  stepLabel: { fontFamily: fonts.medium, fontSize: 10.5, textAlign: 'center' },
-  stepConnector: { flex: 1, height: 2, marginBottom: 14, marginHorizontal: -8 },
+  rolePill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, alignSelf: 'flex-start' },
+  rolePillText: { fontFamily: fonts.bold, fontSize: 10 },
+  modernClockBox: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, alignItems: 'flex-end', borderWidth: 1 },
+  modernClockTime: { fontFamily: fonts.bold, fontSize: fontSize.sm, fontVariant: ['tabular-nums'] },
+  modernClockDate: { fontFamily: fonts.medium, fontSize: 10, marginTop: 1 },
+
   accentStripe: { height: 3, width: '100%' },
   headerNumBadge: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   headerNumBadgeText: { fontFamily: fonts.bold, fontSize: 11 },
+
   photoCardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  photoCardTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
-  photoCardBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  photoThumbSmall: { width: 56, height: 56, borderRadius: radius.md },
-  photoPlaceholder: { width: 56, height: 56, borderRadius: radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  photoStatusTitle: { fontFamily: fonts.semiBold, fontSize: fontSize.sm },
-  photoStatusSub: { fontFamily: fonts.regular, fontSize: 11, marginTop: 1 },
+  photoCardTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs },
+  photoCardBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
+  photoThumbSmall: { width: 48, height: 48, borderRadius: radius.md },
+  photoPlaceholder: { width: 48, height: 48, borderRadius: radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  photoStatusTitle: { fontFamily: fonts.semiBold, fontSize: fontSize.xs },
+  photoStatusSub: { fontFamily: fonts.regular, fontSize: 10.5, marginTop: 1 },
+
   masterUnifiedCard: { padding: 0, overflow: 'hidden', borderRadius: radius.xl },
   centered: { alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   cameraGridOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -862,33 +1390,288 @@ const styles = StyleSheet.create({
   geofenceBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   geofenceDot: { width: 6, height: 6, borderRadius: 3 },
   geofenceText: { fontFamily: fonts.semiBold, fontSize: 10 },
-  largeMapCanvas: { width: '100%', height: 210 },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, padding: spacing.sm, paddingBottom: 0 },
+  largeMapCanvas: { width: '100%', height: 180 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, padding: spacing.sm },
   refreshGpsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, borderWidth: 1 },
   gpsErrorIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  geofenceWarnText: { fontFamily: fonts.regular, fontSize: fontSize.xs, lineHeight: 16, marginBottom: spacing.xs },
-  infoFooterBlock: { padding: spacing.md, gap: spacing.xs },
-  infoHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  infoHeaderTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs },
-  checkedInDetailsWrap: { gap: spacing.xs },
-  successBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md },
-  successIconWrap: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  successTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
-  successSubtitle: { fontFamily: fonts.regular, fontSize: 11, marginTop: 1 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, borderBottomWidth: 0.5 },
-  label: { fontFamily: fonts.medium, fontSize: fontSize.xs },
-  value: { fontFamily: fonts.semiBold, fontSize: fontSize.sm },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  statGridItem: { minWidth: '46%' },
+
+  // Compact Attendance Pass Styles (Single unified clean card)
+  compactPassCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  compactPassHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  compactStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: radius.pill,
+  },
+  compactStatusText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+  },
+  compactTimeText: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+  },
+  compactTargetTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  compactTargetSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+  },
+  compactMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+  },
+  compactMetaCol: {
+    flex: 1,
+    gap: 2,
+  },
+  compactMetaDivider: {
+    width: 1,
+    height: 26,
+  },
+  compactMetaLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+  },
+  compactMetaValue: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+  },
+  compactMapWrap: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    position: 'relative',
+  },
+  mapOverlayPill: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  mapOverlayText: {
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+  },
+  compactQrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+  },
+  compactQrBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+
+  // Timeline
   timelineTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
   timelineRow: { flexDirection: 'row', gap: spacing.sm },
   timelineRail: { alignItems: 'center' },
-  timelineDot: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  timelineDot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   timelineLine: { width: 2, flex: 1, marginTop: 2 },
-  timelineLabel: { fontFamily: fonts.semiBold, fontSize: fontSize.sm },
-  timelineTime: { fontFamily: fonts.regular, fontSize: 11, marginTop: 1 },
+  timelineLabel: { fontFamily: fonts.semiBold, fontSize: fontSize.xs },
+  timelineTime: { fontFamily: fonts.regular, fontSize: 10.5, marginTop: 1 },
+
+  // Success Modal
   successModalBody: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
   successCheckCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   successModalTitle: { fontFamily: fonts.extraBold, fontSize: fontSize.lg },
   successModalSub: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center' },
+
+  // Target Switcher Styles
+  targetTrack: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  targetPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  targetText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
+  selectedEventCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+    gap: 6,
+  },
+  selectedEventTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  selectedEventMetaRow: {
+    gap: 3,
+  },
+  selectedEventMetaText: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+  },
+  eventCategoryTag: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  eventPriorityTag: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+  },
+  changeEventBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  changeEventBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+  },
+  emptyRegisteredBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  emptyRegisteredTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+  },
+  emptyRegisteredSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 10.5,
+    lineHeight: 15,
+  },
+  emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+  },
+  emptyActionBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    color: '#FFFFFF',
+  },
+  eventPickerItem: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+    gap: 4,
+  },
+  eventPickerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  eventPickerMeta: {
+    fontFamily: fonts.regular,
+    fontSize: 10.5,
+  },
+  targetInfoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  qrPassBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 8,
+  },
+  qrPassBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+
+  // Step Progress
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xs,
+  },
+  stepItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNum: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+  },
+  stepLabel: {
+    fontSize: 10.5,
+    textAlign: 'center',
+  },
+  stepConnector: {
+    height: 2,
+    flex: 1,
+    marginHorizontal: 4,
+    marginBottom: 16,
+  },
 });

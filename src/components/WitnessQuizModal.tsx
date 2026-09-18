@@ -9,7 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useTheme, fonts, fontSize, radius, spacing } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { fonts, fontSize, radius, spacing } from '../theme';
 import { BSN_PAN_ACADEMY_DATA, QuizQuestion, WitnessCertificate } from '../data/witnessAcademy';
 import QrPlaceholder from './QrPlaceholder';
 

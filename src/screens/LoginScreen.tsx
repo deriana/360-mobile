@@ -8,15 +8,22 @@ import { useTheme } from '../context/ThemeContext';
 import { PrimaryButton, Input } from '../components/ui';
 import { QuickLoginPicker, QuickLoginCategory } from '../components/QuickLoginPicker';
 import { fontSize, fonts, iconStrokeWidth, radius, spacing } from '../theme';
-import { CADRE_CANDIDATE_ACCOUNTS, MOBILE_FIELD_ACCOUNTS, PENGURUS_ACCOUNTS, findAccount } from '../data/accounts';
+import {
+  COORDINATOR_ACCOUNTS,
+  MEMBER_ACCOUNTS,
+  VOLUNTEER_ACCOUNTS,
+  WITNESS_ACCOUNTS,
+  findAccount,
+} from '../data/accounts';
 import { Role } from '../types';
 import { BRAND_ASSETS } from '../data/images';
 import RegisterMemberScreen from './RegisterMemberScreen';
 
 const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
-  { key: 'kader', label: 'Kader', fullLabel: 'Caleg & Kader', icon: 'award', accounts: CADRE_CANDIDATE_ACCOUNTS },
-  { key: 'saksi', label: 'Saksi', fullLabel: 'Saksi & Relawan', icon: 'shield', accounts: MOBILE_FIELD_ACCOUNTS },
-  { key: 'pengurus', label: 'Pengurus', fullLabel: 'Pengurus Wilayah', icon: 'briefcase', accounts: PENGURUS_ACCOUNTS },
+  { key: 'saksi', label: 'Saksi', fullLabel: 'Saksi TPS Resmi (Bilik Suara)', icon: 'eye', accounts: WITNESS_ACCOUNTS },
+  { key: 'relawan', label: 'Relawan', fullLabel: 'Relawan Lapangan & Posko', icon: 'heart', accounts: VOLUNTEER_ACCOUNTS },
+  { key: 'korlap', label: 'Korlap', fullLabel: 'Koordinator TPS & Wilayah', icon: 'users', accounts: COORDINATOR_ACCOUNTS },
+  { key: 'anggota', label: 'Anggota', fullLabel: 'Kader & Anggota Partai (simPAN)', icon: 'user-check', accounts: MEMBER_ACCOUNTS },
 ];
 
 export default function LoginScreen() {
@@ -37,12 +44,12 @@ export default function LoginScreen() {
       return;
     }
     setError(null);
-    login(account.role);
+    login(account.role, account.email);
   };
 
-  const handleQuickLogin = (role: Role) => {
+  const handleQuickLogin = (role: Role, accountEmail?: string) => {
     setError(null);
-    login(role);
+    login(role, accountEmail);
   };
 
   if (showRegisterScreen) {

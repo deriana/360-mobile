@@ -11,11 +11,15 @@ export const ROLE_ICON: Record<Role, keyof typeof Feather.glyphMap> = {
   DPC: 'map-pin',
   PAC: 'home',
   TPS_COORDINATOR: 'users',
+  FIELD_COORDINATOR: 'shield',
   OPERATOR: 'settings',
   TPS_WITNESS: 'eye',
+  WITNESS: 'eye',
   RELAWAN: 'heart',
+  VOLUNTEER: 'heart',
   CALEG: 'award',
   KADER_ANGGOTA: 'user-check',
+  MEMBER: 'user-check',
 };
 
 // Each non-witness role is anchored to one mock home region/unit for this demo.
@@ -26,11 +30,15 @@ export const ROLE_HOME: Record<Role, { province?: string; regency?: string; dist
   DPC: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   PAC: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   TPS_COORDINATOR: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong', coordinatorId: 'COORD-1' },
+  FIELD_COORDINATOR: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   OPERATOR: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   TPS_WITNESS: {},
+  WITNESS: {},
   RELAWAN: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
+  VOLUNTEER: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   CALEG: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   KADER_ANGGOTA: { province: 'Jawa Barat', regency: 'Kota Bandung' },
+  MEMBER: { province: 'Jawa Barat', regency: 'Kota Bandung' },
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
@@ -39,12 +47,16 @@ export const ROLE_LABEL: Record<Role, string> = {
   DPD: 'DPD PAN — Kota Bandung',
   DPC: 'DPC PAN — Kecamatan Coblong',
   PAC: 'PAC PAN — Ranting Coblong',
-  TPS_COORDINATOR: 'Koordinator TPS PAN Lapangan (6 TPS)',
+  TPS_COORDINATOR: 'Koordinator TPS PAN (Kluster 6 TPS)',
+  FIELD_COORDINATOR: 'Koordinator Lapangan (Kecamatan Coblong)',
   OPERATOR: 'Operator Lapangan PAN (Kota Bandung)',
   TPS_WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
-  RELAWAN: 'Relawan Lapangan & Pengawal Suara — PAN 360',
+  WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
+  RELAWAN: 'Relawan Simpatisan — PAN 360',
+  VOLUNTEER: 'Relawan Simpatisan — PAN 360',
   CALEG: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
-  KADER_ANGGOTA: 'Kader & Calon Parlemen DPR-RI — Partai Amanat Nasional',
+  KADER_ANGGOTA: 'Kader & Anggota Partai — simPAN',
+  MEMBER: 'Kader & Anggota Partai — simPAN',
 };
 
 export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
@@ -54,11 +66,15 @@ export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
   DPC: 'Cakupan DPC PAN — Memantau TPS di Kecamatan Coblong',
   PAC: 'Cakupan PAC PAN — Memantau TPS di Kelurahan & Ranting',
   TPS_COORDINATOR: 'Cakupan Kluster TPS PAN — Supervisi 6 TPS di wilayah Kelurahan Dago',
+  FIELD_COORDINATOR: 'Cakupan Korlap — Supervisi Koordinator TPS se-Kecamatan Coblong',
   OPERATOR: 'Cakupan Operator PAN — Memantau & Mendampingi Saksi se-Kota Bandung',
   TPS_WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
+  WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
   RELAWAN: 'Cakupan Relawan — Mobilisasi Pemilih & Pemantauan TPS Wilayah Kelurahan Dago',
+  VOLUNTEER: 'Cakupan Relawan — Mobilisasi Pemilih & Pemantauan TPS Wilayah Kelurahan Dago',
   CALEG: 'Cakupan Dapil Jabar I — Monitoring Suara Caleg, Perolehan Partai & Rekap C1',
-  KADER_ANGGOTA: 'Cakupan Calon Parlemen — Monitoring Suara Pribadi Masuk, Suara Partai & e-KTA',
+  KADER_ANGGOTA: 'Cakupan Anggota — Monitoring Suara Partai & Layanan e-KTA simPAN',
+  MEMBER: 'Cakupan Anggota — Monitoring Suara Partai & Layanan e-KTA simPAN',
 };
 
 export interface UserProfile {
@@ -174,17 +190,41 @@ export function getUserProfile(role: Role): UserProfile {
         avatarIndex: 3,
       };
     case 'RELAWAN':
+    case 'VOLUNTEER':
       return {
         name: 'Siti Rahmawati',
         nik: '3273014506950002',
         phone: '0812-8877-6655',
         email: 'relawan@pan.go.id',
         badgeId: 'REL-PAN-DGO-01',
-        roleLabel: 'Relawan Lapangan & Pengawal Suara — PAN 360',
+        roleLabel: 'Relawan Simpatisan — PAN 360',
         scopeLocation: 'Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 4,
       };
+    case 'FIELD_COORDINATOR':
+      return {
+        name: 'Asep Ridwan',
+        nik: '3273011503850002',
+        phone: '0811-2233-4455',
+        email: 'korlap@pan.go.id',
+        badgeId: 'KORLAP-PAN-COBLONG-01',
+        roleLabel: 'Koordinator Lapangan (Kecamatan Coblong)',
+        scopeLocation: 'Kec. Coblong, Kota Bandung',
+        avatarIndex: 3,
+      };
+    case 'MEMBER':
+      return {
+        name: 'Fajar Pratama Nugraha, S.T.',
+        nik: '3273011508920005',
+        phone: '0813-2211-4433',
+        email: 'kader@pan.go.id',
+        badgeId: 'KTA-PAN-3273-08912',
+        roleLabel: 'Kader & Anggota Partai — simPAN',
+        scopeLocation: 'Kota Bandung, Jawa Barat',
+        avatarIndex: 1,
+      };
     case 'TPS_WITNESS':
+    case 'WITNESS':
     default:
       return {
         name: 'Rudi Saputra',
@@ -273,7 +313,25 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
     canAccessAllPayments: false,
     canMarkPayments: false,
   },
+  MEMBER: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: false,
+    canAccessEmergencyList: false,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
   TPS_COORDINATOR: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: true,
+    canAccessInsights: false,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: true,
+    canMarkPayments: true,
+  },
+  FIELD_COORDINATOR: {
     canAccessLeadership: false,
     canAccessSecurity: false,
     canAccessBroadcast: true,
@@ -300,7 +358,25 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
     canAccessAllPayments: false,
     canMarkPayments: false,
   },
+  WITNESS: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: false,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
   RELAWAN: {
+    canAccessLeadership: false,
+    canAccessSecurity: false,
+    canAccessBroadcast: false,
+    canAccessInsights: false,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
+  VOLUNTEER: {
     canAccessLeadership: false,
     canAccessSecurity: false,
     canAccessBroadcast: false,
@@ -312,7 +388,7 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
 };
 
 export function scopeTps(role: Role, tps: Tps[], witnesses: Witness[] = []): Tps[] {
-  if (role === 'TPS_WITNESS') {
+  if (role === 'TPS_WITNESS' || role === 'WITNESS') {
     const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
     if (witness) {
       return tps.filter((t) => t.id === witness.assignedTpsId);
@@ -320,11 +396,11 @@ export function scopeTps(role: Role, tps: Tps[], witnesses: Witness[] = []): Tps
     return tps.slice(0, 1);
   }
 
-  if (role === 'RELAWAN') {
+  if (role === 'RELAWAN' || role === 'VOLUNTEER') {
     return tps.filter((t) => t.regency === 'Kota Bandung' && t.district === 'Coblong');
   }
 
-  if (role === 'TPS_COORDINATOR') {
+  if (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR') {
     const cluster = tps.filter((t) => t.regency === 'Kota Bandung' && t.district === 'Coblong');
     return cluster.length >= 6 ? cluster.slice(0, 6) : tps.slice(0, 6);
   }
@@ -340,7 +416,7 @@ export function scopeTps(role: Role, tps: Tps[], witnesses: Witness[] = []): Tps
 }
 
 export function scopeWitnesses(role: Role, witnesses: Witness[], tpsInScope: Tps[]): Witness[] {
-  if (role === 'TPS_WITNESS') {
+  if (role === 'TPS_WITNESS' || role === 'WITNESS') {
     return witnesses.filter((w) => w.id === CURRENT_WITNESS_ID);
   }
   const tpsIds = new Set(tpsInScope.map((t) => t.id));
