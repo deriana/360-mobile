@@ -269,13 +269,47 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       id: 'broadcast',
       icon: 'volume-2',
       title: 'Broadcast',
-      subtitle: 'Saluran Resmi',
-      // badge: hasOfficialWitnessAssignment ? 'Grup' : 'Saluran',
+      subtitle: hasOfficialWitnessAssignment ? 'Grup Saksi' : isCoordinator ? 'Siaran Wilayah' : isCaleg ? 'Timses Dapil' : 'Saluran Resmi',
+      badge: isWitnessRole ? 'Instruksi' : isCoordinator ? 'Siaran' : 'Saluran',
       tone: 'primary',
       onPress: () => navigation.navigate('Broadcast'),
     };
 
-    // 1. Relawan Biasa (Murni) / Simpatisan
+    // 1. Relawan: State R2 (Relawan Mandat Saksi TPS)
+    if (isVolunteer && hasOfficialWitnessAssignment) {
+      return [
+        {
+          id: 'presensi_gps',
+          icon: 'map-pin',
+          title: 'Presensi Bilik',
+          subtitle: 'GPS Bilik TPS',
+          badge: 'Wajib',
+          tone: 'primary',
+          onPress: () => navigation.navigate('CheckIn'),
+        },
+        {
+          id: 'entri_c1',
+          icon: 'camera',
+          title: 'Entri C1 TPS',
+          subtitle: 'Scan AI OCR',
+          badge: 'AI OCR',
+          tone: 'success',
+          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+        },
+        {
+          id: 'lapor_sos',
+          icon: 'alert-triangle',
+          title: 'Lapor SOS',
+          subtitle: 'Darurat TPS',
+          badge: 'Darurat',
+          tone: 'danger',
+          onPress: () => navigation.navigate('EmergencyForm'),
+        },
+        broadcastItem,
+      ];
+    }
+
+    // 2. Relawan Biasa (Murni) / Simpatisan - State R1
     if (isVolunteer) {
       return [
         {
@@ -283,16 +317,16 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           icon: 'briefcase',
           title: 'Bursa Tugas',
           subtitle: 'Aksi Lapangan',
-          badge: '4',
+          badge: 'Giat',
           tone: 'primary',
           onPress: () => navigation.navigate('Tasks'),
         },
         {
           id: 'pan_academy',
-          icon: 'award',
+          icon: 'book-open',
           title: 'PAN Academy',
           subtitle: 'Modul Pelatihan',
-          // badge: 'Modul',
+          badge: 'Modul',
           tone: 'primary',
           onPress: () => navigation.navigate('AmanatAcademy'),
         },
@@ -300,7 +334,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           id: 'sebaran_relawan',
           icon: 'map',
           title: 'Sebaran Relawan',
-          subtitle: 'Sebaran Relawan',
+          subtitle: 'Peta GIS Posko',
           tone: 'info',
           onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
         },
@@ -308,26 +342,26 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       ];
     }
 
-    // 2. Koordinator TPS / Lapangan
-    if (isCoordinator) {
+    // 3. Saksi TPS Resmi Hari-H (WITNESS)
+    if (isWitnessRole) {
       return [
         {
-          id: 'supervisi',
-          icon: 'grid',
-          title: 'Supervisi TPS',
-          subtitle: 'Kluster Wilayah',
-          badge: `${scopedTps.length}`,
+          id: 'presensi_gps',
+          icon: 'map-pin',
+          title: 'Presensi Bilik',
+          subtitle: '07:00 WIB',
+          badge: 'Wajib',
           tone: 'primary',
-          onPress: () => navigation.navigate('Supervision'),
+          onPress: () => navigation.navigate('CheckIn'),
         },
         {
-          id: 'peta_sebaran',
-          icon: 'map',
-          title: 'Peta Sebaran',
-          subtitle: 'GIS Wilayah',
-          badge: 'GIS',
-          tone: 'primary',
-          onPress: navigateToMap,
+          id: 'scan_ocr',
+          icon: 'camera',
+          title: 'Scan C1 AI',
+          subtitle: 'Vision Plano C1',
+          badge: 'Plano',
+          tone: 'success',
+          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
         },
         {
           id: 'darurat',
@@ -342,7 +376,41 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       ];
     }
 
-    // 3. Anggota + Caleg / Bacaleg 2029
+    // 4. Koordinator TPS / Lapangan
+    if (isCoordinator) {
+      return [
+        {
+          id: 'supervisi',
+          icon: 'eye',
+          title: 'Supervisi TPS',
+          subtitle: 'Kluster Wilayah',
+          badge: `${scopedTps.length}`,
+          tone: 'primary',
+          onPress: () => navigation.navigate('Supervision'),
+        },
+        {
+          id: 'peta_sebaran',
+          icon: 'map',
+          title: 'Peta Sebaran',
+          subtitle: 'GIS Wilayah',
+          badge: 'GIS',
+          tone: 'info',
+          onPress: navigateToMap,
+        },
+        {
+          id: 'darurat',
+          icon: 'alert-triangle',
+          title: 'Lapor Insiden',
+          subtitle: 'Eskalasi Darurat',
+          badge: 'Eskalasi',
+          tone: 'danger',
+          onPress: () => navigation.navigate('EmergencyForm'),
+        },
+        broadcastItem,
+      ];
+    }
+
+    // 5. Anggota + Caleg / Bacaleg 2029
     if (isCaleg) {
       return [
         {
@@ -350,70 +418,38 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           icon: 'map',
           title: 'Peta Basis Dapil',
           subtitle: 'GIS Suara Masuk',
-          badge: 'Dapil',
+          badge: 'Dapil Jabar I',
           tone: 'primary',
           onPress: navigateToMap,
         },
         {
-          id: 'daftar_bacaleg',
-          icon: 'file-text',
-          title: 'Daftar Bacaleg',
-          subtitle: 'simPAN Caleg',
-          tone: 'primary',
-          onPress: () => navigation.navigate('SimpanBacaleg'),
-        },
-        {
-          id: 'audit_berkas',
+          id: 'audit_suara_kppn',
           icon: 'check-circle',
           title: 'Audit KPPN',
-          subtitle: 'Verifikasi Berkas',
-          badge: 'Valid',
-          tone: 'primary',
-          onPress: () => setShowAuditBerkasModal(true),
+          subtitle: 'Real Count Kursi',
+          badge: 'Real Count',
+          tone: 'success',
+          onPress: () => navigation.navigate('QuickCountGame'),
+        },
+        {
+          id: 'suara_warga',
+          icon: 'message-circle',
+          title: 'Suara Warga',
+          subtitle: 'Aspirasi Dapil',
+          badge: `${aspirasiItems.length}`,
+          tone: 'info',
+          onPress: () => setShowAspirasiModal(true),
         },
         broadcastItem,
       ];
     }
 
-    // 4. Saksi TPS Resmi Hari-H (WITNESS)
-    if (isWitnessRole) {
-      return [
-        {
-          id: 'presensi_gps',
-          icon: 'map-pin',
-          title: 'Presensi Bilik',
-          subtitle: 'GPS Geofence',
-          badge: 'Wajib',
-          tone: 'primary',
-          onPress: () => navigation.navigate('CheckIn'),
-        },
-        {
-          id: 'lapor_c1',
-          icon: 'edit-3',
-          title: 'Entri C1 TPS',
-          subtitle: 'Formulir Plano',
-          tone: 'primary',
-          onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
-        },
-        {
-          id: 'scan_ocr',
-          icon: 'camera',
-          title: 'Scan AI C1',
-          subtitle: 'Vision Plano C1',
-          badge: 'AI',
-          tone: 'primary',
-          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
-        },
-        broadcastItem,
-      ];
-    }
-
-    // 5. Anggota / Pengurus Umum (MEMBER default)
+    // 6. Anggota / Pengurus Umum (MEMBER default)
     return [
       {
-        id: 'peta_sebaran',
+        id: 'peta_kader',
         icon: 'map',
-        title: 'Peta Sebaran',
+        title: 'Peta Kader',
         subtitle: 'GIS Kekuatan',
         badge: 'GIS',
         tone: 'primary',
@@ -422,18 +458,18 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       {
         id: 'aspirasi_warga',
         icon: 'message-square',
-        title: 'Catat Aspirasi',
+        title: 'Serap Aspirasi',
         subtitle: 'Suara Warga',
         badge: `${aspirasiItems.length}`,
-        tone: 'primary',
+        tone: 'info',
         onPress: () => setShowAspirasiModal(true),
       },
       {
         id: 'pan_academy',
         icon: 'award',
-        title: 'PAN Academy',
-        subtitle: 'Modul Kader',
-        badge: 'Modul',
+        title: 'Amanat Academy',
+        subtitle: 'Perkaderan LKK',
+        badge: 'LKK',
         tone: 'primary',
         onPress: () => navigation.navigate('AmanatAcademy'),
       },
