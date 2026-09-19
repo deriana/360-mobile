@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Alert,
   FlatList,
@@ -37,16 +37,12 @@ interface ChannelPost {
   senderAvatar: any;
   dateBadge?: string;
   time: string;
-  categoryTag: string;
-  categoryTone: 'primary' | 'warning' | 'danger' | 'info';
   type: 'video' | 'text' | 'document';
   mediaImage?: any;
-  mediaBadge?: string;
   videoDuration?: string;
+  documentName?: string;
   title: string;
   content: string;
-  actionLinkLabel?: string;
-  actionLinkUrl?: string;
   reactions: PostReaction;
   shareCount: string;
 }
@@ -62,23 +58,17 @@ interface ChatMessage {
 
 const OFFICIAL_CHANNEL_POSTS: ChannelPost[] = [
   {
-    id: 'post-ketum',
-    senderName: 'Zulkifli Hasan',
-    senderRole: 'Ketua Umum DPP PAN',
-    senderAvatar: LEADER_AVATARS.ketuaUmum,
-    dateBadge: 'Hari Ini • 19 September 2026',
-    time: '08:30 WIB',
-    categoryTag: 'AMANAT KETUM',
-    categoryTone: 'warning',
-    type: 'video',
-    mediaImage: IMAGES.tpsHero,
-    mediaBadge: 'Amanat Resmi Pimpinan Tertinggi',
-    videoDuration: '04:15 Menit',
-    title: 'Kawal Marwah Suara Rakyat: Berdiri Teguh Tanpa Ragu di Setiap Bilik Suara',
+    id: 'post-bsn',
+    senderName: 'Badan Saksi Nasional (BSN)',
+    senderRole: 'Direktorat Pengawalan Suara DPP PAN',
+    senderAvatar: LEADER_AVATARS.sekretarisJendral,
+    dateBadge: '17 September 2026',
+    time: '16:00 WIB',
+    type: 'document',
+    documentName: 'JUKNIS-BSN-C1-PLANO-DIGITAL.pdf',
+    title: 'Standar Operasional Presensi Geofence GPS & Validasi Foto C1 Plano Digital',
     content:
-      'Kepada seluruh kader pejuang, simpatisan, dan saksi TPS PAN di seluruh pelosok Tanah Air:\n\nSuara rakyat adalah amanat suci yang tidak boleh bergeser barang satu pun. Berdirilah tegak menjaga kemurnian formulir C1 Plano. Layani warga dengan keramahan, sapa masyarakat dengan senyuman, dan pastikan proses penghitungan suara di TPS Anda berlangsung jujur, adil, dan transparan.',
-    actionLinkLabel: 'Tonton Video Pidato Amanat Lengkap (TV PAN)',
-    actionLinkUrl: 'https://pan.or.id/amanat-ketum-2026',
+      'Petunjuk Teknis Pengawalan Bilik Suara:\n\n1. Seluruh Saksi TPS wajib hadir sebelum pukul 07:00 WIB dan melakukan presensi GPS melalui menu "Presensi" simPAN di radius TPS penugasan.\n2. Segera foto formulir C1 Plano secara tegak lurus, pencahayaan merata tanpa pantulan cahaya, dan pastikan tanda tangan KPPS terbaca tajam sebelum diunggah ke server terenkripsi partai.',
     reactions: {
       thumbs: 88400,
       heart: 42100,
@@ -92,47 +82,40 @@ const OFFICIAL_CHANNEL_POSTS: ChannelPost[] = [
     senderName: 'Ketua DPP PAN',
     senderRole: 'Badan Pemenangan Pemilu (Bappilu) DPP',
     senderAvatar: LEADER_AVATARS.ketuaDpp,
-    time: 'Kemarin • 21:15 WIB',
-    categoryTag: 'INSTRUKSI PEMENANGAN',
-    categoryTone: 'primary',
+    dateBadge: '18 September 2026',
+    time: '21:15 WIB',
     type: 'text',
     title: 'Konsolidasi Posko Wilayah & Kesiapan Pengawalan Saksi Terakreditasi BSN',
     content:
       'Seluruh jajaran pengurus DPD, DPC, ranting, dan relawan simpatisan diinstruksikan:\n\n1. Merapatkan barisan di Posko Pemenangan wilayah masing-masing untuk pemetaan titik TPS rawan.\n2. Memastikan relawan yang telah dimandatkan telah menyelesaikan sertifikasi Bimtek Saksi BSN.\n3. Menyimpan nomor kontak darurat Korlap dan Tim Advokasi Hukum BSN setempat guna respon cepat laporan dugaan pelanggaran.',
-    actionLinkLabel: 'Unduh Panduan Penugasan Posko Wilayah (PDF)',
-    actionLinkUrl: 'https://simpan.pan.or.id/panduan-posko-2026',
     reactions: {
-      thumbs: 45200,
-      heart: 18600,
-      fire: 14000,
-      totalDisplay: '77.8 Rb Reaksi',
+      thumbs: 88400,
+      heart: 42100,
+      fire: 26500,
+      totalDisplay: '157 Rb Reaksi',
     },
-    shareCount: '9.2 Rb',
+    shareCount: '18.4 Rb',
   },
   {
-    id: 'post-bsn',
-    senderName: 'Badan Saksi Nasional (BSN)',
-    senderRole: 'Direktorat Pengawalan Suara DPP PAN',
-    senderAvatar: LEADER_AVATARS.sekretarisJendral,
-    dateBadge: '17 September 2026',
-    time: '16:00 WIB',
-    categoryTag: 'STANDAR BSN',
-    categoryTone: 'danger',
-    type: 'document',
-    mediaImage: IMAGES.c1Form,
-    mediaBadge: 'Dokumen SOP Resmi BSN PAN • 4.8 MB',
-    title: 'Standar Operasional Presensi Geofence GPS & Validasi Foto C1 Plano Digital',
+    id: 'post-ketum',
+    senderName: 'Zulkifli Hasan',
+    senderRole: 'Ketua Umum DPP PAN',
+    senderAvatar: LEADER_AVATARS.ketuaUmum,
+    dateBadge: 'Hari Ini • 19 September 2026',
+    time: '08:30 WIB',
+    type: 'video',
+    mediaImage: IMAGES.tpsHero,
+    videoDuration: '04:15 Menit',
+    title: 'Kawal Marwah Suara Rakyat: Berdiri Teguh Tanpa Ragu di Setiap Bilik Suara',
     content:
-      'Petunjuk Teknis Pengawalan Bilik Suara:\n\n1. Seluruh Saksi TPS wajib hadir sebelum pukul 07:00 WIB dan melakukan presensi GPS melalui menu "Presensi" simPAN di radius TPS penugasan.\n2. Segera foto formulir C1 Plano secara tegak lurus, pencahayaan merata tanpa pantulan cahaya, dan pastikan tanda tangan KPPS terbaca tajam sebelum diunggah ke server terenkripsi partai.',
-    actionLinkLabel: 'Akses Portal Pengawalan Suara simPAN BSN',
-    actionLinkUrl: 'https://bsn.pan.or.id/c1-digital-sop',
+      'Kepada seluruh kader pejuang, simpatisan, dan saksi TPS PAN di seluruh pelosok Tanah Air:\n\nSuara rakyat adalah amanat suci yang tidak boleh bergeser barang satu pun. Berdirilah tegak menjaga kemurnian formulir C1 Plano. Layani warga dengan keramahan, sapa masyarakat dengan senyuman, dan pastikan proses penghitungan suara di TPS Anda berlangsung jujur, adil, dan transparan.',
     reactions: {
-      thumbs: 32100,
-      heart: 12400,
-      fire: 9800,
-      totalDisplay: '54.3 Rb Reaksi',
+      thumbs: 88400,
+      heart: 42100,
+      fire: 26500,
+      totalDisplay: '157 Rb Reaksi',
     },
-    shareCount: '6.7 Rb',
+    shareCount: '18.4 Rb',
   },
 ];
 
@@ -199,6 +182,16 @@ export default function BroadcastScreen() {
   const [inputChatText, setInputChatText] = useState('');
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const hasInitialScrolled = useRef(false);
+
+  useEffect(() => {
+    if (activeTab === 'channel') {
+      const timer = setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
 
   // Status kelayakan akses group chat (Relawan yang memegang SK Mandat Saksi / Saksi Resmi)
   const isWitnessRole = role === 'WITNESS' || role === 'TPS_WITNESS';
@@ -297,9 +290,8 @@ export default function BroadcastScreen() {
               activeTab === 'channel' && { fontFamily: fonts.bold },
             ]}
           >
-            Saluran Pusat (1 Arah)
+            Saluran Pusat
           </Text>
-          <View style={[styles.livePulseDot, { backgroundColor: colors.primary }]} />
         </Pressable>
 
         <Pressable
@@ -323,13 +315,8 @@ export default function BroadcastScreen() {
               activeTab === 'group' && { fontFamily: fonts.bold },
             ]}
           >
-            Grup Saksi TPS (2 Arah)
+            Grup Saksi
           </Text>
-          {!hasWitnessRole && (
-            <View style={styles.tabLockBadge}>
-              <Text style={styles.tabLockBadgeText}>Kunci</Text>
-            </View>
-          )}
         </Pressable>
       </View>
 
@@ -340,74 +327,13 @@ export default function BroadcastScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => {
+            if (!hasInitialScrolled.current) {
+              scrollViewRef.current?.scrollToEnd({ animated: false });
+              hasInitialScrolled.current = true;
+            }
+          }}
         >
-          {/* BRANDED OFFICIAL CHANNEL HERO CARD */}
-          <View
-            style={[
-              styles.channelHeroCard,
-              {
-                backgroundColor: isDark ? '#002B52' : '#004F8A',
-                borderColor: isDark ? '#0A3D6B' : '#003366',
-              },
-            ]}
-          >
-            <View style={styles.channelHeroTopRow}>
-              <View style={styles.channelAvatarWrap}>
-                <Image source={BRAND_ASSETS.emblem} style={styles.channelEmblemImage} resizeMode="contain" />
-              </View>
-
-              <View style={{ flex: 1, gap: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.channelHeroTitle}>Saluran Resmi DPP PAN</Text>
-                  <VerifiedBadge size={16} />
-                </View>
-                <Text style={styles.channelHeroSubtitle}>
-                  Pusat Komando Informasi & Maklumat DPP
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                  <Feather name="users" size={11} color="#93C5FD" />
-                  <Text style={styles.channelHeroMetaText}>
-                    142.500 Kader & Relawan Se-Indonesia
-                  </Text>
-                </View>
-              </View>
-
-              {/* SUBSCRIBE / FOLLOW TOGGLE BUTTON */}
-              <Pressable
-                onPress={toggleFollow}
-                style={({ pressed }) => [
-                  styles.followButton,
-                  isFollowed
-                    ? { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)' }
-                    : { backgroundColor: '#F59E0B' },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Feather
-                  name={isFollowed ? 'check' : 'bell'}
-                  size={12}
-                  color={isFollowed ? '#FFFFFF' : '#002B52'}
-                />
-                <Text
-                  style={[
-                    styles.followButtonText,
-                    { color: isFollowed ? '#FFFFFF' : '#002B52' },
-                  ]}
-                >
-                  {isFollowed ? 'Mengikuti' : 'Ikuti'}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.channelHeroDivider, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]} />
-
-            <View style={styles.channelHeroBottomRow}>
-              <Feather name="shield" size={12} color="#93C5FD" />
-              <Text style={styles.channelHeroNoticeText}>
-                Siaran resmi satu arah langsung dari pimpinan partai, Bappilu, dan Badan Saksi Nasional (BSN).
-              </Text>
-            </View>
-          </View>
 
           {/* LIST OF OFFICIAL BROADCAST POSTS */}
           {OFFICIAL_CHANNEL_POSTS.map((post) => {
@@ -451,7 +377,6 @@ export default function BroadcastScreen() {
                     </View>
 
                     <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                      <Pill label={post.categoryTag} tone={post.categoryTone} />
                       <Text style={[styles.postTimeText, { color: colors.textMuted }]}>
                         {post.time}
                       </Text>
@@ -466,13 +391,6 @@ export default function BroadcastScreen() {
                       {/* DARK GRADIENT VIGNETTE OVERLAY */}
                       <View style={styles.postMediaDarkOverlay} />
 
-                      {/* MEDIA BADGE AT TOP LEFT */}
-                      {post.mediaBadge && (
-                        <View style={styles.postMediaTopBadge}>
-                          <Image source={BRAND_ASSETS.sunWhite} style={{ width: 12, height: 12 }} resizeMode="contain" />
-                          <Text style={styles.postMediaTopBadgeText}>{post.mediaBadge}</Text>
-                        </View>
-                      )}
 
                       {/* PLAY BUTTON FOR VIDEO */}
                       {post.type === 'video' && (
@@ -484,25 +402,15 @@ export default function BroadcastScreen() {
                           style={styles.postPlayCenterBtn}
                         >
                           <View style={styles.postPlayCircle}>
-                            <Feather name="play" size={24} color="#FFFFFF" style={{ marginLeft: 3 }} />
+                            <Feather name="play" size={24} color="#ffffff65" style={{ marginLeft: 3 }} />
                           </View>
                           {post.videoDuration && (
                             <View style={styles.postDurationBadge}>
-                              <Feather name="clock" size={10} color="#FFFFFF" />
+                              <Feather name="clock" size={10} color="#ffffff65" />
                               <Text style={styles.postDurationText}>{post.videoDuration}</Text>
                             </View>
                           )}
                         </TouchableOpacity>
-                      )}
-
-                      {/* DOCUMENT BADGE FOR PDF */}
-                      {post.type === 'document' && (
-                        <View style={styles.postDocCenterBtn}>
-                          <View style={styles.postDocIconWrap}>
-                            <Feather name="file-text" size={20} color="#0066B3" />
-                          </View>
-                          <Text style={styles.postDocText}>Berkas Juknis Tersedia</Text>
-                        </View>
                       )}
                     </View>
                   )}
@@ -517,27 +425,14 @@ export default function BroadcastScreen() {
                       {post.content}
                     </Text>
 
-                    {/* OFFICIAL ATTACHMENT LINK BUTTON */}
-                    {post.actionLinkLabel && (
-                      <TouchableOpacity
-                        activeOpacity={0.75}
-                        onPress={() => handleOpenLink(post.title, post.actionLinkUrl)}
-                        style={[
-                          styles.postActionLinkRow,
-                          {
-                            backgroundColor: isDark ? 'rgba(0, 102, 179, 0.15)' : '#EFF6FF',
-                            borderColor: isDark ? '#0A3D6B' : '#BFDBFE',
-                          },
-                        ]}
-                      >
-                        <View style={[styles.postActionLinkIconWrap, { backgroundColor: colors.primary }]}>
-                          <Feather name="link-2" size={13} color="#FFFFFF" />
-                        </View>
-                        <Text style={[styles.postActionLinkText, { color: colors.primary }]} numberOfLines={1}>
-                          {post.actionLinkLabel}
+                    {/* DOKUMEN LAMPIRAN */}
+                    {post.documentName && (
+                      <View style={styles.postDocumentRow}>
+                        <Feather name="file" size={16} color="#94A3B8" />
+                        <Text style={[styles.postDocumentText, { color: colors.textMuted }]}>
+                          {post.documentName}
                         </Text>
-                        <Feather name="external-link" size={13} color={colors.primary} />
-                      </TouchableOpacity>
+                      </View>
                     )}
                   </View>
 
@@ -1031,9 +926,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(0, 102, 179, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.17)',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#ffffff65',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1041,13 +936,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.29)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radius.pill,
   },
   postDurationText: {
-    color: '#FFFFFF',
+    color: '#ffffff65',
     fontSize: 10,
     fontFamily: fonts.medium,
   },
@@ -1093,27 +988,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     lineHeight: 18,
   },
-  postActionLinkRow: {
+  postDocumentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
     marginTop: 4,
   },
-  postActionLinkIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  postActionLinkText: {
-    flex: 1,
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
+  postDocumentText: {
+    fontSize: 12.5,
+    fontFamily: fonts.medium,
   },
 
   // POST FOOTER
