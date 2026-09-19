@@ -168,11 +168,8 @@ export default function LoginScreen() {
           <View style={{ gap: 8, marginTop: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary, letterSpacing: 0.5 }}>
-                DEMO PERSONA UTAMA DPP PAN
+                Demo Akun
               </Text>
-              <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.primary }}>1-Tap Demo</Text>
-              </View>
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -228,10 +225,10 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <QuickLoginPicker
+          {/* <QuickLoginPicker
             categories={QUICK_LOGIN_CATEGORIES}
             onSelectRole={handleQuickLogin}
-          />
+          /> */}
         </View>
 
         <Text style={[styles.footnote, { color: colors.textMuted }]}>

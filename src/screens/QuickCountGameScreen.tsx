@@ -32,8 +32,14 @@ function paslonParts(key: string) {
 
 const RANK_COLORS = ['#F59E0B', '#94A3B8', '#B45309'];
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental &&
+  !(globalThis as any).nativeFabricUIManager
+) {
+  try {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  } catch {}
 }
 
 function Billboard({ votes, colors }: { votes: Record<string, number>; colors: any }) {

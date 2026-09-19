@@ -19,8 +19,14 @@ import { Account } from '../data/accounts';
 import { Role } from '../types';
 import { ROLE_ICON, ROLE_LABEL, ROLE_SCOPE_DESCRIPTION } from '../utils/scope';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental &&
+  !(globalThis as any).nativeFabricUIManager
+) {
+  try {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  } catch {}
 }
 
 // ==========================================
