@@ -33,7 +33,7 @@ interface DirectoryMenuItem {
   title: string;
   shortTitle: string;
   subtitle: string;
-  screen: string;
+  screen?: string;
   params?: any;
   category: 'TUGAS' | 'EDUKASI' | 'ORGANISASI';
   icon: keyof typeof Feather.glyphMap;
@@ -44,6 +44,18 @@ interface DirectoryMenuItem {
 
 const DIRECTORY_PAGES: DirectoryMenuItem[] = [
   // TUGAS LAPANGAN & KAWAL SUARA
+  {
+    id: 'unlock-saksi',
+    title: 'Unlock Mandat Saksi TPS',
+    shortTitle: 'Unlock Saksi',
+    subtitle: 'Syarat akreditasi BSN, verifikasi berkas, & SK Mandat resmi',
+    screen: 'modal',
+    category: 'TUGAS',
+    icon: 'lock',
+    tone: 'warning',
+    badge: '4 Syarat',
+    highlightRoles: ['VOLUNTEER', 'MEMBER'],
+  },
   {
     id: 'c1-ocr',
     title: 'Pemindaian C1 Plano (AI OCR)',
@@ -383,6 +395,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [roleSwitchNotice, setRoleSwitchNotice] = useState<string | null>(null);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [unlockSaksiModalVisible, setUnlockSaksiModalVisible] = useState(false);
   const [roleModalTab, setRoleModalTab] = useState<'roles' | 'presets'>('roles');
 
   // State Direktori Menu Lengkap (Pusat Akses Ramah Lansia/Senior/Boomer)
@@ -537,6 +550,8 @@ export default function ProfileScreen({ navigation }: any) {
   const handleDirectoryPress = (item: DirectoryMenuItem) => {
     if (item.id === 'activity-timeline') {
       setActivityModalVisible(true);
+    } else if (item.id === 'unlock-saksi') {
+      setUnlockSaksiModalVisible(true);
     } else if (item.screen) {
       navigation.navigate(item.screen, item.params);
     }
@@ -1120,6 +1135,59 @@ export default function ProfileScreen({ navigation }: any) {
                 </View>
                 <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
                   Pindai e-KTP dengan AI, verifikasi data, & terbitkan e-KTA digital resmi
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        )}
+
+        {/* Mandat Saksi TPS (Khusus Relawan / Saksi) */}
+        {!hasWitnessRole ? (
+          <>
+            <Pressable
+              onPress={() => setUnlockSaksiModalVisible(true)}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: '#FEE2E2' }]}>
+                <Feather name="shield" size={15} color="#DC2626" />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.actionTitle, { color: colors.text }]}>Unlock Mandat Saksi TPS</Text>
+                  <View style={{ backgroundColor: '#EF4444', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' }}>4 Syarat</Text>
+                  </View>
+                </View>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Akreditasi BSN: Bimtek, e-KTP, Pakta Integritas, & SK Mandat DPD
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => setUnlockSaksiModalVisible(true)}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                <Feather name="shield" size={15} color="#16A34A" />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.actionTitle, { color: colors.text }]}>Status Mandat Saksi TPS</Text>
+                  <View style={{ backgroundColor: '#16A34A', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' }}>Aktif</Text>
+                  </View>
+                </View>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Mandat resmi BSN aktif • TPS 014 Babakan Asih
                 </Text>
               </View>
               <Feather name="chevron-right" size={16} color={colors.textMuted} />
@@ -1714,6 +1782,127 @@ export default function ProfileScreen({ navigation }: any) {
                 style={{ width: '100%' }}
               />
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL UNLOCK MANDAT SAKSI TPS */}
+      <Modal
+        visible={unlockSaksiModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setUnlockSaksiModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentCard, { backgroundColor: colors.surface, borderColor: colors.border, maxHeight: '85%' }]}>
+            <View style={[styles.modalHeader, { width: '100%' }]}>
+              <View style={{ gap: 2, flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Mandat Saksi TPS</Text>
+                  <View style={{ backgroundColor: '#EF4444', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' }}>BSN PAN</Text>
+                  </View>
+                </View>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                  Verifikasi 4 instrumen akreditasi resmi saksi TPS
+                </Text>
+              </View>
+              <Pressable onPress={() => setUnlockSaksiModalVisible(false)} style={styles.modalCloseBtn}>
+                <Feather name="x" size={18} color={colors.textMuted} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+              <View style={{ backgroundColor: isDark ? '#1E293B' : '#EFF6FF', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: '#93C5FD' }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: '#0066B3' }}>
+                  Persyaratan Operasional Saksi BSN:
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.text, marginTop: 2, lineHeight: 16 }}>
+                  Sesuai Petunjuk Teknis DPP & Badan Saksi Nasional (BSN), relawan yang dimandatkan harus melengkapi 4 instrumen kepatuhan hukum sebelum dapat bertugas di TPS.
+                </Text>
+              </View>
+
+              {/* 4 Syarat Checklist */}
+              {[
+                {
+                  title: '1. Kelulusan Bimtek Saksi Pemilu',
+                  desc: 'Modul pengawalan suara C1 Plano & Kode Etik BSN',
+                  status: 'Tersertifikasi',
+                  done: true,
+                },
+                {
+                  title: '2. Verifikasi e-KTP & DPT TPS',
+                  desc: 'Terdaftar di TPS 014 Kel. Babakan Asih, Bojongloa Kaler',
+                  status: 'Terverifikasi',
+                  done: true,
+                },
+                {
+                  title: '3. Pakta Integritas Saksi PAN',
+                  desc: 'Persetujuan digital pakta komitmen saksi TPS jujur & adil',
+                  status: 'Ditandatangani Digital',
+                  done: true,
+                },
+                {
+                  title: '4. SK Surat Mandat Resmi DPD',
+                  desc: 'No: SK.MANDAT/PAN-BDG/2024/0419 tertanda Ketua DPD',
+                  status: 'Terbit & Sah',
+                  done: true,
+                },
+              ].map((item, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: 10,
+                    borderRadius: 8,
+                    backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <Feather name="check-circle" size={18} color="#16A34A" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1, gap: 1 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>{item.title}</Text>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>{item.desc}</Text>
+                    <View style={{ alignSelf: 'flex-start', backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
+                      <Text style={{ fontFamily: fonts.bold, fontSize: 10, color: '#16A34A' }}>{item.status}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
+                {!hasWitnessRole ? (
+                  <PrimaryButton
+                    label="Aktifkan Mandat Saksi TPS (State R2)"
+                    variant="primary"
+                    onPress={() => {
+                      setUnlockSaksiModalVisible(false);
+                      handleApplyVolunteerPreset('state_r2');
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                ) : (
+                  <PrimaryButton
+                    label="Kembalikan ke Relawan Murni (State R1)"
+                    variant="danger"
+                    onPress={() => {
+                      setUnlockSaksiModalVisible(false);
+                      handleApplyVolunteerPreset('state_r1');
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                )}
+                <PrimaryButton
+                  label="Tutup"
+                  variant="secondary"
+                  onPress={() => setUnlockSaksiModalVisible(false)}
+                  style={{ width: '100%' }}
+                />
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>

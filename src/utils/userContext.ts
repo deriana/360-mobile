@@ -485,14 +485,8 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
       {
         role: 'VOLUNTEER',
         status: 'active',
-        scope: { level: 'DISTRICT', code: '327301', name: 'Posko Kel. Braga, Kec. Sumur Bandung' },
+        scope: { level: 'DISTRICT', code: '327301', name: 'Posko Kel. Dago, Kec. Coblong' },
         assignedAt: '01 Mar 2024',
-      },
-      {
-        role: 'WITNESS',
-        status: 'assigned',
-        scope: { level: 'TPS', code: 'TPS-018', name: 'TPS 018 Kel. Braga' },
-        assignedAt: '10 Sep 2026',
       },
     ],
     currentRole: 'VOLUNTEER',
@@ -916,10 +910,26 @@ export function applyVolunteerPreset(user: CurrentUser, presetId: VolunteerState
     operationalRole: preset.role,
   };
 
+  const nextRoles =
+    presetId === 'state_r1'
+      ? user.roles.filter((r) => r.role === 'VOLUNTEER')
+      : user.roles.some((r) => r.role === 'WITNESS')
+      ? user.roles
+      : [
+          ...user.roles,
+          {
+            role: 'WITNESS' as MobileRole,
+            status: 'assigned' as const,
+            scope: { level: 'TPS' as const, code: 'TPS-018', name: 'TPS 018 Kel. Braga' },
+            assignedAt: '10 Sep 2026',
+          },
+        ];
+
   return {
     ...user,
     currentRole: preset.role,
     permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[preset.role as MobileRole] ?? user.permissions,
+    roles: nextRoles,
     dimensions: nextDims,
   };
 }

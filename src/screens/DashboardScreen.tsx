@@ -257,56 +257,26 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   };
 
   const isWitnessRole = role === 'WITNESS' || role === 'TPS_WITNESS';
-  const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !currentUser.roles.some((r) => r.role === 'WITNESS');
-  const isVolunteerWithWitness = (role === 'VOLUNTEER' || role === 'RELAWAN') && currentUser.roles.some((r) => r.role === 'WITNESS');
+  const isVolunteer = role === 'VOLUNTEER' || role === 'RELAWAN';
   const isCoordinator = role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR';
   const isCaleg = role === 'CALEG' || (currentUser as any)?.electoralStatus?.status === 'CALEG' || (currentUser as any)?.electoralStatus === 'CALEG' || (currentUser as any)?.roles?.some((r: any) => r.role === 'CALEG');
+  const hasOfficialWitnessAssignment =
+    isWitnessRole || (isVolunteer && currentUser.dimensions?.programs?.programSaksi === 'MANDATED');
 
-  // Quick Action items: 4 menu esensial 1 baris per role (Zero Redundancy - Anti Duplikasi Akses)
+  // Quick Action items: 4 menu esensial 1 baris per role dengan menu "Broadcast" selalu di posisi paling kanan
   const getQuickMenuItems = (): BcaQuickActionItem[] => {
-    // 1. Relawan Siaga Saksi (In-Training / Dengan Mandat Belum Terbuka Penuh)
-    if (isVolunteerWithWitness) {
-      return [
-        {
-          id: 'status_unlock_saksi',
-          icon: 'lock',
-          title: 'Unlock Saksi',
-          subtitle: 'Syarat BSN',
-          badge: '4 Syarat',
-          tone: 'warning',
-          onPress: () => setShowRoleModal(true),
-        },
-        {
-          id: 'peta_sebaran',
-          icon: 'map',
-          title: 'Peta Sebaran',
-          subtitle: 'GIS Relawan',
-          badge: 'GIS',
-          tone: 'primary',
-          onPress: navigateToMap,
-        },
-        {
-          id: 'aspirasi_warga',
-          icon: 'message-square',
-          title: 'Catat Aspirasi',
-          subtitle: 'Suara Warga',
-          badge: `${aspirasiItems.length}`,
-          tone: 'primary',
-          onPress: () => setShowAspirasiModal(true),
-        },
-        {
-          id: 'kontak_korlap',
-          icon: 'phone-call',
-          title: 'Kontak Korlap',
-          subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
-          tone: 'info',
-          onPress: () => setShowCoordinatorModal(true),
-        },
-      ];
-    }
+    const broadcastItem: BcaQuickActionItem = {
+      id: 'broadcast',
+      icon: 'volume-2',
+      title: 'Broadcast',
+      subtitle: 'Saluran Resmi',
+      badge: hasOfficialWitnessAssignment ? 'Grup' : 'Saluran',
+      tone: 'primary',
+      onPress: () => navigation.navigate('Broadcast'),
+    };
 
-    // 2. Relawan Biasa (Murni) Sesuai Desain & Screenshot
-    if (isVolunteerOnly) {
+    // 1. Relawan Biasa (Murni) / Simpatisan
+    if (isVolunteer) {
       return [
         {
           id: 'bursa_tugas',
@@ -334,18 +304,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           tone: 'info',
           onPress: () => navigation.navigate('SimpanOffices'),
         },
-        {
-          id: 'kontak_korlap',
-          icon: 'phone',
-          title: 'Kontak Korlap',
-          subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
-          tone: 'info',
-          onPress: () => setShowCoordinatorModal(true),
-        },
+        broadcastItem,
       ];
     }
 
-    // 3. Koordinator TPS / Lapangan
+    // 2. Koordinator TPS / Lapangan
     if (isCoordinator) {
       return [
         {
@@ -367,14 +330,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           onPress: navigateToMap,
         },
         {
-          id: 'broadcast',
-          icon: 'radio',
-          title: 'Broadcast Tim',
-          subtitle: 'Komando Saksi',
-          tone: 'warning',
-          onPress: () => navigation.navigate('Broadcast'),
-        },
-        {
           id: 'darurat',
           icon: 'alert-triangle',
           title: 'Lapor Insiden',
@@ -383,10 +338,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           tone: 'danger',
           onPress: () => navigation.navigate('EmergencyForm'),
         },
+        broadcastItem,
       ];
     }
 
-    // 4. Anggota + Caleg / Bacaleg 2029
+    // 3. Anggota + Caleg / Bacaleg 2029
     if (isCaleg) {
       return [
         {
@@ -415,18 +371,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           tone: 'primary',
           onPress: () => setShowAuditBerkasModal(true),
         },
-        {
-          id: 'struktur_pengurus',
-          icon: 'users',
-          title: 'Struktur Partai',
-          subtitle: 'Pengurus DPD',
-          tone: 'info',
-          onPress: () => navigation.navigate('SimpanStructure'),
-        },
+        broadcastItem,
       ];
     }
 
-    // 5. Saksi TPS Resmi Hari-H (WITNESS)
+    // 4. Saksi TPS Resmi Hari-H (WITNESS)
     if (isWitnessRole) {
       return [
         {
@@ -455,28 +404,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           tone: 'primary',
           onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
         },
-        {
-          id: 'darurat',
-          icon: 'alert-triangle',
-          title: 'Lapor Insiden',
-          subtitle: 'Sengketa & SOS',
-          badge: 'SOS',
-          tone: 'danger',
-          onPress: () => navigation.navigate('EmergencyForm'),
-        },
+        broadcastItem,
       ];
     }
 
-    // 6. Anggota / Pengurus Umum (MEMBER default)
+    // 5. Anggota / Pengurus Umum (MEMBER default)
     return [
-      {
-        id: 'struktur_partai',
-        icon: 'users',
-        title: 'Struktur DPD',
-        subtitle: 'Kepengurusan',
-        tone: 'primary',
-        onPress: () => navigation.navigate('SimpanStructure'),
-      },
       {
         id: 'peta_sebaran',
         icon: 'map',
@@ -487,22 +420,24 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         onPress: navigateToMap,
       },
       {
-        id: 'kantor_dpd',
-        icon: 'map-pin',
-        title: 'Sekretariat',
-        subtitle: 'Kantor DPD/DPC',
-        tone: 'info',
-        onPress: () => navigation.navigate('SimpanOffices'),
+        id: 'aspirasi_warga',
+        icon: 'message-square',
+        title: 'Catat Aspirasi',
+        subtitle: 'Suara Warga',
+        badge: `${aspirasiItems.length}`,
+        tone: 'primary',
+        onPress: () => setShowAspirasiModal(true),
       },
       {
-        id: 'transparansi',
-        icon: 'shield',
-        title: 'Transparansi',
-        subtitle: 'Akuntabilitas',
-        badge: 'WTP',
+        id: 'pan_academy',
+        icon: 'award',
+        title: 'PAN Academy',
+        subtitle: 'Modul Kader',
+        badge: 'Modul',
         tone: 'primary',
-        onPress: () => navigation.navigate('TransparencyHub'),
+        onPress: () => navigation.navigate('AmanatAcademy'),
       },
+      broadcastItem,
     ];
   };
 
@@ -574,7 +509,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         <View style={styles.headerTopRow}>
           <View style={styles.headerTitleCol}>
             <Text style={[styles.welcomeGreeting, { color: colors.text }]}>
-              {isWitnessRole || isVolunteerWithWitness
+              {isVolunteer
+                ? 'SELAMAT DATANG'
+                : isWitnessRole
                 ? 'SIAGA HARI-H'
                 : (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR')
                 ? 'KOMANDO LAPANGAN'
@@ -611,11 +548,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[styles.roleBadgeDot, { backgroundColor: colors.primary }]} />
               <Text style={[styles.swRoleName, { color: colors.primary }]}>
-                {isVolunteerOnly ? 'Relawan Simpatisan — PAN 360' : (ROLE_LABEL[role] || profile.roleLabel)}
+                {isVolunteer ? 'Relawan Simpatisan — PAN 360' : (ROLE_LABEL[role] || profile.roleLabel)}
               </Text>
             </View>
             <Text style={[styles.swScopeText, { color: colors.textMuted }]} numberOfLines={1}>
-              {isVolunteerOnly ? 'Kel. Dago, Kec. Coblong, Kota Bandung' : profile.scopeLocation}
+              {isVolunteer ? 'Kel. Dago, Kec. Coblong, Kota Bandung' : profile.scopeLocation}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
               <Text style={[styles.swIdText, { color: colors.text }]}>
@@ -627,7 +564,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {!isVolunteerOnly && (
+            {!isVolunteer && (
               <Pressable
                 onPress={() => navigation.navigate('StatusPeranSaya')}
                 style={({ pressed }) => [
@@ -641,7 +578,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               </Pressable>
             )}
 
-            {!isVolunteerOnly && currentUser.roles.length > 1 && (
+            {!isVolunteer && currentUser.roles.length > 1 && (
               <Pressable
                 onPress={() => setShowRoleModal(true)}
                 style={({ pressed }) => [
@@ -668,67 +605,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             </Pressable>
           </View>
         </View>
-
-        {/* C. Integrated Announcement Ticker Strip */}
-        <Pressable
-          onPress={() => setShowInfoModal(true)}
-          style={({ pressed }) => [
-            styles.integratedAnnouncementStrip,
-            {
-              backgroundColor: isVolunteerOnly
-                ? (isDark ? 'rgba(0, 43, 82, 0.35)' : '#F0F9FF')
-                : (isDark ? 'rgba(220, 38, 38, 0.1)' : '#FEF2F2'),
-              borderColor: isVolunteerOnly
-                ? (isDark ? '#0A3D6B' : '#BAE6FD')
-                : (isDark ? 'rgba(220, 38, 38, 0.3)' : '#FECACA'),
-            },
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <View
-            style={[
-              styles.announcementIconBoxCompact,
-              { backgroundColor: isVolunteerOnly ? colors.primaryLight : 'rgba(220, 38, 38, 0.12)' },
-            ]}
-          >
-            <Feather
-              name="volume-2"
-              size={13}
-              color={isVolunteerOnly ? colors.primary : '#DC2626'}
-            />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View
-                style={[
-                  styles.announcementBadgeCompact,
-                  { backgroundColor: isVolunteerOnly ? colors.primary : '#DC2626' },
-                ]}
-              >
-                <Text style={styles.announcementBadgeTextCompact}>
-                  {isVolunteerOnly ? 'ARAHAN DPP PAN' : 'INSTRUKSI DPP'}
-                </Text>
-              </View>
-              <Text style={[styles.announcementDateTextCompact, { color: colors.textMuted }]}>
-                Hari Ini • 08:30 WIB
-              </Text>
-            </View>
-            <Text style={[styles.announcementHeadlineCompact, { color: colors.text }]} numberOfLines={1}>
-              {isVolunteerOnly
-                ? 'Gerakan Sapa Warga: Kenalkan Aksi Nyata PAN ke Masyarakat'
-                : 'Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara Pemilu'}
-            </Text>
-          </View>
-          <View style={styles.announcementActionBox}>
-            <Text style={[styles.announcementActionText, { color: isVolunteerOnly ? colors.primary : '#DC2626' }]}>
-              Baca
-            </Text>
-            <Feather name="chevron-right" size={12} color={isVolunteerOnly ? colors.primary : '#DC2626'} />
-          </View>
-        </Pressable>
-
-        {/* D. Divider Tipis Minimalis */}
-        <View style={[styles.unifiedCardDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]} />
 
         {/* E. Quick Menu Section */}
         <View style={{ gap: spacing.xs, paddingTop: 2 }}>
@@ -933,8 +809,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         </Card>
       )}
 
-      {/* Kartu Penugasan jika Relawan memegang Mandat Saksi TPS */}
-      {isVolunteerWithWitness && (
+      {/* Kartu Penugasan jika Relawan memegang Mandat Saksi TPS Resmi */}
+      {hasOfficialWitnessAssignment && isVolunteer && (
         <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
           <View style={styles.sectionHeaderBetween}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
@@ -1002,46 +878,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. AGENDA & KEGIATAN TERDEKAT                                             */}
-      {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Feather name="calendar" size={15} color={colors.primary} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Agenda Kegiatan Terdekat</Text>
-          </View>
-          <Pressable onPress={() => navigation.navigate('ActivitiesTab')} hitSlop={8}>
-            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
-          </Pressable>
-        </View>
-
-        <View style={{ gap: spacing.xs }}>
-          {events.slice(0, 3).map((ev) => (
-            <Pressable
-              key={ev.id}
-              onPress={() => navigation.navigate('ActivitiesTab')}
-              style={({ pressed }) => [
-                styles.miniAgendaRow,
-                { borderColor: colors.border },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
-                  {ev.title}
-                </Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
-                  {ev.dateLabel} • {ev.location}
-                </Text>
-              </View>
-              <Pill label={isVolunteerOnly ? 'Terdaftar' : (ev.isRegistered ? 'Terdaftar' : 'Buka')} tone={isVolunteerOnly || ev.isRegistered ? 'success' : 'info'} />
-            </Pressable>
-          ))}
-        </View>
-      </Card>
-
-      {/* ========================================================================= */}
-      {/* 5. KABAR & BERITA TERBARU (SESUAI SCREENSHOT)                             */}
+      {/* 4. KABAR & BERITA TERBARU (SESUAI SCREENSHOT — DI ATAS AGENDA)            */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
@@ -1113,53 +950,44 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         </View>
       </Card>
 
-      {!isVolunteerOnly && (
-        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <View style={styles.sectionHeaderBetween}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#E60012' }} />
-              <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Maklumat Resmi DPP PAN</Text>
-            </View>
-            <Pill label="Instruksi Pimpinan" tone="danger" />
+      {/* ========================================================================= */}
+      {/* 5. AGENDA & KEGIATAN TERDEKAT                                             */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Feather name="calendar" size={15} color={colors.primary} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Agenda Kegiatan Terdekat</Text>
           </View>
-
-          <Pressable
-            onPress={() => setShowMaklumatModal(true)}
-            style={({ pressed }) => [
-              styles.newsHighlightCard,
-              {
-                backgroundColor: isDark ? 'rgba(230, 0, 18, 0.12)' : '#FEF2F2',
-                borderColor: isDark ? 'rgba(230, 0, 18, 0.35)' : '#FCA5A5',
-              },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: '#DC2626', letterSpacing: 0.5 }}>
-                  MAKLUMAT STRATEGIS • NO. 082/DPP/IX/2026
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
-                  18 Sep 2026
-                </Text>
-              </View>
-              <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
-                Instruksi DPP PAN: Siaga Total Mengawal Suara Pemilu & Konsolidasi Pengawal Suara Se-Indonesia
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
-                Sekretariat Jenderal DPP PAN • Ketuk untuk membaca arahan resmi Ketum & Sekjen
-              </Text>
-            </View>
-
-            <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
-              <View style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: '#E60012', justifyContent: 'center', alignItems: 'center' }}>
-                <Feather name="volume-2" size={18} color="#FFFFFF" />
-              </View>
-            </View>
+          <Pressable onPress={() => navigation.navigate('ActivitiesTab')} hitSlop={8}>
+            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
           </Pressable>
-        </Card>
-      )}
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          {events.slice(0, 3).map((ev) => (
+            <Pressable
+              key={ev.id}
+              onPress={() => navigation.navigate('ActivitiesTab')}
+              style={({ pressed }) => [
+                styles.miniAgendaRow,
+                { borderColor: colors.border },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
+                  {ev.title}
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                  {ev.dateLabel} • {ev.location}
+                </Text>
+              </View>
+              <Pill label={isVolunteer ? 'Terdaftar' : (ev.isRegistered ? 'Terdaftar' : 'Buka')} tone={isVolunteer || ev.isRegistered ? 'success' : 'info'} />
+            </Pressable>
+          ))}
+        </View>
+      </Card>
 
 
       {/* Role Switcher Modal ("Mode Saya") */}
@@ -1218,17 +1046,17 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       <Modal
         visible={showInfoModal}
         onClose={() => setShowInfoModal(false)}
-        title={isVolunteerOnly ? 'Arahan Resmi DPP PAN' : 'Maklumat Resmi DPP PAN'}
-        subtitle={isVolunteerOnly ? 'Gerakan Sapa Warga & Aksi Nyata Rakyat' : 'Instruksi Pemenangan & Pengawalan Pemilu'}
+        title={isVolunteer ? 'Arahan Resmi DPP PAN' : 'Maklumat Resmi DPP PAN'}
+        subtitle={isVolunteer ? 'Gerakan Sapa Warga & Aksi Nyata Rakyat' : 'Instruksi Pemenangan & Pengawalan Pemilu'}
       >
         <View style={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
           <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.text }}>
-            {isVolunteerOnly
+            {isVolunteer
               ? 'Gerakan Sapa Warga: Kenalkan Aksi Nyata PAN ke Masyarakat'
               : 'Kawal Ketat Form C1 Plano & Integritas Tabulasi Suara'}
           </Text>
           <Text style={{ fontFamily: fonts.regular, fontSize: fontSize.xs, color: colors.textMuted, lineHeight: 18 }}>
-            {isVolunteerOnly ? (
+            {isVolunteer ? (
               <>
                 1. Lakukan kunjungan silaturahmi sapa warga secara santun dan ramah di lingkungan Kelurahan Dago.{'\n'}
                 2. Kenalkan program aksi nyata PAN dalam membantu kebutuhan pokok rakyat dan UMKM.{'\n'}
