@@ -59,6 +59,8 @@ export default function DashboardScreen({ navigation }: any) {
   const [showCoordinatorModal, setShowCoordinatorModal] = useState(false);
   const [showAspirasiModal, setShowAspirasiModal] = useState(false);
   const [showCandidateConfirmDialog, setShowCandidateConfirmDialog] = useState(false);
+  const [showAuditBerkasModal, setShowAuditBerkasModal] = useState(false);
+  const [showMaklumatModal, setShowMaklumatModal] = useState(false);
   const [activeWartaTab, setActiveWartaTab] = useState<'instruksi' | 'agenda'>('instruksi');
   const [newAspirasiTitle, setNewAspirasiTitle] = useState('');
   const [newAspirasiDesc, setNewAspirasiDesc] = useState('');
@@ -246,40 +248,43 @@ export default function DashboardScreen({ navigation }: any) {
   const isWitnessRole = role === 'WITNESS' || role === 'TPS_WITNESS';
   const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !currentUser.roles.some((r) => r.role === 'WITNESS');
   const isVolunteerWithWitness = (role === 'VOLUNTEER' || role === 'RELAWAN') && currentUser.roles.some((r) => r.role === 'WITNESS');
+  const isCoordinator = role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR';
+  const isCaleg = role === 'CALEG' || (currentUser as any)?.electoralStatus?.status === 'CALEG' || (currentUser as any)?.electoralStatus === 'CALEG' || (currentUser as any)?.roles?.some((r: any) => r.role === 'CALEG');
 
-  // Quick Action items: 4 menu esensial 1 baris per role (tanpa kabar aksi karena sudah di bottom tab)
+  // Quick Action items: 4 menu esensial 1 baris per role (Zero Redundancy - Anti Duplikasi Akses)
   const getQuickMenuItems = (): BcaQuickActionItem[] => {
-    if (isVolunteerOnly) {
-      // 4 menu esensial untuk Relawan Murni (1 baris)
+    // 1. Relawan Siaga Saksi (In-Training / Dengan Mandat Belum Terbuka Penuh)
+    if (isVolunteerWithWitness) {
       return [
         {
-          id: 'bursa_tugas',
-          icon: 'briefcase',
-          title: 'Bursa Tugas',
-          subtitle: 'Peluang Aksi',
-          badge: `${volunteerOpportunities.length}`,
+          id: 'status_unlock_saksi',
+          icon: 'lock',
+          title: 'Unlock Saksi',
+          subtitle: 'Syarat BSN',
+          badge: '4 Syarat',
+          tone: 'warning',
+          onPress: () => setShowRoleModal(true),
+        },
+        {
+          id: 'peta_sebaran',
+          icon: 'map',
+          title: 'Peta Sebaran',
+          subtitle: 'GIS Relawan',
+          badge: 'GIS',
           tone: 'primary',
-          onPress: () => navigation.navigate('ActivitiesTab', { screen: 'Activities', params: { tab: 'tugas' } }),
+          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
         },
         {
-          id: 'akademi',
-          icon: 'award',
-          title: 'PAN Academy',
-          subtitle: 'Bimtek Relawan',
-          badge: 'Modul',
+          id: 'aspirasi_warga',
+          icon: 'message-square',
+          title: 'Catat Aspirasi',
+          subtitle: 'Suara Warga',
+          badge: `${aspirasiItems.length}`,
           tone: 'primary',
-          onPress: () => navigation.navigate('WitnessAcademy'),
+          onPress: () => setShowAspirasiModal(true),
         },
         {
-          id: 'posko',
-          icon: 'map-pin',
-          title: 'Posko Relawan',
-          subtitle: 'Titik Kumpul',
-          tone: 'info',
-          onPress: () => navigation.navigate('SimpanOffices'),
-        },
-        {
-          id: 'korlap',
+          id: 'kontak_korlap',
           icon: 'phone-call',
           title: 'Kontak Korlap',
           subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
@@ -289,121 +294,203 @@ export default function DashboardScreen({ navigation }: any) {
       ];
     }
 
-    if (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR') {
-      // 4 menu esensial untuk Koordinator Lapangan (1 baris)
+    // 2. Relawan Biasa (Murni)
+    if (isVolunteerOnly) {
+      return [
+        {
+          id: 'peta_sebaran',
+          icon: 'map',
+          title: 'Peta Sebaran',
+          subtitle: 'GIS Relawan',
+          badge: 'GIS',
+          tone: 'primary',
+          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+        },
+        {
+          id: 'aspirasi_warga',
+          icon: 'message-square',
+          title: 'Catat Aspirasi',
+          subtitle: 'Suara Warga',
+          badge: `${aspirasiItems.length}`,
+          tone: 'primary',
+          onPress: () => setShowAspirasiModal(true),
+        },
+        {
+          id: 'titik_posko',
+          icon: 'map-pin',
+          title: 'Titik Posko',
+          subtitle: 'Posko Wilayah',
+          tone: 'info',
+          onPress: () => navigation.navigate('SimpanOffices'),
+        },
+        {
+          id: 'kontak_korlap',
+          icon: 'phone-call',
+          title: 'Kontak Korlap',
+          subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
+          tone: 'info',
+          onPress: () => setShowCoordinatorModal(true),
+        },
+      ];
+    }
+
+    // 3. Koordinator TPS / Lapangan
+    if (isCoordinator) {
       return [
         {
           id: 'supervisi',
           icon: 'grid',
           title: 'Supervisi TPS',
-          subtitle: 'Monitoring Wilayah',
+          subtitle: 'Kluster Wilayah',
           badge: `${scopedTps.length}`,
           tone: 'primary',
           onPress: () => navigation.navigate('Supervision'),
         },
         {
-          id: 'saksi_list',
-          icon: 'users',
-          title: 'Daftar Saksi',
-          subtitle: 'Status Personel',
+          id: 'peta_sebaran',
+          icon: 'map',
+          title: 'Peta Sebaran',
+          subtitle: 'GIS Wilayah',
+          badge: 'GIS',
           tone: 'primary',
-          onPress: () => navigation.navigate('WitnessList'),
-        },
-        {
-          id: 'darurat',
-          icon: 'alert-triangle',
-          title: 'Lapor Insiden',
-          subtitle: 'Eskalasi Cepat',
-          badge: 'SOS',
-          tone: 'danger',
-          onPress: () => navigation.navigate('EmergencyForm'),
+          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
         },
         {
           id: 'broadcast',
           icon: 'radio',
           title: 'Broadcast Tim',
-          subtitle: 'Pesan Komando',
+          subtitle: 'Komando Saksi',
           tone: 'warning',
           onPress: () => navigation.navigate('Broadcast'),
         },
+        {
+          id: 'darurat',
+          icon: 'alert-triangle',
+          title: 'Lapor Insiden',
+          subtitle: 'Eskalasi Darurat',
+          badge: 'SOS',
+          tone: 'danger',
+          onPress: () => navigation.navigate('EmergencyForm'),
+        },
       ];
     }
 
-    if (role === 'MEMBER') {
-      // 4 menu esensial untuk Kader / Member Partai (1 baris)
+    // 4. Anggota + Caleg / Bacaleg 2029
+    if (isCaleg) {
       return [
         {
-          id: 'kta',
-          icon: 'credit-card',
-          title: 'e-KTA simPAN',
-          subtitle: 'KTA Digital',
+          id: 'peta_basis_dapil',
+          icon: 'map',
+          title: 'Peta Basis Dapil',
+          subtitle: 'GIS Suara Masuk',
+          badge: 'Dapil',
           tone: 'primary',
-          onPress: () => navigation.navigate('SimpanKta'),
+          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
         },
         {
-          id: 'akademi',
-          icon: 'award',
-          title: 'PAN Academy',
-          subtitle: 'Kaderisasi',
+          id: 'daftar_bacaleg',
+          icon: 'file-text',
+          title: 'Daftar Bacaleg',
+          subtitle: 'simPAN Caleg',
           tone: 'primary',
-          onPress: () => navigation.navigate('WitnessAcademy'),
+          onPress: () => navigation.navigate('SimpanBacaleg'),
         },
         {
-          id: 'posko',
-          icon: 'map-pin',
-          title: 'Kantor DPD',
-          subtitle: 'Sekretariat',
+          id: 'audit_berkas',
+          icon: 'check-circle',
+          title: 'Audit KPPN',
+          subtitle: 'Verifikasi Berkas',
+          badge: 'Valid',
+          tone: 'primary',
+          onPress: () => setShowAuditBerkasModal(true),
+        },
+        {
+          id: 'struktur_pengurus',
+          icon: 'users',
+          title: 'Struktur Partai',
+          subtitle: 'Pengurus DPD',
           tone: 'info',
-          onPress: () => navigation.navigate('SimpanOffices'),
-        },
-        {
-          id: 'transparansi',
-          icon: 'shield',
-          title: 'Transparansi',
-          subtitle: 'Akuntabilitas',
-          badge: 'WTP',
-          tone: 'primary',
-          onPress: () => navigation.navigate('TransparencyHub'),
+          onPress: () => navigation.navigate('SimpanStructure'),
         },
       ];
     }
 
-    // 4 menu utama untuk Saksi TPS (Rudi Saputra) - 1 baris
+    // 5. Saksi TPS Resmi Hari-H (WITNESS)
+    if (isWitnessRole) {
+      return [
+        {
+          id: 'presensi_gps',
+          icon: 'map-pin',
+          title: 'Presensi Bilik',
+          subtitle: 'GPS Geofence',
+          badge: 'Wajib',
+          tone: 'primary',
+          onPress: () => navigation.navigate('CheckIn'),
+        },
+        {
+          id: 'lapor_c1',
+          icon: 'edit-3',
+          title: 'Entri C1 TPS',
+          subtitle: 'Formulir Plano',
+          tone: 'primary',
+          onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
+        },
+        {
+          id: 'scan_ocr',
+          icon: 'camera',
+          title: 'Scan AI C1',
+          subtitle: 'Vision Plano C1',
+          badge: 'AI',
+          tone: 'primary',
+          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+        },
+        {
+          id: 'darurat',
+          icon: 'alert-triangle',
+          title: 'Lapor Insiden',
+          subtitle: 'Sengketa & SOS',
+          badge: 'SOS',
+          tone: 'danger',
+          onPress: () => navigation.navigate('EmergencyForm'),
+        },
+      ];
+    }
+
+    // 6. Anggota / Pengurus Umum (MEMBER default)
     return [
       {
-        id: 'mandat',
-        icon: 'file-text',
-        title: 'Surat Mandat',
-        subtitle: 'e-Mandat KPPS',
-        badge: 'Resmi',
+        id: 'struktur_partai',
+        icon: 'users',
+        title: 'Struktur DPD',
+        subtitle: 'Kepengurusan',
         tone: 'primary',
-        onPress: () => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID }),
+        onPress: () => navigation.navigate('SimpanStructure'),
       },
       {
-        id: 'lapor_c1',
-        icon: 'edit-3',
-        title: 'Entri C1 TPS',
-        subtitle: 'Formulir Suara',
+        id: 'peta_sebaran',
+        icon: 'map',
+        title: 'Peta Sebaran',
+        subtitle: 'GIS Kekuatan',
+        badge: 'GIS',
         tone: 'primary',
-        onPress: () => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' }),
+        onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
       },
       {
-        id: 'scan_ocr',
-        icon: 'camera',
-        title: 'Scan AI C1',
-        subtitle: 'Vision Plano C1',
-        badge: 'AI',
-        tone: 'primary',
-        onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+        id: 'kantor_dpd',
+        icon: 'map-pin',
+        title: 'Sekretariat',
+        subtitle: 'Kantor DPD/DPC',
+        tone: 'info',
+        onPress: () => navigation.navigate('SimpanOffices'),
       },
       {
-        id: 'darurat',
-        icon: 'alert-triangle',
-        title: 'Lapor Insiden',
-        subtitle: 'Sengketa & SOS',
-        badge: 'SOS',
-        tone: 'danger',
-        onPress: () => navigation.navigate('EmergencyForm'),
+        id: 'transparansi',
+        icon: 'shield',
+        title: 'Transparansi',
+        subtitle: 'Akuntabilitas',
+        badge: 'WTP',
+        tone: 'primary',
+        onPress: () => navigation.navigate('TransparencyHub'),
       },
     ];
   };
@@ -714,41 +801,38 @@ export default function DashboardScreen({ navigation }: any) {
               </View>
             </View>
 
-            <View style={styles.wsActionButtonsRow}>
-              <Pressable
-                onPress={() => navigation.navigate('CheckIn')}
-                style={({ pressed }) => [
-                  styles.wsBtnSolid,
-                  { backgroundColor: colors.primary },
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <Feather name="map-pin" size={13} color="#FFFFFF" />
-                <Text style={styles.wsBtnSolidText}>Presensi GPS</Text>
-              </Pressable>
+            {/* Progress Monitoring Suara & Status TPS (Zero Redundancy: Entri C1 di Quick Menu) */}
+            <View style={{ gap: 6, marginTop: spacing.xs }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+                  Partisipasi TPS: 184 / 284 DPT Terdata Hadir
+                </Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
+                  64.8% Hadir
+                </Text>
+              </View>
+              <View style={{ height: 6, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' }}>
+                <View style={{ width: '64.8%', height: '100%', borderRadius: 999, backgroundColor: colors.primary }} />
+              </View>
+            </View>
 
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="shield" size={12} color={colors.success} />
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+                  Mandat BSN Resmi Terverifikasi KPU
+                </Text>
+              </View>
               <Pressable
-                onPress={() => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' })}
+                onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
                 style={({ pressed }) => [
-                  styles.wsBtnOutline,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.8 },
+                  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+                  pressed && { opacity: 0.7 },
                 ]}
               >
-                <Feather name="edit-3" size={13} color={colors.primary} />
-                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Lapor C1</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
-                style={({ pressed }) => [
-                  styles.wsBtnOutline,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Feather name="file-text" size={13} color={colors.primary} />
-                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Surat Mandat</Text>
+                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
+                  Detail Log Suara TPS →
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -767,47 +851,44 @@ export default function DashboardScreen({ navigation }: any) {
 
           <View style={[styles.coordSummaryBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
             <View style={styles.coordStatRow}>
-              <View style={styles.coordStatCol}>
+              <Pressable
+                onPress={() => navigation.navigate('Supervision')}
+                style={styles.coordStatCol}
+              >
                 <Text style={[styles.coordStatNum, { color: colors.primary }]}>{scopedTps.length}</Text>
-                <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>TPS Kluster</Text>
-              </View>
+                <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>TPS Kluster (Detail)</Text>
+              </Pressable>
               <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.coordStatCol}>
+              <Pressable
+                onPress={() => navigation.navigate('WitnessList')}
+                style={styles.coordStatCol}
+              >
                 <Text style={[styles.coordStatNum, { color: colors.success }]}>{checkedInCount}</Text>
                 <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>Saksi Hadir</Text>
-              </View>
+              </Pressable>
               <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-              <View style={styles.coordStatCol}>
+              <Pressable
+                onPress={() => navigation.navigate('WitnessList')}
+                style={styles.coordStatCol}
+              >
                 <Text style={[styles.coordStatNum, { color: colors.warning }]}>
                   {totalWitnessInScope - checkedInCount}
                 </Text>
                 <Text style={[styles.coordStatLabel, { color: colors.textMuted }]}>Belum Check-in</Text>
-              </View>
+              </Pressable>
             </View>
 
-            <View style={styles.wsActionButtonsRow}>
-              <Pressable
-                onPress={() => navigation.navigate('Supervision')}
-                style={({ pressed }) => [
-                  styles.wsBtnSolid,
-                  { backgroundColor: colors.primary },
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <Feather name="grid" size={13} color="#FFFFFF" />
-                <Text style={styles.wsBtnSolidText}>Pantau Kluster TPS</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('WitnessList')}
-                style={({ pressed }) => [
-                  styles.wsBtnOutline,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Feather name="users" size={13} color={colors.primary} />
-                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Daftar Saksi</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="check-circle" size={12} color={colors.success} />
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+                  Ketuk angka di atas untuk membuka daftar personel
+                </Text>
+              </View>
+              <Pressable onPress={() => navigation.navigate('Supervision')}>
+                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
+                  Supervisi Wilayah →
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -844,41 +925,37 @@ export default function DashboardScreen({ navigation }: any) {
               </View>
             </View>
 
-            <View style={styles.wsActionButtonsRow}>
-              <Pressable
-                onPress={() => navigation.navigate('CheckIn')}
-                style={({ pressed }) => [
-                  styles.wsBtnSolid,
-                  { backgroundColor: colors.primary },
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <Feather name="map-pin" size={13} color="#FFFFFF" />
-                <Text style={styles.wsBtnSolidText}>Presensi TPS</Text>
-              </Pressable>
+            <View style={{ gap: 6, marginTop: spacing.xs }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+                  Progress Pemilih Hadir: 184 / 284 DPT (64.8%)
+                </Text>
+                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
+                  C1 Standby
+                </Text>
+              </View>
+              <View style={{ height: 6, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' }}>
+                <View style={{ width: '64.8%', height: '100%', borderRadius: 999, backgroundColor: colors.primary }} />
+              </View>
+            </View>
 
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="check" size={12} color={colors.success} />
+                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
+                  Relawan Terakreditasi BSN
+                </Text>
+              </View>
               <Pressable
-                onPress={() => navigation.navigate('ReportForm', { tpsId: currentTps?.id || 'TPS-001' })}
+                onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
                 style={({ pressed }) => [
-                  styles.wsBtnOutline,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.8 },
+                  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+                  pressed && { opacity: 0.7 },
                 ]}
               >
-                <Feather name="edit-3" size={13} color={colors.primary} />
-                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>Form C1</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => navigation.navigate('AssignmentLetter', { witnessId: CURRENT_WITNESS_ID })}
-                style={({ pressed }) => [
-                  styles.wsBtnOutline,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  pressed && { opacity: 0.8 },
-                ]}
-              >
-                <Feather name="file-text" size={13} color={colors.primary} />
-                <Text style={[styles.wsBtnOutlineText, { color: colors.primary }]}>E-Mandat</Text>
+                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
+                  Detail TPS →
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -925,82 +1002,52 @@ export default function DashboardScreen({ navigation }: any) {
       </Card>
 
       {/* ========================================================================= */}
-      {/* 5. KABAR & BERITA TERBARU                                                 */}
+      {/* 5. TICKER MAKLUMAT RESMI DPP PAN (ZERO REDUNDANCY — ARAHAN KOMANDO PUSAT)  */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Feather name="book-open" size={15} color={colors.primary} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#E60012' }} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Maklumat Resmi DPP PAN</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('NewsTab')} hitSlop={8}>
-            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
-          </Pressable>
+          <Pill label="Instruksi Pimpinan" tone="danger" />
         </View>
 
-        {/* Featured News Highlight */}
-        {PORTAL_NEWS_LIST.slice(0, 1).map((news) => (
-          <Pressable
-            key={news.id}
-            onPress={() => navigation.navigate('NewsTab')}
-            style={({ pressed }) => [
-              styles.newsHighlightCard,
-              {
-                backgroundColor: isDark ? 'rgba(0, 102, 179, 0.12)' : '#F0F7FF',
-                borderColor: isDark ? '#0A3D6B' : '#BAE6FD',
-              },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={[styles.newsCatBadge, { color: news.categoryColor }]}>
-                  {news.categoryLabel.toUpperCase()}
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
-                  {news.timeAgo}
-                </Text>
-              </View>
-              <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
-                {news.title}
+        <Pressable
+          onPress={() => setShowMaklumatModal(true)}
+          style={({ pressed }) => [
+            styles.newsHighlightCard,
+            {
+              backgroundColor: isDark ? 'rgba(230, 0, 18, 0.12)' : '#FEF2F2',
+              borderColor: isDark ? 'rgba(230, 0, 18, 0.35)' : '#FCA5A5',
+            },
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <View style={{ flex: 1, gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: '#DC2626', letterSpacing: 0.5 }}>
+                MAKLUMAT STRATEGIS • NO. 082/DPP/IX/2026
               </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
-                {news.author.name} • {news.readTime}
+              <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
+                18 Sep 2026
               </Text>
             </View>
-            <Image
-              source={news.localFallbackImage}
-              style={styles.newsHighlightThumb}
-              resizeMode="cover"
-            />
-          </Pressable>
-        ))}
+            <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
+              Instruksi DPP PAN: Siaga Total Mengawal Suara Pemilu & Konsolidasi Pengawal Suara Se-Indonesia
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
+              Sekretariat Jenderal DPP PAN • Ketuk untuk membaca arahan resmi Ketum & Sekjen
+            </Text>
+          </View>
 
-        {/* Secondary News Mini Rows */}
-        <View style={{ gap: spacing.xs }}>
-          {PORTAL_NEWS_LIST.slice(1, 3).map((item) => (
-            <Pressable
-              key={item.id}
-              onPress={() => navigation.navigate('NewsTab')}
-              style={({ pressed }) => [
-                styles.miniAgendaRow,
-                { borderColor: colors.border },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2, marginRight: 8 }}>
-                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 10.5, color: colors.textMuted }}>
-                  {item.categoryLabel} • {item.timeAgo}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={15} color={colors.textMuted} />
-            </Pressable>
-          ))}
-        </View>
+          <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
+            <View style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: '#E60012', justifyContent: 'center', alignItems: 'center' }}>
+              <Feather name="volume-2" size={18} color="#FFFFFF" />
+            </View>
+          </View>
+        </Pressable>
       </Card>
 
 
@@ -1697,6 +1744,156 @@ export default function DashboardScreen({ navigation }: any) {
             </View>
           </ScrollView>
         )}
+      </Modal>
+
+      {/* Modal Audit Berkas KPPN (Khusus Caleg & Fungsionaris) */}
+      <Modal
+        visible={showAuditBerkasModal}
+        onClose={() => setShowAuditBerkasModal(false)}
+        title="Audit Berkas Pencalegan KPPN"
+      >
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ gap: 2 }}>
+            <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: colors.textMuted }}>
+              Komite Pemenangan Pemilu Nasional (KPPN) DPP PAN
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: colors.text }}>
+              Verifikasi Kelayakan Berkas Caleg Pemilu 2029
+            </Text>
+          </View>
+
+          <View style={{ gap: 8, marginTop: 4 }}>
+            {[
+              { id: '1', doc: 'KTP Elektronik & e-KTA simPAN Terverifikasi', status: 'Lengkap & Sah' },
+              { id: '2', doc: 'Ijazah Terlegalisir Lembaga Pendidikan Berwenang', status: 'Lengkap & Sah' },
+              { id: '3', doc: 'Surat Keterangan Bebas Pidana Pengadilan Negeri', status: 'Lengkap & Sah' },
+              { id: '4', doc: 'SKCK dari Mabes Polri (Keperluan Pencalegan)', status: 'Lengkap & Sah' },
+              { id: '5', doc: 'Bukti Pelaporan Harta Kekayaan (LHKPN KPK)', status: 'Terverifikasi' },
+              { id: '6', doc: 'Formulir Model BB & Pakta Integritas DPP PAN', status: 'Ditandatangani' },
+            ].map((item) => (
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 8,
+                  borderRadius: radius.sm,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 8,
+                }}
+              >
+                <Feather name="check-circle" size={16} color={colors.success} />
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={{ fontSize: 11.5, fontFamily: fonts.medium, color: colors.text }}>
+                    {item.doc}
+                  </Text>
+                  <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.success }}>
+                    Status: {item.status}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View
+            style={{
+              backgroundColor: isDark ? 'rgba(5, 150, 105, 0.15)' : '#ECFDF5',
+              padding: 10,
+              borderRadius: radius.sm,
+              borderWidth: 1,
+              borderColor: '#10B981',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 4,
+            }}
+          >
+            <Feather name="award" size={20} color="#059669" />
+            <View style={{ flex: 1, gap: 1 }}>
+              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: '#059669' }}>
+                STATUS KPPN: MEMENUHI SYARAT (MS)
+              </Text>
+              <Text style={{ fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted }}>
+                Berkas siap di-generate dan di-submit ke SILON KPU RI.
+              </Text>
+            </View>
+          </View>
+
+          <PrimaryButton
+            label="Tutup Hasil Audit"
+            onPress={() => setShowAuditBerkasModal(false)}
+          />
+        </View>
+      </Modal>
+
+      {/* Modal Maklumat Resmi DPP PAN */}
+      <Modal
+        visible={showMaklumatModal}
+        onClose={() => setShowMaklumatModal(false)}
+        title="Maklumat Resmi DPP PAN"
+      >
+        <View style={{ gap: spacing.sm }}>
+          <View
+            style={{
+              backgroundColor: isDark ? 'rgba(230, 0, 18, 0.15)' : '#FEF2F2',
+              borderColor: '#FCA5A5',
+              borderWidth: 1,
+              padding: 10,
+              borderRadius: radius.md,
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: '#DC2626', letterSpacing: 0.5 }}>
+              SEKRETARIAT JENDERAL DPP PARTAI AMANAT NASIONAL
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: colors.text }}>
+              Instruksi Strategis Pemenangan & Pengawalan Suara
+            </Text>
+            <Text style={{ fontSize: 10.5, fontFamily: fonts.regular, color: colors.textMuted }}>
+              Nomor: PAN/A/KU-SJ/082/IX/2026 • Tanggal: 18 September 2026
+            </Text>
+          </View>
+
+          <Text style={{ fontSize: 12, fontFamily: fonts.medium, color: colors.text, lineHeight: 17 }}>
+            Kepada Seluruh Fungsionaris DPW, DPD, DPC, DPRt, Caleg, dan Saksi TPS BSN PAN Se-Indonesia:
+          </Text>
+
+          <View style={{ gap: 8 }}>
+            {[
+              '1. Seluruh jajaran DPD & DPC wajib memastikan 100% TPS di wilayahnya terisi saksi resmi ber-SK Mandat.',
+              '2. Wajib menggunakan aplikasi SAKSI 360 untuk input Form C1 Plano dan presensi GPS bilik suara.',
+              '3. Koordinator Kluster dan Satgas PANdawa siaga penuh mengamankan pemungutan serta penghitungan suara.',
+              '4. Setiap potensi sengketa atau indikasi kecurangan segera dilaporkan melalui kanal SOS Darurat di aplikasi.',
+            ].map((text, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
+                <Feather name="check-square" size={13} color={colors.primary} style={{ marginTop: 2 }} />
+                <Text style={{ fontSize: 11.5, fontFamily: fonts.regular, color: colors.text, flex: 1, lineHeight: 16 }}>
+                  {text}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ gap: 1 }}>
+              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.text }}>Dr. (H.C.) Zulkifli Hasan</Text>
+              <Text style={{ fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted }}>Ketua Umum DPP PAN</Text>
+            </View>
+            <View style={{ gap: 1, alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.text }}>Sekretaris Jenderal</Text>
+              <Text style={{ fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted }}>DPP PAN Jakarta</Text>
+            </View>
+          </View>
+
+          <PrimaryButton
+            label="Pahami & Siap Melaksanakan"
+            onPress={() => setShowMaklumatModal(false)}
+          />
+        </View>
       </Modal>
     </ScrollView>
   );
