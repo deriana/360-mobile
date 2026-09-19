@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { fonts } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
+import { withRoleGuard } from '../components/RoleGuardWrapper';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
 import SupervisionScreen from '../screens/SupervisionScreen';
@@ -104,6 +105,11 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
 ];
 
+const GUARDED_SCREENS = DETAIL_SCREENS.map((s) => ({
+  ...s,
+  component: withRoleGuard(s.component, s.name),
+}));
+
 /**
  * Komponen header kanan yang berdiri sendiri.
  * useNavigation() dipanggil di sini agar mendapat context Stack navigator
@@ -191,7 +197,7 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
             ),
           }}
         />
-        {DETAIL_SCREENS.filter((s) => s.name !== homeName).map((s) => (
+        {GUARDED_SCREENS.filter((s) => s.name !== homeName).map((s) => (
           <Stack.Screen
             key={s.name}
             name={s.name}
