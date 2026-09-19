@@ -60,9 +60,21 @@ if (process.platform === 'win32') {
 
 const config = getDefaultConfig(__dirname);
 
+// Fix pnpm symlink resolution: Without this, Metro treats
+// node_modules/react-native/... (symlink) and
+// node_modules/.pnpm/react-native@0.86.3_.../node_modules/react-native/... (real path)
+// as TWO different modules, causing duplicate bundling and fatal runtime errors
+// like "TypeError: property is not writable" when modules with global side effects
+// (e.g. setUpFuseboxReactDevToolsDispatcher.js) execute twice.
+config.resolver.unstable_enableSymlinks = true;
+
+// Ensure Metro watches the pnpm virtual store where real files live
+const pnpmStore = path.join(__dirname, 'node_modules', '.pnpm');
+config.watchFolders = [...(config.watchFolders || []), pnpmStore];
+
 // Exclude build artifacts and temporary export directories from Metro's resolution
 const additionalBlockList = [
-  /^(?:dist|temp_export)[\\/].*$/,
+  /^(?:dist|temp_export)[\\\/].*$/,
 ];
 
 if (Array.isArray(config.resolver.blockList)) {
