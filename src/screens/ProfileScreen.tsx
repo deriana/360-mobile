@@ -45,18 +45,6 @@ interface DirectoryMenuItem {
 const DIRECTORY_PAGES: DirectoryMenuItem[] = [
   // TUGAS LAPANGAN & KAWAL SUARA
   {
-    id: 'unlock-saksi',
-    title: 'Unlock Mandat Saksi TPS',
-    shortTitle: 'Unlock Saksi',
-    subtitle: 'Syarat akreditasi BSN, verifikasi berkas, & SK Mandat resmi',
-    screen: 'modal',
-    category: 'TUGAS',
-    icon: 'lock',
-    tone: 'warning',
-    badge: '4 Syarat',
-    highlightRoles: ['VOLUNTEER', 'MEMBER'],
-  },
-  {
     id: 'c1-ocr',
     title: 'Pemindaian C1 Plano (AI OCR)',
     shortTitle: 'C1 Plano',
@@ -66,18 +54,6 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'file-text',
     tone: 'success',
     badge: 'OCR',
-    highlightRoles: ['WITNESS'],
-  },
-  {
-    id: 'check-in',
-    title: 'Presensi Kehadiran GPS',
-    shortTitle: 'Presensi GPS',
-    subtitle: 'Absensi lokasi digital di TPS atau posko kegiatan',
-    screen: 'CheckIn',
-    category: 'TUGAS',
-    icon: 'map-pin',
-    tone: 'primary',
-    badge: 'Wajib',
     highlightRoles: ['WITNESS', 'VOLUNTEER'],
   },
   {
@@ -91,7 +67,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'award',
     tone: 'primary',
     badge: 'Resmi',
-    highlightRoles: ['WITNESS'],
+    highlightRoles: ['WITNESS', 'VOLUNTEER'],
   },
   {
     id: 'tps-detail',
@@ -104,12 +80,12 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'check-square',
     tone: 'info',
     badge: 'DPT',
-    highlightRoles: ['WITNESS'],
+    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'supervision',
     title: 'Supervisi & Pantau TPS Wilayah',
-    shortTitle: 'Supervisi',
+    shortTitle: 'Supervisi TPS',
     subtitle: 'Monitoring saksi dan progres suara di kecamatan',
     screen: 'Supervision',
     category: 'TUGAS',
@@ -127,29 +103,19 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'TUGAS',
     icon: 'users',
     tone: 'primary',
-    highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'broadcast',
-    title: 'Siaran Pesan (Broadcast Instruksi)',
-    shortTitle: 'Broadcast',
-    subtitle: 'Kirim pengumuman serentak ke saksi lapangan',
-    screen: 'Broadcast',
-    category: 'TUGAS',
-    icon: 'radio',
-    tone: 'warning',
-    badge: 'Siaran',
+    badge: '15 Saksi',
     highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'verify-letter',
     title: 'Verifikasi Surat Tugas Lapangan',
-    shortTitle: 'Cek Mandat',
+    shortTitle: 'Verifikasi Mandat',
     subtitle: 'Pindai barcode surat mandat saksi di TPS',
     screen: 'VerifyLetter',
     category: 'TUGAS',
     icon: 'check-circle',
     tone: 'info',
+    badge: 'Barcode',
     highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
@@ -162,7 +128,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'check-square',
     tone: 'info',
     badge: 'Giat',
-    highlightRoles: ['VOLUNTEER', 'MEMBER'],
+    highlightRoles: ['VOLUNTEER'],
   },
   {
     id: 'emergency-form',
@@ -177,16 +143,16 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
-    id: 'activity-timeline',
-    title: 'Riwayat Aktivitas & Penugasan',
-    shortTitle: 'Aktivitas',
-    subtitle: 'Jejak rekam penugasan dan aksi resmi partai',
-    screen: '',
+    id: 'quick-count',
+    title: 'Hitung Cepat Suara (Real Count)',
+    shortTitle: 'Hitung Suara',
+    subtitle: 'Simulasi dan tabulasi real count perolehan kursi pemilu',
+    screen: 'QuickCountGame',
     category: 'TUGAS',
-    icon: 'clock',
-    tone: 'info',
-    badge: 'Jejak',
-    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER'],
+    icon: 'check-circle',
+    tone: 'success',
+    badge: 'KPPN',
+    highlightRoles: ['CALEG_OPS'],
   },
 
   // EDUKASI & KADERISASI
@@ -200,7 +166,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'book-open',
     tone: 'primary',
     badge: 'Akademi',
-    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
+    highlightRoles: ['VOLUNTEER', 'MEMBER', 'CALEG_OPS'],
   },
   {
     id: 'pandawa-program',
@@ -212,7 +178,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'shield',
     tone: 'warning',
     badge: 'Satgas',
-    highlightRoles: ['MEMBER', 'VOLUNTEER'],
+    highlightRoles: ['VOLUNTEER'],
   },
   {
     id: 'witness-academy',
@@ -224,7 +190,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'award',
     tone: 'primary',
     badge: 'Bimtek',
-    highlightRoles: ['WITNESS'],
+    highlightRoles: ['WITNESS', 'VOLUNTEER'],
   },
 
   // ORGANISASI, DATA PARTAI & PETA
@@ -250,7 +216,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'map',
     tone: 'primary',
     badge: 'GIS',
-    highlightRoles: ['MEMBER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'VOLUNTEER', 'WITNESS'],
+    highlightRoles: ['VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
   },
   {
     id: 'simpan-structure',
@@ -261,7 +227,8 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'layers',
     tone: 'info',
-    highlightRoles: ['MEMBER'],
+    badge: 'DPP-DPC',
+    highlightRoles: ['MEMBER', 'CALEG_OPS'],
   },
   {
     id: 'simpan-offices',
@@ -272,7 +239,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'home',
     tone: 'info',
-    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
+    highlightRoles: ['VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'simpan-bacaleg',
@@ -284,18 +251,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'user-plus',
     tone: 'warning',
     badge: 'Caleg',
-    highlightRoles: ['MEMBER'],
-  },
-  {
-    id: 'simpan-news',
-    title: 'Warta & Instruksi Resmi PAN',
-    shortTitle: 'Warta PAN',
-    subtitle: 'Berita partai terpercaya, press release & kabar aksi',
-    screen: 'SimpanNews',
-    category: 'ORGANISASI',
-    icon: 'rss',
-    tone: 'info',
-    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
+    highlightRoles: ['MEMBER', 'CALEG_OPS'],
   },
   {
     id: 'party-roster',
@@ -306,7 +262,19 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'users',
     tone: 'primary',
-    highlightRoles: ['MEMBER'],
+    badge: 'Fraksi',
+    highlightRoles: ['MEMBER', 'CALEG_OPS'],
+  },
+  {
+    id: 'simpan-news',
+    title: 'Warta & Instruksi Resmi PAN',
+    shortTitle: 'Warta PAN',
+    subtitle: 'Berita partai terpercaya, press release & kabar aksi',
+    screen: 'SimpanNews',
+    category: 'ORGANISASI',
+    icon: 'rss',
+    tone: 'info',
+    highlightRoles: ['VOLUNTEER', 'WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
   },
   {
     id: 'transparency-hub',
@@ -318,64 +286,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'check-circle',
     tone: 'success',
     badge: 'WTP',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'status-peran',
-    title: 'Status & Peran Saya (7 Dimensi)',
-    shortTitle: 'Status Peran',
-    subtitle: 'Rincian keanggotaan, mandat saksi, kepengurusan & dapil',
-    screen: 'StatusPeranSaya',
-    category: 'ORGANISASI',
-    icon: 'user',
-    tone: 'primary',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'kelola-status',
-    title: 'Kelola Status & Partisipasi Mandiri',
-    shortTitle: 'Kelola Status',
-    subtitle: 'Pengajuan pengunduran diri resmi, jeda relawan & task guard',
-    screen: 'KelolaStatus',
-    category: 'ORGANISASI',
-    icon: 'user-x',
-    tone: 'warning',
-    badge: 'Tata Kelola',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'register-member',
-    title: 'Daftar Jadi Kader Resmi (e-KTA)',
-    shortTitle: 'Daftar KTA',
-    subtitle: 'Formulir online upgrade status simpatisan ke kader simPAN',
-    screen: 'RegisterMember',
-    category: 'ORGANISASI',
-    icon: 'user-check',
-    tone: 'warning',
-    badge: 'Upgrade',
-    highlightRoles: ['VOLUNTEER'],
-  },
-  {
-    id: 'help-center',
-    title: 'Pusat Bantuan & Panduan',
-    shortTitle: 'Pusat Bantuan',
-    subtitle: 'Tanya jawab (FAQ), kontak call center & regulasi BSN',
-    screen: 'HelpCenter',
-    category: 'ORGANISASI',
-    icon: 'help-circle',
-    tone: 'info',
-    highlightRoles: ['WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'VOLUNTEER'],
-  },
-  {
-    id: 'security-center',
-    title: 'Keamanan & Autentikasi Akun',
-    shortTitle: 'Keamanan PIN',
-    subtitle: 'Pengaturan PIN transaksi, biometric & verifikasi perangkat',
-    screen: 'Security',
-    category: 'ORGANISASI',
-    icon: 'shield',
-    tone: 'primary',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
+    highlightRoles: ['VOLUNTEER', 'WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
   },
 ];
 
@@ -496,30 +407,40 @@ export default function ProfileScreen({ navigation }: any) {
   };
 
   // 1. Menu yang sah dan relevan khusus untuk role aktif (mencegah kebocoran & menu duplikat)
+  const isWitnessMandated =
+    hasWitnessRole ||
+    currentUser.dimensions?.programs?.programSaksi === 'MANDATED' ||
+    currentUser.dimensions?.programs?.programSaksi === 'CERTIFIED';
+
+  // 1. Menu yang sah dan relevan khusus untuk role aktif (mencegah kebocoran & menu duplikat)
   const roleAccessibleItems = useMemo(() => {
     return DIRECTORY_PAGES.filter((item) => {
+      // 1. Role match
       if (!item.highlightRoles.includes(role as MobileRole)) {
         return false;
       }
-      if (item.id === 'simpan-kta' && !isOfficialMember) {
-        return false;
+      // 2. Volunteer state guard (Relawan Murni vs Relawan Mandat Saksi)
+      if (role === 'VOLUNTEER' && !isWitnessMandated) {
+        const witnessOnlyIds = ['c1-ocr', 'assignment-letter', 'tps-detail', 'witness-academy', 'emergency-form'];
+        if (witnessOnlyIds.includes(item.id)) return false;
       }
-      if (item.id === 'register-member' && isOfficialMember) {
+      // 3. Official member guard
+      if (item.id === 'simpan-kta' && !isOfficialMember) {
         return false;
       }
       return true;
     });
-  }, [role, isOfficialMember]);
+  }, [role, isWitnessMandated, isOfficialMember]);
 
-  // Hitung jumlah menu per kategori
+  // Hitung jumlah menu per kategori (berbasis roleAccessibleItems)
   const categoryCounts = useMemo(() => {
     return {
-      ALL: DIRECTORY_PAGES.length,
-      TUGAS: DIRECTORY_PAGES.filter((i) => i.category === 'TUGAS').length,
-      EDUKASI: DIRECTORY_PAGES.filter((i) => i.category === 'EDUKASI').length,
-      ORGANISASI: DIRECTORY_PAGES.filter((i) => i.category === 'ORGANISASI').length,
+      ALL: roleAccessibleItems.length,
+      TUGAS: roleAccessibleItems.filter((i) => i.category === 'TUGAS').length,
+      EDUKASI: roleAccessibleItems.filter((i) => i.category === 'EDUKASI').length,
+      ORGANISASI: roleAccessibleItems.filter((i) => i.category === 'ORGANISASI').length,
     };
-  }, []);
+  }, [roleAccessibleItems]);
 
   const CATEGORY_TABS = useMemo(() => [
     { key: 'ALL' as const, label: 'Semua', icon: 'grid' as const, count: categoryCounts.ALL },
@@ -528,9 +449,9 @@ export default function ProfileScreen({ navigation }: any) {
     { key: 'ORGANISASI' as const, label: 'Organisasi', icon: 'briefcase' as const, count: categoryCounts.ORGANISASI },
   ], [categoryCounts]);
 
-  // Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori (semua menu ditampilkan langsung)
+  // Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori (khusus menu role aktif)
   const displayedDirectoryItems = useMemo(() => {
-    return DIRECTORY_PAGES.filter((item) => {
+    return roleAccessibleItems.filter((item) => {
       if (directorySearch.trim()) {
         const q = directorySearch.toLowerCase();
         return (
@@ -545,14 +466,10 @@ export default function ProfileScreen({ navigation }: any) {
       }
       return item.category === directoryCategory;
     });
-  }, [directorySearch, directoryCategory]);
+  }, [roleAccessibleItems, directorySearch, directoryCategory]);
 
   const handleDirectoryPress = (item: DirectoryMenuItem) => {
-    if (item.id === 'activity-timeline') {
-      setActivityModalVisible(true);
-    } else if (item.id === 'unlock-saksi') {
-      setUnlockSaksiModalVisible(true);
-    } else if (item.screen) {
+    if (item.screen) {
       navigation.navigate(item.screen, item.params);
     }
   };
@@ -1256,23 +1173,6 @@ export default function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Riwayat Aktivitas Modal Trigger */}
-        <Pressable
-          onPress={() => setActivityModalVisible(true)}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="clock" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Riwayat Aktivitas & Penugasan</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>{activityTimeline.length} rekam jejak kegiatan resmi</Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
         {/* Keamanan & Privasi */}
         <Pressable
           onPress={() => navigation.navigate('Security')}
@@ -1284,30 +1184,6 @@ export default function ProfileScreen({ navigation }: any) {
           <View style={{ flex: 1, gap: 1 }}>
             <Text style={[styles.actionTitle, { color: colors.text }]}>Keamanan & Privasi Akun</Text>
             <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>Proteksi PIN & autentikasi biometric</Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        {/* Transparansi & Akuntabilitas Partai */}
-        <Pressable
-          onPress={() => navigation.navigate('TransparencyHub')}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="shield" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.actionTitle, { color: colors.text }]}>Transparansi & Akuntabilitas</Text>
-              <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 8.5, color: '#059669' }}>WTP</Text>
-              </View>
-            </View>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
-              Struktur, Laporan Keuangan, Banpar & AD/ART
-            </Text>
           </View>
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </Pressable>
