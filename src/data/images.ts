@@ -10,6 +10,14 @@ export const BRAND_ASSETS = {
   official: require('../../assets/brand/pan_logo_official.png'),
 };
 
+export const LEADER_AVATARS = {
+  ketuaUmum: require('../../assets/avatars/ketua-umum.png'),
+  ketuaDpp: require('../../assets/avatars/ketua-dpp.png'),
+  wakilKetuaUmum: require('../../assets/avatars/wakil-ketua-umum.png'),
+  sekretarisJendral: require('../../assets/avatars/sekretaris-jendral.png'),
+  bendaharaUmum: require('../../assets/avatars/bendahara-umum.png'),
+};
+
 
 export const TPS_LOCAL_IMAGES = [
   require('../../assets/tps/tps_petanggan.jpg'),
