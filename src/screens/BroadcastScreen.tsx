@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -18,7 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { Pill, PrimaryButton } from '../components/ui';
+import { Card, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { BRAND_ASSETS, LEADER_AVATARS, IMAGES } from '../data/images';
 
@@ -28,28 +27,28 @@ interface PostReaction {
   thumbs: number;
   heart: number;
   fire: number;
-  pray?: number;
   totalDisplay: string;
 }
 
 interface ChannelPost {
   id: string;
   senderName: string;
-  senderTitle: string;
+  senderRole: string;
   senderAvatar: any;
   dateBadge?: string;
   time: string;
-  isEdited?: boolean;
-  type: 'text' | 'video' | 'document';
+  categoryTag: string;
+  categoryTone: 'primary' | 'warning' | 'danger' | 'info';
+  type: 'video' | 'text' | 'document';
   mediaImage?: any;
-  mediaSize?: string;
-  mediaWatermark?: string;
-  boldHeadline?: string;
-  bodyText: string;
-  linkText: string;
-  linkUrl: string;
+  mediaBadge?: string;
+  videoDuration?: string;
+  title: string;
+  content: string;
+  actionLinkLabel?: string;
+  actionLinkUrl?: string;
   reactions: PostReaction;
-  forwardCount: string;
+  shareCount: string;
 }
 
 interface ChatMessage {
@@ -61,74 +60,79 @@ interface ChatMessage {
   isSelf?: boolean;
 }
 
-const INITIAL_CHANNEL_POSTS: ChannelPost[] = [
+const OFFICIAL_CHANNEL_POSTS: ChannelPost[] = [
   {
-    id: 'post-1',
-    senderName: 'Ketua DPP PAN',
-    senderTitle: 'Bidang Pemenangan Pemilu DPP PAN',
-    senderAvatar: LEADER_AVATARS.ketuaDpp,
-    dateBadge: '18 September 2026',
-    time: '22.35',
-    type: 'text',
-    bodyText:
-      'Seluruh jajaran pengurus DPD, DPC, relawan simpatisan, dan saksi TPS diinstruksikan siaga penuh menjaga marwah suara rakyat. Koordinasi lapangan dipusatkan di posko pemenangan masing-masing wilayah untuk memastikan pengawalan plano C1 berjalan transparan.',
-    linkText: 'Pelajari selengkapnya: https://simpan.pan.or.id/instruksi-siaga-pemilu-2026',
-    linkUrl: 'https://simpan.pan.or.id/instruksi-siaga-pemilu-2026',
-    reactions: {
-      thumbs: 42000,
-      heart: 12000,
-      fire: 5000,
-      pray: 2000,
-      totalDisplay: '61Rb',
-    },
-    forwardCount: '8Rb',
-  },
-  {
-    id: 'post-2',
-    senderName: 'Ketua Umum DPP PAN',
-    senderTitle: 'Amanat Langsung Pemimpin Partai',
+    id: 'post-ketum',
+    senderName: 'Zulkifli Hasan',
+    senderRole: 'Ketua Umum DPP PAN',
     senderAvatar: LEADER_AVATARS.ketuaUmum,
-    dateBadge: 'Hari Ini',
-    time: '23.04',
-    isEdited: true,
+    dateBadge: 'Hari Ini • 19 September 2026',
+    time: '08:30 WIB',
+    categoryTag: 'AMANAT KETUM',
+    categoryTone: 'warning',
     type: 'video',
     mediaImage: IMAGES.tpsHero,
-    mediaSize: '25 MB',
-    mediaWatermark: 'AMANAT KETUM',
-    boldHeadline: 'Gerakan Sapa Warga & Pengawalan TPS Nasional.',
-    bodyText:
-      'Kepada seluruh pejuang dan relawan PAN yang saya banggakan: Teruslah hadir di tengah denyut nadi rakyat. Kawal integritas C1 Plano di setiap bilik suara demi kemenangan rakyat. Jangan biarkan hak suara umat dan rakyat Indonesia tercederai sedikit pun.',
-    linkText: 'Akses siaran lengkap: https://pan.or.id/amanat-ketum-2026',
-    linkUrl: 'https://pan.or.id/amanat-ketum-2026',
+    mediaBadge: 'Amanat Resmi Pimpinan Tertinggi',
+    videoDuration: '04:15 Menit',
+    title: 'Kawal Marwah Suara Rakyat: Berdiri Teguh Tanpa Ragu di Setiap Bilik Suara',
+    content:
+      'Kepada seluruh kader pejuang, simpatisan, dan saksi TPS PAN di seluruh pelosok Tanah Air:\n\nSuara rakyat adalah amanat suci yang tidak boleh bergeser barang satu pun. Berdirilah tegak menjaga kemurnian formulir C1 Plano. Layani warga dengan keramahan, sapa masyarakat dengan senyuman, dan pastikan proses penghitungan suara di TPS Anda berlangsung jujur, adil, dan transparan.',
+    actionLinkLabel: 'Tonton Video Pidato Amanat Lengkap (TV PAN)',
+    actionLinkUrl: 'https://pan.or.id/amanat-ketum-2026',
     reactions: {
-      thumbs: 88000,
-      heart: 36000,
-      fire: 18000,
-      totalDisplay: '142Rb',
+      thumbs: 88400,
+      heart: 42100,
+      fire: 26500,
+      totalDisplay: '157 Rb Reaksi',
     },
-    forwardCount: '18Rb',
+    shareCount: '18.4 Rb',
   },
   {
-    id: 'post-3',
+    id: 'post-ketua-dpp',
+    senderName: 'Ketua DPP PAN',
+    senderRole: 'Badan Pemenangan Pemilu (Bappilu) DPP',
+    senderAvatar: LEADER_AVATARS.ketuaDpp,
+    time: 'Kemarin • 21:15 WIB',
+    categoryTag: 'INSTRUKSI PEMENANGAN',
+    categoryTone: 'primary',
+    type: 'text',
+    title: 'Konsolidasi Posko Wilayah & Kesiapan Pengawalan Saksi Terakreditasi BSN',
+    content:
+      'Seluruh jajaran pengurus DPD, DPC, ranting, dan relawan simpatisan diinstruksikan:\n\n1. Merapatkan barisan di Posko Pemenangan wilayah masing-masing untuk pemetaan titik TPS rawan.\n2. Memastikan relawan yang telah dimandatkan telah menyelesaikan sertifikasi Bimtek Saksi BSN.\n3. Menyimpan nomor kontak darurat Korlap dan Tim Advokasi Hukum BSN setempat guna respon cepat laporan dugaan pelanggaran.',
+    actionLinkLabel: 'Unduh Panduan Penugasan Posko Wilayah (PDF)',
+    actionLinkUrl: 'https://simpan.pan.or.id/panduan-posko-2026',
+    reactions: {
+      thumbs: 45200,
+      heart: 18600,
+      fire: 14000,
+      totalDisplay: '77.8 Rb Reaksi',
+    },
+    shareCount: '9.2 Rb',
+  },
+  {
+    id: 'post-bsn',
     senderName: 'Badan Saksi Nasional (BSN)',
-    senderTitle: 'Direktorat Pengawalan Suara DPP PAN',
+    senderRole: 'Direktorat Pengawalan Suara DPP PAN',
     senderAvatar: LEADER_AVATARS.sekretarisJendral,
-    time: '15.00',
+    dateBadge: '17 September 2026',
+    time: '16:00 WIB',
+    categoryTag: 'STANDAR BSN',
+    categoryTone: 'danger',
     type: 'document',
     mediaImage: IMAGES.c1Form,
-    mediaSize: 'PDF Juknis • 8.4 MB',
-    boldHeadline: 'Standar Operasional Presensi GPS & Rekapitulasi C1 Plano.',
-    bodyText:
-      'Saksi TPS wajib hadir sebelum pukul 07:00 WIB dan melakukan presensi geofence GPS di bilik suara serta mengunggah salinan plano tajam tanpa blur langsung ke server BSN.',
-    linkText: 'Unduh juknis resmi: https://bsn.pan.or.id/sop-c1-plano-2026',
-    linkUrl: 'https://bsn.pan.or.id/sop-c1-plano-2026',
+    mediaBadge: 'Dokumen SOP Resmi BSN PAN • 4.8 MB',
+    title: 'Standar Operasional Presensi Geofence GPS & Validasi Foto C1 Plano Digital',
+    content:
+      'Petunjuk Teknis Pengawalan Bilik Suara:\n\n1. Seluruh Saksi TPS wajib hadir sebelum pukul 07:00 WIB dan melakukan presensi GPS melalui menu "Presensi" simPAN di radius TPS penugasan.\n2. Segera foto formulir C1 Plano secara tegak lurus, pencahayaan merata tanpa pantulan cahaya, dan pastikan tanda tangan KPPS terbaca tajam sebelum diunggah ke server terenkripsi partai.',
+    actionLinkLabel: 'Akses Portal Pengawalan Suara simPAN BSN',
+    actionLinkUrl: 'https://bsn.pan.or.id/c1-digital-sop',
     reactions: {
-      thumbs: 31000,
-      heart: 9000,
-      fire: 5000,
-      totalDisplay: '45Rb',
+      thumbs: 32100,
+      heart: 12400,
+      fire: 9800,
+      totalDisplay: '54.3 Rb Reaksi',
     },
-    forwardCount: '6Rb',
+    shareCount: '6.7 Rb',
   },
 ];
 
@@ -136,47 +140,47 @@ const INITIAL_GROUP_CHATS: ChatMessage[] = [
   {
     id: 'msg-1',
     senderName: 'Asep Ridwan',
-    senderRole: 'Korlap Dago',
+    senderRole: 'Korlap Babakan Asih',
     time: '06:45 WIB',
-    text: 'Selamat pagi seluruh rekan-rekan saksi TPS Kluster Coblong & Dago! Mohon pastikan baterai ponsel terisi penuh dan surat mandat siap di saku.',
+    text: 'Selamat pagi rekan-rekan saksi TPS Kluster Bojongloa & Babakan Asih! Pastikan ponsel terisi daya penuh dan surat mandat fisik ada di saku.',
   },
   {
     id: 'msg-2',
     senderName: 'Rudi Saputra',
-    senderRole: 'Saksi TPS 001 Dago',
+    senderRole: 'Saksi TPS 012',
     time: '07:05 WIB',
-    text: 'Siap Pak Korlap! TPS 001 Dago sudah selesai presensi GPS. Petugas KPPS sedang mulai sumpah jabatan dan buka kotak suara.',
+    text: 'Siap Pak Korlap! Presensi GPS di TPS 012 sudah terekam di simPAN. KPPS saat ini sedang membuka kotak suara.',
   },
   {
     id: 'msg-3',
     senderName: 'Hendra Gunawan',
-    senderRole: 'Saksi TPS 002 Dago',
+    senderRole: 'Saksi TPS 013',
     time: '07:12 WIB',
-    text: 'TPS 002 hadir lengkap, saksi partai lain juga sudah hadir. Kondisi kondusif dan tertib.',
+    text: 'TPS 013 hadir lengkap. Logistik surat suara dan plano tersegel rapi. Kondisi kondusif.',
   },
   {
     id: 'msg-4',
     senderName: 'Siti Rahmawati',
     senderRole: 'Relawan Saksi',
     time: '07:18 WIB',
-    text: 'Posko Dago siap membackup konsumsi dan logistik pengawalan bilik suara. Semangat mengawal!',
+    text: 'Posko Babakan Asih siap membackup logistik dan konsumsi lapangan. Semangat kawal suara partai!',
     isSelf: true,
   },
 ];
 
-function VerifiedBadge({ size = 16 }: { size?: number }) {
+function VerifiedBadge({ size = 15 }: { size?: number }) {
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: '#00A3FF',
+        backgroundColor: '#0066B3',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Feather name="check" size={Math.round(size * 0.72)} color="#FFFFFF" />
+      <Feather name="check" size={Math.round(size * 0.7)} color="#FFFFFF" />
     </View>
   );
 }
@@ -187,8 +191,7 @@ export default function BroadcastScreen() {
   const navigation = useNavigation<any>();
 
   const [activeTab, setActiveTab] = useState<BroadcastTab>('channel');
-  const [isFollowed, setIsFollowed] = useState(false);
-  const [channelPosts, setChannelPosts] = useState<ChannelPost[]>(INITIAL_CHANNEL_POSTS);
+  const [isFollowed, setIsFollowed] = useState(true);
   const [userReactions, setUserReactions] = useState<Record<string, 'thumbs' | 'heart' | 'fire' | null>>({});
 
   // Group chat states
@@ -212,32 +215,40 @@ export default function BroadcastScreen() {
       [postId]: isSame ? null : type,
     }));
 
+    const label = type === 'thumbs' ? '👍 Suka' : type === 'heart' ? '❤️ Komitmen' : '🔥 Semangat';
     Alert.alert(
-      isSame ? 'Reaksi Dibatalkan' : 'Reaksi Dikirim',
+      isSame ? 'Reaksi Dibatalkan' : 'Reaksi Tercatat',
       isSame
-        ? 'Reaksi Anda telah dihapus dari siaran ini.'
-        : `Anda memberikan reaksi ${type === 'thumbs' ? '👍 Suka' : type === 'heart' ? '❤️ Cinta' : '🔥 Semangat'} pada siaran resmi ini.`,
-      [{ text: 'OK', style: 'default' }]
+        ? 'Reaksi Anda telah dibatalkan.'
+        : `Apresiasi ${label} berhasil dikirim ke saluran resmi pengurus partai.`
     );
   };
 
-  const handleSharePost = (postId: string) => {
+  const handleSharePost = (post: ChannelPost) => {
     Alert.alert(
-      'Teruskan Pesan WhatsApp',
-      'Tautan dan isi maklumat resmi telah disalin ke papan klip Anda untuk diteruskan ke grup posko pemenangan.',
+      'Bagikan Amanat / Instruksi',
+      `Teks siaran "${post.title}" telah disalin ke papan klip untuk diteruskan ke grup posko pemenangan & jejaring relawan.`,
       [{ text: 'Tutup', style: 'default' }]
+    );
+  };
+
+  const handleOpenLink = (title: string, url?: string) => {
+    Alert.alert(
+      'Membuka Dokumen / Siaran',
+      `Menghubungkan ke server informasi simPAN:\n\n${title}\n${url || ''}`,
+      [{ text: 'Lanjutkan', style: 'default' }]
     );
   };
 
   const toggleFollow = () => {
     if (isFollowed) {
       setIsFollowed(false);
-      Alert.alert('Batal Mengikuti', 'Anda tidak lagi mengikuti siaran langsung Saluran Pusat.');
+      Alert.alert('Saluran Dibisukan', 'Anda tidak lagi menerima notifikasi pembaruan siaran langsung.');
     } else {
       setIsFollowed(true);
       Alert.alert(
-        'Berhasil Mengikuti Saluran!',
-        'Anda sekarang mengikuti saluran resmi DPP PAN. Notifikasi pembaruan maklumat langsung dari pimpinan pusat akan diterima secara real-time.'
+        'Mengikuti Saluran Resmi',
+        'Anda akan menerima pemberitahuan langsung setiap kali Ketua Umum atau Bappilu menerbitkan amanat baru.'
       );
     }
   };
@@ -248,7 +259,7 @@ export default function BroadcastScreen() {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       senderName: currentUser.identity.name || 'Siti Rahmawati',
-      senderRole: hasWitnessRole ? 'Relawan Saksi' : 'Relawan',
+      senderRole: hasWitnessRole ? 'Relawan Saksi TPS' : 'Relawan',
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
       text: inputChatText.trim(),
       isSelf: true,
@@ -260,405 +271,392 @@ export default function BroadcastScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: '#0B141A' }]}
+      style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#0B141A" />
-
-      {/* 1. WHATSAPP OFFICIAL CHANNEL TOP APP BAR */}
-      <View style={styles.waHeaderBar}>
-        <View style={styles.waHeaderLeft}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={({ pressed }) => [styles.waBackBtn, pressed && { opacity: 0.7 }]}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Feather name="arrow-left" size={22} color="#E9EDEF" />
-          </Pressable>
-
-          <View style={styles.waAvatarWrap}>
-            <Image source={LEADER_AVATARS.ketuaUmum} style={styles.waChannelAvatar} />
-            <View style={styles.waAvatarBadge}>
-              <Image source={BRAND_ASSETS.sunWhite} style={{ width: 9, height: 9 }} resizeMode="contain" />
-            </View>
-          </View>
-
-          <View style={styles.waChannelTitleCol}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={styles.waChannelName} numberOfLines={1}>
-                DPP PAN
-              </Text>
-              <VerifiedBadge size={15} />
-            </View>
-            <Text style={styles.waFollowerCount}>
-              234JT pengikut
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.waHeaderRight}>
-          <Pressable
-            onPress={() => {
-              Alert.alert(
-                'Saluran Resmi DPP PAN',
-                'ID Saluran: wa.me/channel/dpp-pan-official\n\nPusat transmisi maklumat resmi Ketua Umum, Sekretariat Jenderal DPP PAN, dan Badan Saksi Nasional.',
-                [
-                  { text: isFollowed ? 'Batal Mengikuti' : 'Ikuti Saluran', onPress: toggleFollow },
-                  {
-                    text: 'Bagikan Saluran',
-                    onPress: () => Alert.alert('Bagikan', 'Tautan saluran resmi disalin: https://wa.me/channel/dpp-pan-official'),
-                  },
-                  { text: 'Tutup', style: 'cancel' },
-                ]
-              );
-            }}
-            style={({ pressed }) => [styles.waMoreBtn, pressed && { opacity: 0.7 }]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Feather name="more-vertical" size={20} color="#E9EDEF" />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* 2. TAB SELECTOR (SALURAN PUSAT VS GRUP SAKSI TPS) */}
-      <View style={styles.waTabBar}>
+      {/* 1. BRANDED SEGMENTED TAB CONTROL */}
+      <View style={[styles.tabBarWrap, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Pressable
           onPress={() => setActiveTab('channel')}
-          style={[styles.waTabItem, activeTab === 'channel' && styles.waTabItemActive]}
+          style={[
+            styles.tabItem,
+            activeTab === 'channel'
+              ? [styles.tabItemActive, { backgroundColor: isDark ? '#003366' : '#EBF4FF', borderColor: colors.primary }]
+              : { borderColor: 'transparent' },
+          ]}
         >
           <Feather
             name="volume-2"
-            size={13}
-            color={activeTab === 'channel' ? '#25D366' : '#8696A0'}
+            size={14}
+            color={activeTab === 'channel' ? colors.primary : colors.textMuted}
           />
-          <Text style={[styles.waTabItemText, activeTab === 'channel' && styles.waTabItemTextActive]}>
-            Saluran Pusat
+          <Text
+            style={[
+              styles.tabItemText,
+              { color: activeTab === 'channel' ? colors.primary : colors.textMuted },
+              activeTab === 'channel' && { fontFamily: fonts.bold },
+            ]}
+          >
+            Saluran Pusat (1 Arah)
           </Text>
-          <View style={styles.waLiveDot} />
+          <View style={[styles.livePulseDot, { backgroundColor: colors.primary }]} />
         </Pressable>
 
         <Pressable
           onPress={() => setActiveTab('group')}
-          style={[styles.waTabItem, activeTab === 'group' && styles.waTabItemActive]}
+          style={[
+            styles.tabItem,
+            activeTab === 'group'
+              ? [styles.tabItemActive, { backgroundColor: isDark ? '#003366' : '#EBF4FF', borderColor: colors.primary }]
+              : { borderColor: 'transparent' },
+          ]}
         >
           <Feather
             name={hasWitnessRole ? 'message-circle' : 'lock'}
-            size={13}
-            color={activeTab === 'group' ? '#25D366' : '#8696A0'}
+            size={14}
+            color={activeTab === 'group' ? colors.primary : colors.textMuted}
           />
-          <Text style={[styles.waTabItemText, activeTab === 'group' && styles.waTabItemTextActive]}>
-            Grup Saksi TPS
+          <Text
+            style={[
+              styles.tabItemText,
+              { color: activeTab === 'group' ? colors.primary : colors.textMuted },
+              activeTab === 'group' && { fontFamily: fonts.bold },
+            ]}
+          >
+            Grup Saksi TPS (2 Arah)
           </Text>
           {!hasWitnessRole && (
-            <View style={styles.waLockBadge}>
-              <Text style={styles.waLockBadgeText}>Kunci</Text>
+            <View style={styles.tabLockBadge}>
+              <Text style={styles.tabLockBadgeText}>Kunci</Text>
             </View>
           )}
         </Pressable>
       </View>
 
-      {/* 3. TAB CONTENT: SALURAN WHATSAPP (1 ARAH RESMI) */}
+      {/* 2. TAB CONTENT: SALURAN PUSAT (OFFICIAL PAN BROADCAST CHANNEL) */}
       {activeTab === 'channel' && (
-        <View style={{ flex: 1 }}>
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.waChatScroll}
-            contentContainerStyle={styles.waChatScrollContent}
-            showsVerticalScrollIndicator={false}
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* BRANDED OFFICIAL CHANNEL HERO CARD */}
+          <View
+            style={[
+              styles.channelHeroCard,
+              {
+                backgroundColor: isDark ? '#002B52' : '#004F8A',
+                borderColor: isDark ? '#0A3D6B' : '#003366',
+              },
+            ]}
           >
-            {/* POST 1: Teks dari Ketua DPP PAN */}
-            <View style={styles.waDateRow}>
-              <View style={styles.waDateBadge}>
-                <Text style={styles.waDateBadgeText}>18 September 2026</Text>
-              </View>
-            </View>
-
-            <View style={styles.waPostContainer}>
-              <View style={styles.waBubbleCard}>
-                {/* Author Sub-header */}
-                <View style={styles.waAuthorHeader}>
-                  <Image source={LEADER_AVATARS.ketuaDpp} style={styles.waAuthorAvatar} />
-                  <View style={{ flex: 1, gap: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={styles.waAuthorName}>Ketua DPP PAN</Text>
-                      <VerifiedBadge size={13} />
-                    </View>
-                    <Text style={styles.waAuthorTitle}>Bidang Pemenangan Pemilu</Text>
-                  </View>
-                  <Text style={styles.waTopTime}>22.35</Text>
-                </View>
-
-                {/* Content Text */}
-                <Text style={styles.waBodyText}>
-                  Seluruh jajaran pengurus DPD, DPC, relawan simpatisan, dan saksi TPS diinstruksikan siaga penuh menjaga marwah suara rakyat di seluruh TPS se-Indonesia.
-                </Text>
-
-                {/* Hyperlink */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => Alert.alert('Tautan Dibuka', 'Membuka dokumen juklak siaga pemilu di portal resmi simPAN...')}
-                  style={{ marginTop: 6 }}
-                >
-                  <Text style={styles.waLinkText}>
-                    Learn more:{' '}
-                    <Text style={{ textDecorationLine: 'underline' }}>
-                      https://simpan.pan.or.id/instruksi-siaga-pemilu
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={styles.waBubbleFooter}>
-                  <Text style={styles.waTimestamp}>22.35</Text>
-                </View>
+            <View style={styles.channelHeroTopRow}>
+              <View style={styles.channelAvatarWrap}>
+                <Image source={BRAND_ASSETS.emblem} style={styles.channelEmblemImage} resizeMode="contain" />
               </View>
 
-              {/* WhatsApp Reactions Row Below Card */}
-              <View style={styles.waReactionsRow}>
-                <Pressable
-                  onPress={() => handleToggleReaction('post-1', 'thumbs')}
-                  style={styles.waReactionPill}
-                >
-                  <Text style={styles.waReactionEmojiStack}>👍 ❤️ 🙏 😂</Text>
-                  <Text style={styles.waReactionCount}>61Rb</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSharePost('post-1')}
-                  style={styles.waSharePill}
-                >
-                  <Feather name="corner-up-right" size={13} color="#8696A0" />
-                  <Text style={styles.waShareCount}>8Rb</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* DATE BADGE: HARI INI */}
-            <View style={styles.waDateRow}>
-              <View style={styles.waDateBadge}>
-                <Text style={styles.waDateBadgeText}>9 September 2026</Text>
-              </View>
-            </View>
-
-            {/* POST 2: VIDEO MEDIA CARD DARI KETUA UMUM DPP PAN (Sesuai Screenshot User) */}
-            <View style={styles.waPostContainer}>
-              <View style={styles.waBubbleCard}>
-                {/* Author Sub-header */}
-                <View style={styles.waAuthorHeader}>
-                  <Image source={LEADER_AVATARS.ketuaUmum} style={styles.waAuthorAvatar} />
-                  <View style={{ flex: 1, gap: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={styles.waAuthorName}>Ketua Umum DPP PAN</Text>
-                      <VerifiedBadge size={13} />
-                    </View>
-                    <Text style={styles.waAuthorTitle}>Amanat Langsung Pemimpin Partai</Text>
-                  </View>
-                  <View style={styles.waLiveVideoTag}>
-                    <Text style={styles.waLiveVideoTagText}>VIDEO</Text>
-                  </View>
-                </View>
-
-                {/* Media Image / Video Card Container */}
-                <View style={styles.waMediaContainer}>
-                  <Image
-                    source={IMAGES.tpsHero}
-                    style={styles.waMediaImage}
-                    resizeMode="cover"
-                  />
-                  {/* Subtle Dark Vignette */}
-                  <View style={styles.waMediaOverlay} />
-
-                  {/* Watermark Text + Big Play Button */}
-                  <View style={styles.waMediaCenterContent}>
-                    <Text style={styles.waMediaBigText}>THE FEAT{'\n'}URE</Text>
-
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      onPress={() => Alert.alert('Pemutaran Video', 'Memutar siaran eksklusif amanat Ketua Umum DPP PAN...')}
-                      style={styles.waPlayButtonCircle}
-                    >
-                      <Feather name="play" size={24} color="#FFFFFF" style={{ marginLeft: 3 }} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Download Indicator at Bottom-Left */}
-                  <View style={styles.waDownloadBadge}>
-                    <Feather name="download" size={12} color="#FFFFFF" />
-                    <Text style={styles.waDownloadText}>25 MB</Text>
-                  </View>
-                </View>
-
-                {/* Caption Description Below Video */}
-                <View style={styles.waCaptionContainer}>
-                  <Text style={styles.waCaptionText}>
-                    <Text style={styles.waCaptionBold}>Not every spiral needs an audience.{' '}</Text>
-                    Saksikan arahan langsung Ketua Umum mengenai pentingnya kawal suara C1 Plano dan pendekatan bersahaja ke warga secara bijaksana.
-                  </Text>
-
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => Alert.alert('Tautan Dibuka', 'Membuka tautan interaktif saluran WhatsApp resmi...')}
-                    style={{ marginTop: 6 }}
-                  >
-                    <Text style={styles.waLinkText}>
-                      Give it a try:{' '}
-                      <Text style={{ textDecorationLine: 'underline' }}>
-                        https://wa.me/13135550002
-                      </Text>
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.waBubbleFooter}>
-                    <Text style={styles.waTimestamp}>Diedit 23.04</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Reactions Row Below Card */}
-              <View style={styles.waReactionsRow}>
-                <Pressable
-                  onPress={() => handleToggleReaction('post-2', 'heart')}
-                  style={styles.waReactionPill}
-                >
-                  <Text style={styles.waReactionEmojiStack}>👍 ❤️ 🔥 👏</Text>
-                  <Text style={styles.waReactionCount}>142Rb</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSharePost('post-2')}
-                  style={styles.waSharePill}
-                >
-                  <Feather name="corner-up-right" size={13} color="#8696A0" />
-                  <Text style={styles.waShareCount}>18Rb</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* POST 3: JUKNIS C1 PLANO BSN PAN */}
-            <View style={styles.waPostContainer}>
-              <View style={styles.waBubbleCard}>
-                <View style={styles.waAuthorHeader}>
-                  <Image source={LEADER_AVATARS.sekretarisJendral} style={styles.waAuthorAvatar} />
-                  <View style={{ flex: 1, gap: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Text style={styles.waAuthorName}>Badan Saksi Nasional (BSN)</Text>
-                      <VerifiedBadge size={13} />
-                    </View>
-                    <Text style={styles.waAuthorTitle}>Direktorat Pengawalan Suara</Text>
-                  </View>
-                  <Text style={styles.waTopTime}>15.00</Text>
-                </View>
-
-                <View style={[styles.waMediaContainer, { height: 160 }]}>
-                  <Image source={IMAGES.c1Form} style={styles.waMediaImage} resizeMode="cover" />
-                  <View style={styles.waMediaOverlay} />
-                  <View style={styles.waDownloadBadge}>
-                    <Feather name="file-text" size={12} color="#FFFFFF" />
-                    <Text style={styles.waDownloadText}>PDF Juknis • 8.4 MB</Text>
-                  </View>
-                </View>
-
-                <View style={styles.waCaptionContainer}>
-                  <Text style={styles.waCaptionText}>
-                    <Text style={styles.waCaptionBold}>Standar Operasional C1 Plano Digital.{' '}</Text>
-                    Pastikan swafoto dan lembar formulir plano terbaca tajam tanpa pantulan cahaya sebelum diunggah ke server terenkripsi simPAN.
-                  </Text>
-
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => Alert.alert('Juknis BSN', 'Mengunduh berkas petunjuk teknis saksi TPS BSN PAN...')}
-                    style={{ marginTop: 6 }}
-                  >
-                    <Text style={styles.waLinkText}>
-                      Akses juknis:{' '}
-                      <Text style={{ textDecorationLine: 'underline' }}>
-                        https://bsn.pan.or.id/juknis-saksi-2026
-                      </Text>
-                    </Text>
-                  </TouchableOpacity>
-
-                  <View style={styles.waBubbleFooter}>
-                    <Text style={styles.waTimestamp}>15.00</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.waReactionsRow}>
-                <Pressable
-                  onPress={() => handleToggleReaction('post-3', 'fire')}
-                  style={styles.waReactionPill}
-                >
-                  <Text style={styles.waReactionEmojiStack}>👍 ❤️ 🙏</Text>
-                  <Text style={styles.waReactionCount}>45Rb</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => handleSharePost('post-3')}
-                  style={styles.waSharePill}
-                >
-                  <Feather name="corner-up-right" size={13} color="#8696A0" />
-                  <Text style={styles.waShareCount}>6Rb</Text>
-                </Pressable>
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* FLOATING SCROLL TO BOTTOM BUTTON */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-            style={styles.waFabScrollBottom}
-          >
-            <Feather name="chevron-down" size={18} color="#8696A0" />
-          </TouchableOpacity>
-
-          {/* 4. BOTTOM FIXED BAR (IKUTI SALURAN & PRIVASI WHATSAPP) */}
-          <View style={styles.waBottomBarContainer}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={toggleFollow}
-              style={[
-                styles.waFollowButton,
-                isFollowed && styles.waFollowButtonActive,
-              ]}
-            >
-              {isFollowed ? (
+              <View style={{ flex: 1, gap: 2 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Feather name="check" size={17} color="#0B141A" />
-                  <Text style={styles.waFollowButtonText}>Mengikuti</Text>
+                  <Text style={styles.channelHeroTitle}>Saluran Resmi DPP PAN</Text>
+                  <VerifiedBadge size={16} />
                 </View>
-              ) : (
-                <Text style={styles.waFollowButtonText}>Ikuti saluran</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.waPrivacyRow}>
-              <Text style={styles.waPrivacyText}>
-                Saluran ini memiliki privasi tambahan untuk profil dan nomor telepon.{' '}
-                <Text
-                  onPress={() => Alert.alert('Privasi Saluran', 'Nomor telepon dan profil Anda dirahasiakan dan tidak dapat dilihat oleh pengikut saluran lainnya.')}
-                  style={styles.waPrivacyLink}
-                >
-                  Pelajari selengkapnya.
+                <Text style={styles.channelHeroSubtitle}>
+                  Pusat Komando Informasi & Maklumat DPP
                 </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <Feather name="users" size={11} color="#93C5FD" />
+                  <Text style={styles.channelHeroMetaText}>
+                    142.500 Kader & Relawan Se-Indonesia
+                  </Text>
+                </View>
+              </View>
+
+              {/* SUBSCRIBE / FOLLOW TOGGLE BUTTON */}
+              <Pressable
+                onPress={toggleFollow}
+                style={({ pressed }) => [
+                  styles.followButton,
+                  isFollowed
+                    ? { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)' }
+                    : { backgroundColor: '#F59E0B' },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Feather
+                  name={isFollowed ? 'check' : 'bell'}
+                  size={12}
+                  color={isFollowed ? '#FFFFFF' : '#002B52'}
+                />
+                <Text
+                  style={[
+                    styles.followButtonText,
+                    { color: isFollowed ? '#FFFFFF' : '#002B52' },
+                  ]}
+                >
+                  {isFollowed ? 'Mengikuti' : 'Ikuti'}
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={[styles.channelHeroDivider, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]} />
+
+            <View style={styles.channelHeroBottomRow}>
+              <Feather name="shield" size={12} color="#93C5FD" />
+              <Text style={styles.channelHeroNoticeText}>
+                Siaran resmi satu arah langsung dari pimpinan partai, Bappilu, dan Badan Saksi Nasional (BSN).
               </Text>
             </View>
           </View>
-        </View>
+
+          {/* LIST OF OFFICIAL BROADCAST POSTS */}
+          {OFFICIAL_CHANNEL_POSTS.map((post) => {
+            const reaction = userReactions[post.id];
+
+            return (
+              <View key={post.id} style={styles.postWrapper}>
+                {/* DATE BADGE */}
+                {post.dateBadge && (
+                  <View style={styles.dateBadgeWrap}>
+                    <View style={[styles.dateBadgePill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      <Feather name="calendar" size={11} color={colors.textMuted} />
+                      <Text style={[styles.dateBadgeText, { color: colors.textMuted }]}>
+                        {post.dateBadge}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* POST CARD */}
+                <Card
+                  style={[
+                    styles.postCard,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                >
+                  {/* AUTHOR ROW */}
+                  <View style={styles.postAuthorRow}>
+                    <Image source={post.senderAvatar} style={styles.postAvatarImage} />
+
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Text style={[styles.postAuthorName, { color: colors.text }]}>
+                          {post.senderName}
+                        </Text>
+                        <VerifiedBadge size={14} />
+                      </View>
+                      <Text style={[styles.postAuthorRole, { color: colors.textMuted }]}>
+                        {post.senderRole}
+                      </Text>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <Pill label={post.categoryTag} tone={post.categoryTone} />
+                      <Text style={[styles.postTimeText, { color: colors.textMuted }]}>
+                        {post.time}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* MEDIA BANNER (IF TYPE IS VIDEO OR DOCUMENT) */}
+                  {post.mediaImage && (
+                    <View style={styles.postMediaWrap}>
+                      <Image source={post.mediaImage} style={styles.postMediaImg} resizeMode="cover" />
+
+                      {/* DARK GRADIENT VIGNETTE OVERLAY */}
+                      <View style={styles.postMediaDarkOverlay} />
+
+                      {/* MEDIA BADGE AT TOP LEFT */}
+                      {post.mediaBadge && (
+                        <View style={styles.postMediaTopBadge}>
+                          <Image source={BRAND_ASSETS.sunWhite} style={{ width: 12, height: 12 }} resizeMode="contain" />
+                          <Text style={styles.postMediaTopBadgeText}>{post.mediaBadge}</Text>
+                        </View>
+                      )}
+
+                      {/* PLAY BUTTON FOR VIDEO */}
+                      {post.type === 'video' && (
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() =>
+                            Alert.alert('Putar Siaran Video', `Memutar amanat Ketua Umum:\n"${post.title}"`)
+                          }
+                          style={styles.postPlayCenterBtn}
+                        >
+                          <View style={styles.postPlayCircle}>
+                            <Feather name="play" size={24} color="#FFFFFF" style={{ marginLeft: 3 }} />
+                          </View>
+                          {post.videoDuration && (
+                            <View style={styles.postDurationBadge}>
+                              <Feather name="clock" size={10} color="#FFFFFF" />
+                              <Text style={styles.postDurationText}>{post.videoDuration}</Text>
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      )}
+
+                      {/* DOCUMENT BADGE FOR PDF */}
+                      {post.type === 'document' && (
+                        <View style={styles.postDocCenterBtn}>
+                          <View style={styles.postDocIconWrap}>
+                            <Feather name="file-text" size={20} color="#0066B3" />
+                          </View>
+                          <Text style={styles.postDocText}>Berkas Juknis Tersedia</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* POST CONTENT BODY */}
+                  <View style={styles.postBodyWrap}>
+                    <Text style={[styles.postTitleText, { color: colors.text }]}>
+                      {post.title}
+                    </Text>
+
+                    <Text style={[styles.postDescText, { color: colors.text }]}>
+                      {post.content}
+                    </Text>
+
+                    {/* OFFICIAL ATTACHMENT LINK BUTTON */}
+                    {post.actionLinkLabel && (
+                      <TouchableOpacity
+                        activeOpacity={0.75}
+                        onPress={() => handleOpenLink(post.title, post.actionLinkUrl)}
+                        style={[
+                          styles.postActionLinkRow,
+                          {
+                            backgroundColor: isDark ? 'rgba(0, 102, 179, 0.15)' : '#EFF6FF',
+                            borderColor: isDark ? '#0A3D6B' : '#BFDBFE',
+                          },
+                        ]}
+                      >
+                        <View style={[styles.postActionLinkIconWrap, { backgroundColor: colors.primary }]}>
+                          <Feather name="link-2" size={13} color="#FFFFFF" />
+                        </View>
+                        <Text style={[styles.postActionLinkText, { color: colors.primary }]} numberOfLines={1}>
+                          {post.actionLinkLabel}
+                        </Text>
+                        <Feather name="external-link" size={13} color={colors.primary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* POST FOOTER DIVIDER */}
+                  <View style={[styles.postDivider, { backgroundColor: colors.border }]} />
+
+                  {/* REACTION & SHARE BAR */}
+                  <View style={styles.postFooterBar}>
+                    {/* REACTION PILLS */}
+                    <View style={styles.reactionGroupRow}>
+                      <Pressable
+                        onPress={() => handleToggleReaction(post.id, 'thumbs')}
+                        style={[
+                          styles.reactionChip,
+                          {
+                            backgroundColor:
+                              reaction === 'thumbs'
+                                ? (isDark ? '#003366' : '#EBF4FF')
+                                : (isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC'),
+                            borderColor: reaction === 'thumbs' ? colors.primary : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.reactionEmoji}>👍</Text>
+                        <Text
+                          style={[
+                            styles.reactionCountText,
+                            { color: reaction === 'thumbs' ? colors.primary : colors.textMuted },
+                          ]}
+                        >
+                          {reaction === 'thumbs' ? 'Suka' : '88.4 Rb'}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleToggleReaction(post.id, 'heart')}
+                        style={[
+                          styles.reactionChip,
+                          {
+                            backgroundColor:
+                              reaction === 'heart'
+                                ? (isDark ? 'rgba(220,38,38,0.2)' : '#FEE2E2')
+                                : (isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC'),
+                            borderColor: reaction === 'heart' ? '#DC2626' : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.reactionEmoji}>❤️</Text>
+                        <Text
+                          style={[
+                            styles.reactionCountText,
+                            { color: reaction === 'heart' ? '#DC2626' : colors.textMuted },
+                          ]}
+                        >
+                          {reaction === 'heart' ? 'Komitmen' : '42.1 Rb'}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => handleToggleReaction(post.id, 'fire')}
+                        style={[
+                          styles.reactionChip,
+                          {
+                            backgroundColor:
+                              reaction === 'fire'
+                                ? (isDark ? 'rgba(245,158,11,0.2)' : '#FEF3C7')
+                                : (isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC'),
+                            borderColor: reaction === 'fire' ? '#D97706' : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.reactionEmoji}>🔥</Text>
+                        <Text
+                          style={[
+                            styles.reactionCountText,
+                            { color: reaction === 'fire' ? '#D97706' : colors.textMuted },
+                          ]}
+                        >
+                          {reaction === 'fire' ? 'Semangat' : '26.5 Rb'}
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    {/* SHARE BUTTON */}
+                    <Pressable
+                      onPress={() => handleSharePost(post)}
+                      style={({ pressed }) => [
+                        styles.shareBtn,
+                        {
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9',
+                          borderColor: colors.border,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <Feather name="share-2" size={13} color={colors.primary} />
+                      <Text style={[styles.shareBtnText, { color: colors.primary }]}>Bagikan</Text>
+                    </Pressable>
+                  </View>
+                </Card>
+              </View>
+            );
+          })}
+        </ScrollView>
       )}
 
-      {/* 4. TAB CONTENT: GRUP SAKSI TPS (INTERAKSI DUA ARAH) */}
+      {/* 3. TAB CONTENT: GRUP SAKSI TPS (2 ARAH) */}
       {activeTab === 'group' && (
-        <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }}>
+        <View style={{ flex: 1 }}>
           {!hasWitnessRole ? (
-            /* Mode Terkunci untuk Relawan Murni */
-            <View style={styles.lockedContainer}>
-              <View
+            /* Mode Terkunci untuk Relawan Biasa */
+            <View style={styles.lockedWrap}>
+              <Card
                 style={[
-                  styles.lockedCardBox,
+                  styles.lockedCard,
                   { backgroundColor: colors.surface, borderColor: colors.border },
                 ]}
               >
-                <View style={[styles.lockedIconCircle, { backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7' }]}>
+                <View style={[styles.lockedIconWrap, { backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7' }]}>
                   <Feather name="lock" size={32} color="#D97706" />
                 </View>
 
@@ -666,38 +664,41 @@ export default function BroadcastScreen() {
                   Grup Koordinasi Saksi TPS Terkunci
                 </Text>
                 <Text style={[styles.lockedDesc, { color: colors.textMuted }]}>
-                  Fitur obrolan dua arah ini dikhususkan bagi relawan yang telah resmi mengantongi SK Mandat Saksi TPS dari DPD PAN guna menjamin keamanan dan kerahasiaan pelaporan suara TPS.
+                  Fitur komunikasi dua arah ini dipusatkan khusus bagi relawan yang telah resmi memegang SK Mandat Saksi TPS dari DPD PAN guna menjamin keamanan dan kerahasiaan pengawalan suara di TPS.
                 </Text>
 
-                <View style={[styles.unlockStepsCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderColor: colors.border }]}>
-                  <Text style={[styles.unlockStepsHeading, { color: colors.text }]}>
-                    Cara Membuka Akses Grup Saksi:
+                <View style={[styles.lockedStepBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderColor: colors.border }]}>
+                  <Text style={[styles.lockedStepHeading, { color: colors.text }]}>
+                    4 Instrumen Syarat Akreditasi BSN:
                   </Text>
-                  <Text style={[styles.unlockStepItem, { color: colors.textMuted }]}>
-                    1. Buka Menu Profil simPAN
+                  <Text style={[styles.lockedStepItem, { color: colors.textMuted }]}>
+                    ✓ Kelulusan Bimtek Saksi Pemilu (Academy)
                   </Text>
-                  <Text style={[styles.unlockStepItem, { color: colors.textMuted }]}>
-                    2. Pilih menu "Unlock Mandat Saksi TPS"
+                  <Text style={[styles.lockedStepItem, { color: colors.textMuted }]}>
+                    ✓ Verifikasi NIK e-KTP & Domisili DPT TPS
                   </Text>
-                  <Text style={[styles.unlockStepItem, { color: colors.textMuted }]}>
-                    3. Lengkapi 4 instrumen persyaratan akreditasi BSN
+                  <Text style={[styles.lockedStepItem, { color: colors.textMuted }]}>
+                    ✓ Penandatanganan Pakta Integritas Digital
+                  </Text>
+                  <Text style={[styles.lockedStepItem, { color: colors.textMuted }]}>
+                    ✓ Penerbitan Surat Mandat Resmi DPD PAN
                   </Text>
                 </View>
 
                 <PrimaryButton
-                  label="Buka Menu Profil & Unlock Saksi"
+                  label="Buka Menu Profil & Unlock Mandat Saksi"
                   onPress={() => navigation.navigate('Profile')}
                   style={{ width: '100%', marginTop: 8 }}
                 />
-              </View>
+              </Card>
             </View>
           ) : (
-            /* Mode Aktif untuk Relawan yang Telah Mendapat Mandat */
+            /* Mode Aktif untuk Relawan yang Telah Mendapat Mandat Saksi */
             <View style={{ flex: 1 }}>
               {/* Group Chat Sub-header */}
               <View
                 style={[
-                  styles.groupChatHeader,
+                  styles.groupSubHeader,
                   { backgroundColor: colors.surface, borderBottomColor: colors.border },
                 ]}
               >
@@ -705,11 +706,11 @@ export default function BroadcastScreen() {
                   <Feather name="users" size={16} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.groupChatName, { color: colors.text }]} numberOfLines={1}>
-                    Grup Koordinasi Saksi TPS Kel. Babakan Asih
+                  <Text style={[styles.groupNameText, { color: colors.text }]} numberOfLines={1}>
+                    Grup Saksi TPS Kelurahan Babakan Asih
                   </Text>
-                  <Text style={[styles.groupChatSub, { color: colors.success }]}>
-                    ● 6 Saksi & 1 Korlap Aktif (Dua Arah)
+                  <Text style={[styles.groupStatusText, { color: colors.success }]}>
+                    ● 6 Saksi TPS & 1 Korlap Online (Aktif 2 Arah)
                   </Text>
                 </View>
                 <Pill label="Mandat Sah" tone="success" />
@@ -735,7 +736,7 @@ export default function BroadcastScreen() {
                           styles.chatBubble,
                           isMe
                             ? [styles.myBubble, { backgroundColor: colors.primary }]
-                            : [styles.otherBubble, { backgroundColor: isDark ? '#1E293B' : '#FFFFFF', borderColor: colors.border }],
+                            : [styles.otherBubble, { backgroundColor: colors.surface, borderColor: colors.border }],
                         ]}
                       >
                         {!isMe && (
@@ -776,12 +777,12 @@ export default function BroadcastScreen() {
                   style={[
                     styles.chatTextInput,
                     {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
                       borderColor: colors.border,
                       color: colors.text,
                     },
                   ]}
-                  placeholder="Kirim laporan koordinasi ke Korlap..."
+                  placeholder="Kirim pesan koordinasi ke Korlap..."
                   placeholderTextColor={colors.textMuted}
                   value={inputChatText}
                   onChangeText={setInputChatText}
@@ -806,426 +807,369 @@ export default function BroadcastScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-
-  // WHATSAPP CHANNEL APP BAR
-  waHeaderBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0B141A',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(134, 150, 160, 0.15)',
-  },
-  waHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  screen: {
     flex: 1,
   },
-  waBackBtn: {
-    padding: 4,
-    marginRight: 2,
-  },
-  waAvatarWrap: {
-    position: 'relative',
-  },
-  waChannelAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1F2C34',
-  },
-  waAvatarBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    backgroundColor: '#0066B3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#0B141A',
-  },
-  waChannelTitleCol: {
-    flex: 1,
-    gap: 1,
-  },
-  waChannelName: {
-    fontSize: 16,
-    fontFamily: fonts.bold,
-    color: '#E9EDEF',
-  },
-  waFollowerCount: {
-    fontSize: 12,
-    fontFamily: fonts.regular,
-    color: '#8696A0',
-  },
-  waHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  waMoreBtn: {
-    padding: 6,
-  },
 
-  // TAB SELECTOR
-  waTabBar: {
+  // 1. SEGMENTED TAB CONTROL
+  tabBarWrap: {
     flexDirection: 'row',
-    backgroundColor: '#111B21',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(134, 150, 160, 0.12)',
+    gap: spacing.sm,
   },
-  waTabItem: {
+  tabItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 7,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  waTabItemActive: {
-    backgroundColor: 'rgba(37, 211, 102, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(37, 211, 102, 0.3)',
   },
-  waTabItemText: {
+  tabItemActive: {
+    borderWidth: 1,
+  },
+  tabItemText: {
     fontSize: 12,
     fontFamily: fonts.medium,
-    color: '#8696A0',
   },
-  waTabItemTextActive: {
-    color: '#25D366',
-    fontFamily: fonts.bold,
-  },
-  waLiveDot: {
+  livePulseDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#25D366',
   },
-  waLockBadge: {
+  tabLockBadge: {
     backgroundColor: '#DC2626',
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
   },
-  waLockBadgeText: {
+  tabLockBadgeText: {
     fontSize: 9,
     fontFamily: fonts.bold,
     color: '#FFFFFF',
   },
 
-  // CHAT SCROLL AREA
-  waChatScroll: {
-    flex: 1,
-    backgroundColor: '#0B141A',
-  },
-  waChatScrollContent: {
-    paddingVertical: 10,
-    paddingBottom: 90,
+  // 2. SCROLL CONTENT
+  scrollContent: {
+    padding: spacing.md,
+    gap: spacing.md,
+    paddingBottom: spacing.xxl,
   },
 
-  // DATE BADGE
-  waDateRow: {
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  waDateBadge: {
-    backgroundColor: '#182229',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
+  // CHANNEL HERO BRAND CARD
+  channelHeroCard: {
+    borderRadius: radius.lg,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(134, 150, 160, 0.15)',
+    gap: spacing.sm,
   },
-  waDateBadgeText: {
-    fontSize: 12,
-    fontFamily: fonts.medium,
-    color: '#8696A0',
-  },
-
-  // CHANNEL POST CARD
-  waPostContainer: {
-    marginHorizontal: 12,
-    marginBottom: 16,
-  },
-  waBubbleCard: {
-    backgroundColor: '#1F2C34',
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  waAuthorHeader: {
+  channelHeroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
+    gap: 10,
   },
-  waAuthorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  channelAvatarWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  waAuthorName: {
-    fontSize: 13,
+  channelEmblemImage: {
+    width: 38,
+    height: 38,
+  },
+  channelHeroTitle: {
+    fontSize: 15,
     fontFamily: fonts.bold,
-    color: '#E9EDEF',
+    color: '#FFFFFF',
   },
-  waAuthorTitle: {
+  channelHeroSubtitle: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: '#E0F2FE',
+  },
+  channelHeroMetaText: {
     fontSize: 10.5,
     fontFamily: fonts.regular,
-    color: '#8696A0',
+    color: '#BAE6FD',
   },
-  waTopTime: {
-    fontSize: 11,
-    fontFamily: fonts.regular,
-    color: '#8696A0',
-  },
-  waLiveVideoTag: {
-    backgroundColor: '#DC2626',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  waLiveVideoTagText: {
-    fontSize: 9,
-    fontFamily: fonts.bold,
-    color: '#FFFFFF',
-  },
-
-  // BODY & CAPTIONS
-  waBodyText: {
-    fontSize: 13.5,
-    fontFamily: fonts.regular,
-    color: '#E9EDEF',
-    lineHeight: 19,
-    paddingHorizontal: 12,
-    paddingTop: 2,
-  },
-  waCaptionContainer: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  waCaptionText: {
-    fontSize: 13.5,
-    fontFamily: fonts.regular,
-    color: '#E9EDEF',
-    lineHeight: 19,
-  },
-  waCaptionBold: {
-    fontFamily: fonts.bold,
-    color: '#E9EDEF',
-  },
-  waLinkText: {
-    fontSize: 13,
-    fontFamily: fonts.medium,
-    color: '#53BDEB',
-    lineHeight: 18,
-    paddingHorizontal: 12,
-  },
-  waBubbleFooter: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    paddingBottom: 6,
-    paddingTop: 4,
-  },
-  waTimestamp: {
-    fontSize: 11,
-    fontFamily: fonts.regular,
-    color: '#8696A0',
-  },
-
-  // VIDEO / MEDIA COMPONENT
-  waMediaContainer: {
-    width: '100%',
-    height: 380,
-    backgroundColor: '#0F172A',
-    position: 'relative',
-    marginTop: 4,
-  },
-  waMediaImage: {
-    width: '100%',
-    height: '100%',
-  },
-  waMediaOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-  },
-  waMediaCenterContent: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  waMediaBigText: {
-    fontFamily: fonts.extraBold || fonts.bold,
-    fontSize: 42,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: 2,
-    opacity: 0.9,
-    lineHeight: 46,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  waPlayButtonCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  waDownloadBadge: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
+  followButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
   },
-  waDownloadText: {
+  followButtonText: {
     fontSize: 11,
-    fontFamily: fonts.medium,
-    color: '#FFFFFF',
+    fontFamily: fonts.bold,
   },
-
-  // REACTIONS & FORWARD PILLS (WHATSAPP STYLE)
-  waReactionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingHorizontal: 4,
+  channelHeroDivider: {
+    height: 1,
+    width: '100%',
   },
-  waReactionPill: {
+  channelHeroBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1F2C34',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(134, 150, 160, 0.15)',
   },
-  waReactionEmojiStack: {
-    fontSize: 14,
-    letterSpacing: 1,
+  channelHeroNoticeText: {
+    fontSize: 10.5,
+    fontFamily: fonts.regular,
+    color: '#E0F2FE',
+    flex: 1,
+    lineHeight: 15,
   },
-  waReactionCount: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-    color: '#8696A0',
+
+  // DATE BADGE
+  dateBadgeWrap: {
+    alignItems: 'center',
+    marginVertical: 4,
   },
-  waSharePill: {
+  dateBadgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#1F2C34',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(134, 150, 160, 0.15)',
   },
-  waShareCount: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-    color: '#8696A0',
-  },
-
-  // FAB SCROLL BOTTOM
-  waFabScrollBottom: {
-    position: 'absolute',
-    right: 14,
-    bottom: 110,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1F2C34',
-    borderWidth: 1,
-    borderColor: 'rgba(134, 150, 160, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
-  // BOTTOM FIXED ACTION BAR
-  waBottomBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#0B141A',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(134, 150, 160, 0.15)',
-    gap: 8,
-  },
-  waFollowButton: {
-    width: '100%',
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#25D366',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  waFollowButtonActive: {
-    backgroundColor: '#00A884',
-  },
-  waFollowButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.bold,
-    color: '#0B141A',
-  },
-  waPrivacyRow: {
-    alignItems: 'center',
-  },
-  waPrivacyText: {
+  dateBadgeText: {
     fontSize: 11,
-    fontFamily: fonts.regular,
-    color: '#8696A0',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  waPrivacyLink: {
-    color: '#53BDEB',
     fontFamily: fonts.medium,
   },
 
+  // POST CARD
+  postWrapper: {
+    gap: spacing.sm,
+  },
+  postCard: {
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+  },
+  postAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  postAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E2E8F0',
+  },
+  postAuthorName: {
+    fontSize: 13.5,
+    fontFamily: fonts.bold,
+  },
+  postAuthorRole: {
+    fontSize: 11,
+    fontFamily: fonts.regular,
+  },
+  postTimeText: {
+    fontSize: 10,
+    fontFamily: fonts.regular,
+  },
+
+  // MEDIA CONTAINER
+  postMediaWrap: {
+    width: '100%',
+    height: 190,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#002B52',
+  },
+  postMediaImg: {
+    width: '100%',
+    height: '100%',
+  },
+  postMediaDarkOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  postMediaTopBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0, 43, 82, 0.85)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
+  postMediaTopBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: fonts.bold,
+  },
+  postPlayCenterBtn: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  postPlayCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(0, 102, 179, 0.85)',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postDurationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  postDurationText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: fonts.medium,
+  },
+  postDocCenterBtn: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  postDocIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  postDocText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+  },
+
+  // POST BODY
+  postBodyWrap: {
+    gap: 6,
+  },
+  postTitleText: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    lineHeight: 20,
+  },
+  postDescText: {
+    fontSize: 12,
+    fontFamily: fonts.regular,
+    lineHeight: 18,
+  },
+  postActionLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  postActionLinkIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postActionLinkText: {
+    flex: 1,
+    fontSize: 11.5,
+    fontFamily: fonts.bold,
+  },
+
+  // POST FOOTER
+  postDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 2,
+  },
+  postFooterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reactionGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reactionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  reactionEmoji: {
+    fontSize: 12,
+  },
+  reactionCountText: {
+    fontSize: 10.5,
+    fontFamily: fonts.medium,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  shareBtnText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+  },
+
   // LOCKED STATE (GRUP SAKSI)
-  lockedContainer: {
+  lockedWrap: {
     flex: 1,
     padding: spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  lockedCardBox: {
+  lockedCard: {
     width: '100%',
     padding: spacing.lg,
     borderRadius: radius.lg,
@@ -1233,7 +1177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  lockedIconCircle: {
+  lockedIconWrap: {
     width: 64,
     height: 64,
     borderRadius: 32,
@@ -1252,7 +1196,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 17,
   },
-  unlockStepsCard: {
+  lockedStepBox: {
     width: '100%',
     padding: spacing.sm,
     borderRadius: radius.md,
@@ -1260,17 +1204,17 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  unlockStepsHeading: {
+  lockedStepHeading: {
     fontSize: 11,
     fontFamily: fonts.bold,
   },
-  unlockStepItem: {
+  lockedStepItem: {
     fontSize: 10.5,
     fontFamily: fonts.medium,
   },
 
-  // ACTIVE GROUP CHAT
-  groupChatHeader: {
+  // GROUP CHAT ACTIVE
+  groupSubHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -1285,11 +1229,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  groupChatName: {
+  groupNameText: {
     fontSize: 12.5,
     fontFamily: fonts.bold,
   },
-  groupChatSub: {
+  groupStatusText: {
     fontSize: 10,
     fontFamily: fonts.medium,
   },
