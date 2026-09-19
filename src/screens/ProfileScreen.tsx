@@ -360,7 +360,6 @@ export default function ProfileScreen({ navigation }: any) {
   // State Direktori Menu Lengkap (Pusat Akses Ramah Lansia/Senior/Boomer)
   const [directorySearch, setDirectorySearch] = useState('');
   const [directoryCategory, setDirectoryCategory] = useState<'ALL' | 'TUGAS' | 'EDUKASI' | 'ORGANISASI'>('ALL');
-  const [showAllDirectory, setShowAllDirectory] = useState(false);
 
   const user = currentUser.identity;
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
@@ -452,15 +451,15 @@ export default function ProfileScreen({ navigation }: any) {
     });
   }, [role, isOfficialMember]);
 
-  // Hitung jumlah menu per kategori untuk role aktif saat ini
+  // Hitung jumlah menu per kategori
   const categoryCounts = useMemo(() => {
     return {
-      ALL: roleAccessibleItems.length,
-      TUGAS: roleAccessibleItems.filter((i) => i.category === 'TUGAS').length,
-      EDUKASI: roleAccessibleItems.filter((i) => i.category === 'EDUKASI').length,
-      ORGANISASI: roleAccessibleItems.filter((i) => i.category === 'ORGANISASI').length,
+      ALL: DIRECTORY_PAGES.length,
+      TUGAS: DIRECTORY_PAGES.filter((i) => i.category === 'TUGAS').length,
+      EDUKASI: DIRECTORY_PAGES.filter((i) => i.category === 'EDUKASI').length,
+      ORGANISASI: DIRECTORY_PAGES.filter((i) => i.category === 'ORGANISASI').length,
     };
-  }, [roleAccessibleItems]);
+  }, []);
 
   const CATEGORY_TABS = useMemo(() => [
     { key: 'ALL' as const, label: 'Semua', icon: 'grid' as const, count: categoryCounts.ALL },
@@ -469,9 +468,9 @@ export default function ProfileScreen({ navigation }: any) {
     { key: 'ORGANISASI' as const, label: 'Organisasi', icon: 'briefcase' as const, count: categoryCounts.ORGANISASI },
   ], [categoryCounts]);
 
-  // 2. Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori
-  const filteredDirectoryItems = useMemo(() => {
-    return roleAccessibleItems.filter((item) => {
+  // Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori (semua menu ditampilkan langsung)
+  const displayedDirectoryItems = useMemo(() => {
+    return DIRECTORY_PAGES.filter((item) => {
       if (directorySearch.trim()) {
         const q = directorySearch.toLowerCase();
         return (
@@ -486,12 +485,7 @@ export default function ProfileScreen({ navigation }: any) {
       }
       return item.category === directoryCategory;
     });
-  }, [roleAccessibleItems, directorySearch, directoryCategory]);
-
-  const displayedDirectoryItems =
-    !directorySearch.trim() && directoryCategory === 'ALL' && !showAllDirectory
-      ? filteredDirectoryItems.slice(0, 8)
-      : filteredDirectoryItems;
+  }, [directorySearch, directoryCategory]);
 
   const handleDirectoryPress = (item: DirectoryMenuItem) => {
     if (item.id === 'activity-timeline') {
@@ -1019,29 +1013,6 @@ export default function ProfileScreen({ navigation }: any) {
             })
           )}
         </View>
-
-        {/* Toggle Expand/Collapse jika kategori ALL dan tidak sedang search */}
-        {!directorySearch.trim() && directoryCategory === 'ALL' && filteredDirectoryItems.length > 8 && (
-          <Pressable
-            onPress={() => setShowAllDirectory(!showAllDirectory)}
-            style={({ pressed }) => [
-              styles.directoryToggleBtn,
-              { borderColor: colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC' },
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <Feather
-              name={showAllDirectory ? 'chevron-up' : 'chevron-down'}
-              size={14}
-              color={colors.primary}
-            />
-            <Text style={[styles.directoryToggleBtnText, { color: colors.primary }]}>
-              {showAllDirectory
-                ? 'Tampilkan Lebih Ringkas (8 Menu)'
-                : `Lihat Semua Menu (${filteredDirectoryItems.length})`}
-            </Text>
-          </Pressable>
-        )}
       </Card>
 
       {/* 4. INFORMASI IDENTITAS & WILAYAH */}
