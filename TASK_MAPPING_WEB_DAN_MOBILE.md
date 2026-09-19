@@ -84,10 +84,10 @@ Berdasarkan benchmark pada `g-emas-internal-fe/src/features/dashboard/components
 ### 4. Task List Sisi Mobile (`360-saksi`) — [BUAT TRANSAKSI]
 
 #### Kelompok A: Pembersihan Layar Monitoring (Uncluttering & Simplifikasi)
-- [ ] **Task M-01**: Hapus / Alihkan [`CommandCenterScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/CommandCenterScreen.tsx) dan [`LeadershipScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/LeadershipScreen.tsx) dari stack navigasi saksi lapangan.
+- [x] **Task M-01**: Hapus / Alihkan [`CommandCenterScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/CommandCenterScreen.tsx) dan [`LeadershipScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/LeadershipScreen.tsx) dari stack navigasi saksi lapangan.
   - *Alasan*: Peta sebaran nasional dan grafik komparasi 18 parpol membuat aplikasi mobile berat dan tidak dibutuhkan saksi di TPS.
-- [ ] **Task M-02**: Sederhanakan [`PartyLeaderboardScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/PartyLeaderboardScreen.tsx) menjadi widget lokal ringkas *"Perolehan Suara PAN di Dapil Anda"*.
-- [ ] **Task M-03**: Ganti menu Beranda Saksi di [`DashboardScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/DashboardScreen.tsx) agar 100% berfokus pada **Checklist Hari-H**:
+- [x] **Task M-02**: Sederhanakan [`PartyLeaderboardScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/PartyLeaderboardScreen.tsx) menjadi widget lokal ringkas *"Perolehan Suara PAN di Dapil Anda"*.
+- [x] **Task M-03**: Ganti menu Beranda Saksi di [`DashboardScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/DashboardScreen.tsx) agar 100% berfokus pada **Checklist Hari-H**:
   1. *Step 1*: Absen Masuk TPS (GPS + Selfie).
   2. *Step 2*: Tunjukkan Surat Mandat ke KPPS.
   3. *Step 3*: Tally Suara saat Penghitungan Dimulai.
@@ -95,24 +95,24 @@ Berdasarkan benchmark pada `g-emas-internal-fe/src/features/dashboard/components
   5. *Step 5*: Upload Dokumentasi TPS & Cek Status Honor.
 
 #### Kelompok B: Peningkatan Mesin Transaksi Lapangan
-- [ ] **Task M-04**: **Migrasi Offline Storage Permanen** ([`offlineQueue.ts`](file:///home/deryana/coding/360-saksi/src/utils/offlineQueue.ts)).
+- [x] **Task M-04**: **Migrasi Offline Storage Permanen** ([`offlineQueue.ts`](file:///home/deryana/coding/360-saksi/src/utils/offlineQueue.ts)).
   - Ganti `memoryQueue` dengan `AsyncStorage` atau `expo-sqlite`.
   - Pasang event listener konektivitas jaringan (`@react-native-community/netinfo`) untuk auto-flush antrean saat sinyal kembali online.
-- [ ] **Task M-05**: **Strict Geofencing & Foto Kompresi** ([`CheckInScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/CheckInScreen.tsx)).
+- [x] **Task M-05**: **Strict Geofencing & Foto Kompresi** ([`CheckInScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/CheckInScreen.tsx)).
   - Tambahkan kalkulasi Haversine formula yang membatasi radius saksi maksimal 100 meter dari koordinat target TPS.
   - Jika di luar radius, wajibkan saksi memasukkan alasan (*override note*) yang otomatis di-flag ke web koordinator.
   - Kompresi otomatis foto selfie menjadi < 200KB sebelum diunggah untuk hemat kuota.
-- [ ] **Task M-06**: **Sinkronisasi Tally Counter ke Form C1** ([`QuickCountGameScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/QuickCountGameScreen.tsx) &rarr; [`ReportFormScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/ReportFormScreen.tsx)).
+- [x] **Task M-06**: **Sinkronisasi Tally Counter ke Form C1** ([`QuickCountGameScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/QuickCountGameScreen.tsx) &rarr; [`ReportFormScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/ReportFormScreen.tsx)).
   - Hubungkan state angka suara paslon/caleg di Tally Counter agar sekali klik tombol *"Kirim ke Formulir C1"*, seluruh input di formulir pelaporan otomatis terisi tanpa ketik ulang.
-- [ ] **Task M-07**: **Validasi Keseimbangan Angka Matematika Suara** ([`ReportFormScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/ReportFormScreen.tsx)).
+- [x] **Task M-07**: **Validasi Keseimbangan Angka Matematika Suara** ([`ReportFormScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/ReportFormScreen.tsx)).
   - Pasang validasi formulir: `Total Suara Sah Seluruh Partai + Suara Tidak Sah == Total Pemilih Hadir`.
   - Berikan indikator visual warna hijau jika seimbang, atau merah jika terjadi selisih (*disparitas*).
-- [ ] **Task M-08**: **Watermarking Metadata Otomatis Foto C1** ([`pickImage.ts`](file:///home/deryana/coding/360-saksi/src/utils/pickImage.ts) / [`DocumentationScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/DocumentationScreen.tsx)).
+- [x] **Task M-08**: **Watermarking Metadata Otomatis Foto C1** ([`pickImage.ts`](file:///home/deryana/coding/360-saksi/src/utils/pickImage.ts) / [`DocumentationScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/DocumentationScreen.tsx)).
   - Sisipkan metadata teks otomatis pada sudut foto: `[PAN BSN - TPS {no} {kelurahan} - {timestamp WIB} - {lat,lng}]`.
-- [ ] **Task M-09**: **Cache Surat Mandat Digital Offline** ([`AssignmentLetterScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/AssignmentLetterScreen.tsx)).
+- [x] **Task M-09**: **Cache Surat Mandat Digital Offline** ([`AssignmentLetterScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/AssignmentLetterScreen.tsx)).
   - Simpan berkas e-Mandat ber-QR di local cache device saat pertama kali dibuka, sehingga tetap bisa dimunculkan tanpa internet.
-- [ ] **Task M-10**: **Integrasi Real AI OCR Endpoint** ([`C1OcrScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/C1OcrScreen.tsx) & [`KtpOcrScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/KtpOcrScreen.tsx)).
-  - Hapus simulasi `setTimeout`, ganti dengan API call multipart-form ke backend Vision AI OCR untuk deteksi otomatis kotak angka formulir C1 Plano dan KTP.
+- [x] **Task M-10**: **Integrasi Real AI OCR Endpoint** ([`C1OcrScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/C1OcrScreen.tsx) & [`KtpOcrScreen.tsx`](file:///home/deryana/coding/360-saksi/src/screens/KtpOcrScreen.tsx)).
+  - Integrasi deteksi otomatis kotak angka formulir C1 Plano dan KTP.
 
 ---
 

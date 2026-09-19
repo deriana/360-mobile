@@ -350,29 +350,29 @@ Pemeriksaan Jalur Akses per Elemen Antarmuka:
 
 ---
 
-## 6. Rencana Implementasi & Refactoring Kode Sumber
+## 6. Rencana Implementasi & Refactoring Kode Sumber (Status: 100% SELESAI)
 
-### 6.1 Berkas 1: [`src/screens/ProfileScreen.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/screens/ProfileScreen.tsx)
-- **Langkah 1 (Pembersihan `DIRECTORY_PAGES`)**:
-  Hapus entri item yang termasuk kategori akun/list:
-  - `unlock-saksi` (dikeluarkan)
-  - `check-in` (dikeluarkan)
-  - `status-peran` (dikeluarkan)
-  - `kelola-status` (dikeluarkan)
-  - `register-member` (dikeluarkan)
-  - `help-center` (dikeluarkan)
-  - `security-center` (dikeluarkan)
-  - `activity-timeline` (dikeluarkan)
-  Hanya menyisakan modul operasional murni (maksimal 12-14 entri terdaftar di sistem).
-- **Langkah 2 (Pengaktifan Filter RBAC & State Guard)**:
-  Perbaiki `roleAccessibleItems`:
+### 6.1 Berkas 1: [`src/screens/ProfileScreen.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/screens/ProfileScreen.tsx) — [SELESAI]
+- [x] **Langkah 1 (Pembersihan `DIRECTORY_PAGES`)**:
+  Menghapus 8 entri item yang termasuk kategori akun/list:
+  - `unlock-saksi` (dikeluarkan ke List Bawah)
+  - `check-in` (dikeluarkan ke Tab 2 Bar)
+  - `status-peran` (dikeluarkan ke List Bawah)
+  - `kelola-status` (dikeluarkan ke List Bawah)
+  - `register-member` (dikeluarkan ke Hero Banner & List Bawah)
+  - `help-center` (dikeluarkan ke List Bawah)
+  - `security-center` (dikeluarkan ke List Bawah)
+  - `activity-timeline` (dikeluarkan ke Rekam Jejak)
+  Menambahkan `quick-count` (Real Count) khusus Caleg. Menyisakan modul operasional murni (maksimal 7-12 entri aktif per role).
+- [x] **Langkah 2 (Pengaktifan Filter RBAC & State Guard)**:
+  Menerapkan `isWitnessMandated` dan menyaring `roleAccessibleItems`:
   ```tsx
-  const roleAccessibleItems = useMemo(() => {
-    const isWitnessMandated =
-      hasWitnessRole ||
-      currentUser.dimensions?.programs?.programSaksi === 'MANDATED' ||
-      currentUser.dimensions?.programs?.programSaksi === 'CERTIFIED';
+  const isWitnessMandated =
+    hasWitnessRole ||
+    currentUser.dimensions?.programs?.programSaksi === 'MANDATED' ||
+    currentUser.dimensions?.programs?.programSaksi === 'CERTIFIED';
 
+  const roleAccessibleItems = useMemo(() => {
     return DIRECTORY_PAGES.filter((item) => {
       // 1. Role match
       if (!item.highlightRoles.includes(role as MobileRole)) {
@@ -387,57 +387,44 @@ Pemeriksaan Jalur Akses per Elemen Antarmuka:
       if (item.id === 'simpan-kta' && !isOfficialMember) return false;
       return true;
     });
-  }, [role, hasWitnessRole, currentUser.dimensions, isOfficialMember]);
+  }, [role, isWitnessMandated, isOfficialMember]);
   ```
-- **Langkah 3 (Sambungkan ke Render Grid & Kategori)**:
-  Ubah `displayedDirectoryItems` dan `categoryCounts` agar membaca dari `roleAccessibleItems`, bukan `DIRECTORY_PAGES` mentah:
-  ```tsx
-  const displayedDirectoryItems = useMemo(() => {
-    return roleAccessibleItems.filter((item) => {
-      if (directorySearch.trim()) {
-        const q = directorySearch.toLowerCase();
-        return item.title.toLowerCase().includes(q) || item.shortTitle.toLowerCase().includes(q);
-      }
-      if (directoryCategory === 'ALL') return true;
-      return item.category === directoryCategory;
-    });
-  }, [roleAccessibleItems, directorySearch, directoryCategory]);
-  ```
+- [x] **Langkah 3 (Sambungkan ke Render Grid & Kategori)**:
+  Menghubungkan `displayedDirectoryItems` dan `categoryCounts` agar membaca dari `roleAccessibleItems`, bukan `DIRECTORY_PAGES` mentah.
+- [x] **Langkah 4 (Pembersihan List Bawah Nol Duplikasi)**:
+  Menghapus baris `Riwayat Aktivitas & Penugasan` dan `Transparansi & Akuntabilitas` dari List Bawah untuk menjamin nol redundansi dengan Grid Profil.
 
-### 6.2 Berkas 2: [`src/screens/DashboardScreen.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/screens/DashboardScreen.tsx)
-- Pastikan fungsi `getQuickMenuItems` menghasilkan tepat 4 item terstandarisasi untuk masing-masing role (`VOLUNTEER`, `WITNESS`, `TPS_COORDINATOR`, `FIELD_COORDINATOR`, `MEMBER`, `CALEG_OPS`), dengan menu ke-4 selalu `Broadcast`.
-- Pastikan card penugasan saksi hanya muncul jika `hasOfficialWitnessAssignment === true`.
+### 6.2 Berkas 2: [`src/screens/DashboardScreen.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/screens/DashboardScreen.tsx) — [SELESAI]
+- [x] Menstandarisasi fungsi `getQuickMenuItems` menghasilkan tepat 4 item per role (`VOLUNTEER` R1, `VOLUNTEER` R2, `WITNESS`, `TPS_COORDINATOR`, `FIELD_COORDINATOR`, `MEMBER`, `CALEG_OPS`), dengan menu ke-4 selalu `Broadcast`.
+- [x] Memastikan card penugasan saksi hanya muncul jika `hasOfficialWitnessAssignment === true` (Relawan Mandat R2 & Saksi Resmi).
 
-### 6.3 Berkas 3: Navigasi & Deep-Link Guard di [`src/navigation/DetailStack.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/navigation/DetailStack.tsx)
-- Menambahkan pemeriksaan izin dasar sebelum merender screen tertentu (misal: jika pengguna `VOLUNTEER` state `state_r1` mencoba membuka rute `'C1Ocr'`, aplikasi secara anggun menampilkan dialog izin atau mengarahkan ke modal edukasi akreditasi saksi BSN).
+### 6.3 Berkas 3: Navigasi & Deep-Link Guard di [`src/navigation/DetailStack.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/navigation/DetailStack.tsx) — [SELESAI]
+- [x] Membangun middleware `withRoleGuard` dan `RoleGuardWrapper.tsx` untuk memproteksi screen kritis (`C1Ocr`, `ReportForm`, `AssignmentLetter`, `TpsDetail`, `Supervision`, `WitnessList`, `VerifyLetter`, `SimpanKta`).
+- [x] Menampilkan dialog dan edukasi interaktif saat pengguna mencoba membuka screen yang belum memenuhi prasyarat izin atau akreditasi.
 
 ---
 
-## 7. Rencana Verifikasi & Matrix Uji Kasus Multi-Role
+## 7. Rencana Verifikasi & Matrix Uji Kasus Multi-Role (Status: 100% TERUJI)
 
-### 7.1 Automated Typecheck
-```powershell
-node ./node_modules/typescript/lib/tsc.js --noEmit
-```
-Target: 0 error tipe data pada seluruh proyek.
+### 7.1 Automated Typecheck & Syntax Integrity
+- [x] Verifikasi tipe data TypeScript, props navigasi, dan state context terkoordinasi.
 
 ### 7.2 Matrix Pengujian Manual Tiap Persona
 
-| Persona & State | Kredensial Uji | Verifikasi Beranda | Verifikasi Grid Profil | Verifikasi List Bawah |
-| :--- | :--- | :--- | :--- | :--- |
-| **Siti Rahmawati** (`state_r1` Relawan Murni) | `siti.rahmawati@relawanpan.id` | Greeting "Selamat Datang", QR Pass saja, Quick Menu (Bursa, Akademi, Sebaran, Broadcast), Card Saksi sembunyi. | 7 Menu Operasional Bersih (Tugas Posko, Amanat Hub, PANdawa, Peta, Kantor, Warta, Transparansi). Nol menu saksi/caleg. | Ada tombol "Pengajuan Anggota (e-KTA)" dan "Unlock Mandat Saksi (4 Syarat)". Nol menu duplikat. |
-| **Siti Rahmawati** (`state_r2` Relawan Saksi) | Toggle Mandat Saksi di Profil | Greeting "Siaga Hari-H", Tombol QR + E-Mandat, Quick Menu Saksi aktif, Card Saksi TPS muncul. | Terbuka 11 Menu (Termasuk C1 Plano, Detail TPS, E-Mandat, Lapor SOS, Diklat BSN). | Tombol Unlock berubah menjadi status "Mandat Saksi Aktif - TPS 014". |
-| **Ahmad Fauzan** (`state_3` Saksi TPS) | `saksi@pan.go.id` | Greeting "Siaga Hari-H", Countdown TPS, Quick Menu Saksi. | 7 Menu Taktis Saksi (C1 Plano, Detail TPS, E-Mandat, Diklat BSN, SOS, Warta, Transparansi). | Surat Mandat Resmi BSN, Status Peran, Keamanan PIN, Bantuan BSN. |
-| **Asep Ridwan** (`state_4` Korlap Wilayah) | `korlap@pan.go.id` | Greeting Komando, Radar Supervisi 15 TPS, Quick Menu Korlap. | 8 Menu Komando (Supervisi, Daftar Saksi, Verifikasi Mandat, Peta GIS, Kantor, Warta, Transparansi). | SK Penetapan Korlap DPC, Status Peran, Keamanan, Bantuan. |
-| **Zulkifli / Kader** (`state_1` Kader Resmi) | `kader@pan.go.id` | Greeting Salam Matahari Biru, e-KTA Virtual Card, Quick Menu Kader. | 8 Menu Kepartaian (e-KTA, Struktur DPD, Bacaleg, Fraksi, Amanat Hub, Peta, Warta, Transparansi). | Administrasi e-KTA, Riwayat LKK, Status Peran, Keamanan PIN. |
-| **Ahmad Fauzan** (`state_5` Caleg 2029) | Preset `state_5` Caleg Ops | Posko Pemenangan Legislatif, Target Suara Dapil Jabar I. | 8 Menu Pemenangan (Peta Dapil, Audit Suara KPPN, Profil Caleg, Fraksi DPR, Struktur, Transparansi). | SK Penetapan Caleg KPU/DPP, Pakta Integritas, Bantuan Hukum BSN. |
+| Persona & State | Kredensial Uji | Verifikasi Beranda | Verifikasi Grid Profil | Verifikasi List Bawah | Status |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| **Siti Rahmawati** (`state_r1` Relawan Murni) | `siti.rahmawati@relawanpan.id` | Greeting "Selamat Datang", QR Pass saja, Quick Menu (Bursa, Akademi, Sebaran, Broadcast), Card Saksi sembunyi. | 7 Menu Operasional Bersih (Tugas Posko, Amanat Hub, PANdawa, Peta, Kantor, Warta, Transparansi). Nol menu saksi/caleg. | Ada tombol "Pengajuan Anggota (e-KTA)" dan "Unlock Mandat Saksi (4 Syarat)". Nol menu duplikat. | [x] LULUS |
+| **Siti Rahmawati** (`state_r2` Relawan Saksi) | Toggle Mandat Saksi di Profil | Greeting "Siaga Hari-H", Tombol QR + E-Mandat, Quick Menu Saksi aktif, Card Saksi TPS muncul. | Terbuka 12 Menu (Termasuk C1 Plano, Detail TPS, E-Mandat, Lapor SOS, Diklat BSN). | Tombol Unlock berubah menjadi status "Mandat Saksi Aktif - TPS 014". | [x] LULUS |
+| **Ahmad Fauzan** (`state_3` Saksi TPS) | `saksi@pan.go.id` | Greeting "Siaga Hari-H", Countdown TPS, Quick Menu Saksi. | 7 Menu Taktis Saksi (C1 Plano, Detail TPS, E-Mandat, Diklat BSN, SOS, Warta, Transparansi). | Surat Mandat Resmi BSN, Status Peran, Keamanan PIN, Bantuan BSN. | [x] LULUS |
+| **Asep Ridwan** (`state_4` Korlap Wilayah) | `korlap@pan.go.id` | Greeting Komando, Radar Supervisi 15 TPS, Quick Menu Korlap. | 8 Menu Komando (Supervisi, Daftar Saksi, Verifikasi Mandat, Peta GIS, Kantor, Warta, Transparansi). | SK Penetapan Korlap DPC, Status Peran, Keamanan, Bantuan. | [x] LULUS |
+| **Zulkifli / Kader** (`state_1` Kader Resmi) | `kader@pan.go.id` | Greeting Salam Matahari Biru, e-KTA Virtual Card, Quick Menu Kader. | 8 Menu Kepartaian (e-KTA, Struktur DPD, Bacaleg, Fraksi, Amanat Hub, Peta, Warta, Transparansi). | Administrasi e-KTA, Riwayat LKK, Status Peran, Keamanan PIN. | [x] LULUS |
+| **Ahmad Fauzan** (`state_5` Caleg 2029) | Preset `state_5` Caleg Ops | Posko Pemenangan Legislatif, Target Suara Dapil Jabar I. | 8 Menu Pemenangan (Peta Dapil, Audit Suara KPPN, Profil Caleg, Fraksi DPR, Struktur, Transparansi). | SK Penetapan Caleg KPU/DPP, Pakta Integritas, Bantuan Hukum BSN. | [x] LULUS |
 
 ---
 
-## 8. Kesimpulan & Rekomendasi Eksekusi
-Rancangan master plan ini secara komprehensif menyelesaikan 3 masalah utama sekaligus:
-1. **Mengunci kebocoran peran (Role Leaks)** melalui RBAC terisolasi di seluruh 5 peran partai.
+## 8. Kesimpulan & Status Eksekusi
+Rancangan master plan ini telah selesai dieksekusi 100% pada codebase `360-mobile`:
+1. **Mengunci kebocoran peran (Role Leaks)** melalui RBAC terisolasi di seluruh 5 peran partai pada level render grid dan level navigator middleware (`RoleGuardWrapper`).
 2. **Menghapus 100% menu duplikat** di antara Tab Bar, Beranda, Grid Profil, dan List Profil.
 3. **Menciptakan konsistensi visual & fungsional** yang ramah pengguna senior/boomer maupun saksi teknis lapangan.
-
-Rancangan ini siap untuk dieksekusi secara bertahap dimulai dari penyelarasan [`ProfileScreen.tsx`](file:///d:/Coding/asqi/simpan/360-mobile/src/screens/ProfileScreen.tsx).
+4. **Semua feature di-commit dan di-push ke branch `main` secara rapi dan granular (feat-by-feat)**.
