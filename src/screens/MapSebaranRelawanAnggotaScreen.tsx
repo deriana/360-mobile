@@ -378,7 +378,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
           >
             <Feather name="map-pin" size={11} color={colors.primary} />
             <Text style={[styles.mapScopeBadgeText, { color: colors.text }]}>
-              Dapil Jabar I • {selectedCluster.name}
+              Dapil Jabar I | {selectedCluster.name}
             </Text>
           </View>
 
@@ -434,7 +434,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.fullscreenHeaderTitle}>Peta Sebaran Nasional simPAN</Text>
               <Text style={styles.fullscreenHeaderSub}>
-                Batas navigasi dikunci wilayah NKRI • Se-Indonesia
+                Batas navigasi dikunci wilayah NKRI | Se-Indonesia
               </Text>
             </View>
             <TouchableOpacity
@@ -608,7 +608,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={[styles.districtName, { color: colors.text }]}>{c.name}</Text>
                     <Text style={[styles.districtStat, { color: colors.primary }]}>
-                      {c.totalCadres.toLocaleString('id-ID')} Kader • {c.witnessCount} Saksi
+                      {c.totalCadres.toLocaleString('id-ID')} Kader | {c.witnessCount} Saksi
                     </Text>
                   </View>
 
@@ -644,8 +644,12 @@ export default function MapSebaranRelawanAnggotaScreen() {
             <Feather name="map-pin" size={16} color={colors.primary} />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Jejaring Posko Pemenangan Wilayah</Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('SimpanOffices')}>
-            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.primary }}>Lihat Kantor DPD →</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SimpanOffices')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          >
+            <Text style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.primary }}>Lihat Kantor DPD</Text>
+            <Feather name="arrow-right" size={13} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -675,7 +679,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
                   {posko.address}
                 </Text>
                 <Text style={{ fontSize: 10, fontFamily: fonts.medium, color: colors.primary }}>
-                  PIC: {posko.picName} • {posko.activeVolunteers} Relawan Siaga
+                  PIC: {posko.picName} | {posko.activeVolunteers} Relawan Siaga
                 </Text>
               </View>
 

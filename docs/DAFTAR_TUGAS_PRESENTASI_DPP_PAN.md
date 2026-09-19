@@ -255,7 +255,7 @@ flowchart LR
 ### EPIC 4: Layar "Status & Peran Saya", Modul "Kelola Status Saya", & Refactor Header Beranda
 *Tujuan: Memberikan visualisasi transparan atas 7 lapisan identitas, menyediakan kontrol status mandiri (pengunduran diri anggota berjenjang, opsi berhenti sementara/tetap relawan, dan proteksi tugas aktif), serta header beranda ringkas.*
 
-- [ ] **TASK-4.1: Layar Khusus "Status & Peran Saya" (`src/screens/StatusPeranSayaScreen.tsx`)**
+- [x] **TASK-4.1: Layar Khusus "Status & Peran Saya" (`src/screens/StatusPeranSayaScreen.tsx`)**
   - Akses dari: **Profil → Status & Peran Saya**.
   - Tampilan visual berlapis kartu:
     1. **Kartu Keanggotaan (Membership):** Status 🟢 Anggota Aktif / 🟡 Dalam Proses Pengunduran Diri / ⚪ Ended, Nomor e-KTA simPAN, Tanggal Bergabung, Asal DPC/DPD.
@@ -277,7 +277,7 @@ flowchart LR
     - Baris 3: Badge Status Operasional Aktif saat ini: `Mode Operasional: Saksi TPS 001 Kel. Dago`.
   - Tombol Quick Actions mini: `[ Ganti Mode ]` dan `[ Status & Peran ]`.
 
-- [ ] **TASK-4.3: Modul Baru: "Kelola Status Saya" (`src/screens/KelolaStatusScreen.tsx`)**
+- [x] **TASK-4.3: Modul Baru: "Kelola Status Saya" (`src/screens/KelolaStatusScreen.tsx`)**
   - *Tujuan Arsitektur:* Mengakomodir tata kelola siklus hidup status secara independen tanpa menghapus akun (*Never Delete User Hard*).
   - **A. Bagian Keanggotaan (Membership):**
     - Tombol: `[ Pengajuan Pengunduran Diri Anggota ]`.
