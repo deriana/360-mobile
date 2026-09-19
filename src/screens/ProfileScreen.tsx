@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Image,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -28,268 +27,6 @@ import {
 } from '../utils/userContext';
 import { checkRoleEligibility } from '../utils/roleUnlockRules';
 
-interface DirectoryMenuItem {
-  id: string;
-  title: string;
-  shortTitle: string;
-  subtitle: string;
-  screen?: string;
-  params?: any;
-  category: 'TUGAS' | 'EDUKASI' | 'ORGANISASI';
-  icon: keyof typeof Feather.glyphMap;
-  tone?: 'primary' | 'danger' | 'warning' | 'success' | 'info';
-  badge?: string;
-  highlightRoles: MobileRole[];
-}
-
-const DIRECTORY_PAGES: DirectoryMenuItem[] = [
-  // TUGAS LAPANGAN & KAWAL SUARA
-  {
-    id: 'c1-ocr',
-    title: 'Pemindaian C1 Plano (AI OCR)',
-    shortTitle: 'C1 Plano',
-    subtitle: 'Foto dan unggah rekapitulasi C1 plano ke server BSN',
-    screen: 'C1Ocr',
-    category: 'TUGAS',
-    icon: 'file-text',
-    tone: 'success',
-    badge: 'OCR',
-    highlightRoles: ['WITNESS', 'VOLUNTEER'],
-  },
-  {
-    id: 'assignment-letter',
-    title: 'Surat Mandat Saksi (E-Mandat)',
-    shortTitle: 'E-Mandat',
-    subtitle: 'Surat tugas mandat resmi saksi TPS ber-barcode BSN',
-    screen: 'AssignmentLetter',
-    params: { witnessId: 'SAKSI-001' },
-    category: 'TUGAS',
-    icon: 'award',
-    tone: 'primary',
-    badge: 'Resmi',
-    highlightRoles: ['WITNESS', 'VOLUNTEER'],
-  },
-  {
-    id: 'tps-detail',
-    title: 'Detail TPS & Bilik Suara',
-    shortTitle: 'Detail TPS',
-    subtitle: 'Informasi nomor TPS, data pemilih (DPT) & lokasi',
-    screen: 'TpsDetail',
-    params: { tpsId: 'TPS-01' },
-    category: 'TUGAS',
-    icon: 'check-square',
-    tone: 'info',
-    badge: 'DPT',
-    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'supervision',
-    title: 'Supervisi & Pantau TPS Wilayah',
-    shortTitle: 'Supervisi TPS',
-    subtitle: 'Monitoring saksi dan progres suara di kecamatan',
-    screen: 'Supervision',
-    category: 'TUGAS',
-    icon: 'eye',
-    tone: 'primary',
-    badge: 'Komando',
-    highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'witness-list',
-    title: 'Daftar Saksi Terverifikasi',
-    shortTitle: 'Daftar Saksi',
-    subtitle: 'Kontak dan status seluruh saksi di TPS binaan Anda',
-    screen: 'WitnessList',
-    category: 'TUGAS',
-    icon: 'users',
-    tone: 'primary',
-    badge: '15 Saksi',
-    highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'verify-letter',
-    title: 'Verifikasi Surat Tugas Lapangan',
-    shortTitle: 'Verifikasi Mandat',
-    subtitle: 'Pindai barcode surat mandat saksi di TPS',
-    screen: 'VerifyLetter',
-    category: 'TUGAS',
-    icon: 'check-circle',
-    tone: 'info',
-    badge: 'Barcode',
-    highlightRoles: ['TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'tasks',
-    title: 'Bursa Tugas & Aksi Lapangan',
-    shortTitle: 'Tugas Posko',
-    subtitle: 'Daftar penugasan kegiatan sosial warga & posko',
-    screen: 'Tasks',
-    category: 'TUGAS',
-    icon: 'check-square',
-    tone: 'info',
-    badge: 'Giat',
-    highlightRoles: ['VOLUNTEER'],
-  },
-  {
-    id: 'emergency-form',
-    title: 'Lapor Kejadian Darurat (SOS)',
-    shortTitle: 'Lapor SOS',
-    subtitle: 'Laporkan insiden, kecurangan, atau kendala lapangan',
-    screen: 'EmergencyForm',
-    category: 'TUGAS',
-    icon: 'alert-triangle',
-    tone: 'danger',
-    badge: 'SOS',
-    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'quick-count',
-    title: 'Hitung Cepat Suara (Real Count)',
-    shortTitle: 'Hitung Suara',
-    subtitle: 'Simulasi dan tabulasi real count perolehan kursi pemilu',
-    screen: 'QuickCountGame',
-    category: 'TUGAS',
-    icon: 'check-circle',
-    tone: 'success',
-    badge: 'KPPN',
-    highlightRoles: ['CALEG_OPS'],
-  },
-
-  // EDUKASI & KADERISASI
-  {
-    id: 'amanat-academy',
-    title: 'Amanat Academy Hub',
-    shortTitle: 'Amanat Hub',
-    subtitle: 'Kurikulum perkaderan LKK, kepemimpinan & bicara publik',
-    screen: 'AmanatAcademy',
-    category: 'EDUKASI',
-    icon: 'book-open',
-    tone: 'primary',
-    badge: 'Akademi',
-    highlightRoles: ['VOLUNTEER', 'MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'pandawa-program',
-    title: 'Satgas Pemuda PANdawa',
-    shortTitle: 'PANdawa',
-    subtitle: 'Gerakan kesamaptaan pengawalan suara & kesiapsiagaan',
-    screen: 'PandawaProgram',
-    category: 'EDUKASI',
-    icon: 'shield',
-    tone: 'warning',
-    badge: 'Satgas',
-    highlightRoles: ['VOLUNTEER'],
-  },
-  {
-    id: 'witness-academy',
-    title: 'Diklat & Modul Saksi BSN PAN',
-    shortTitle: 'Diklat BSN',
-    subtitle: 'Panduan teknis pengawalan suara pemilu di TPS',
-    screen: 'WitnessAcademy',
-    category: 'EDUKASI',
-    icon: 'award',
-    tone: 'primary',
-    badge: 'Bimtek',
-    highlightRoles: ['WITNESS', 'VOLUNTEER'],
-  },
-
-  // ORGANISASI, DATA PARTAI & PETA
-  {
-    id: 'simpan-kta',
-    title: 'e-KTA Digital simPAN',
-    shortTitle: 'e-KTA simPAN',
-    subtitle: 'Kartu tanda anggota resmi Partai Amanat Nasional',
-    screen: 'SimpanKta',
-    category: 'ORGANISASI',
-    icon: 'credit-card',
-    tone: 'primary',
-    badge: 'KTA',
-    highlightRoles: ['MEMBER'],
-  },
-  {
-    id: 'map-sebaran',
-    title: 'Peta Sebaran GIS Relawan & Kader',
-    shortTitle: 'Peta Sebaran',
-    subtitle: 'Peta kekuatan kader, posko & saksi TPS se-Indonesia',
-    screen: 'MapSebaranRelawanAnggota',
-    category: 'ORGANISASI',
-    icon: 'map',
-    tone: 'primary',
-    badge: 'GIS',
-    highlightRoles: ['VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'simpan-structure',
-    title: 'Struktur Pengurus simPAN',
-    shortTitle: 'Struktur DPD',
-    subtitle: 'Hierarki kepengurusan DPP, DPW, DPD, hingga DPC',
-    screen: 'SimpanStructure',
-    category: 'ORGANISASI',
-    icon: 'layers',
-    tone: 'info',
-    badge: 'DPP-DPC',
-    highlightRoles: ['MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'simpan-offices',
-    title: 'Kantor Sekretariat simPAN',
-    shortTitle: 'Kantor Partai',
-    subtitle: 'Alamat kantor partai dan rumah aspirasi di Indonesia',
-    screen: 'SimpanOffices',
-    category: 'ORGANISASI',
-    icon: 'home',
-    tone: 'info',
-    highlightRoles: ['VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'simpan-bacaleg',
-    title: 'Pendaftaran & Info Bacaleg',
-    shortTitle: 'Bacaleg 2029',
-    subtitle: 'Pemberkasan dan biodata calon wakil rakyat PAN 2029',
-    screen: 'SimpanBacaleg',
-    category: 'ORGANISASI',
-    icon: 'user-plus',
-    tone: 'warning',
-    badge: 'Caleg',
-    highlightRoles: ['MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'party-roster',
-    title: 'Daftar Wakil Rakyat Fraksi PAN',
-    shortTitle: 'Wakil Rakyat',
-    subtitle: 'Daftar anggota DPR-RI & DPRD dari Partai Amanat Nasional',
-    screen: 'PartyRoster',
-    category: 'ORGANISASI',
-    icon: 'users',
-    tone: 'primary',
-    badge: 'Fraksi',
-    highlightRoles: ['MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'simpan-news',
-    title: 'Warta & Instruksi Resmi PAN',
-    shortTitle: 'Warta PAN',
-    subtitle: 'Berita partai terpercaya, press release & kabar aksi',
-    screen: 'SimpanNews',
-    category: 'ORGANISASI',
-    icon: 'rss',
-    tone: 'info',
-    highlightRoles: ['VOLUNTEER', 'WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
-  },
-  {
-    id: 'transparency-hub',
-    title: 'Transparansi & Akuntabilitas',
-    shortTitle: 'Transparansi',
-    subtitle: 'Laporan keuangan WTP, Banpar, dan AD/ART partai',
-    screen: 'TransparencyHub',
-    category: 'ORGANISASI',
-    icon: 'check-circle',
-    tone: 'success',
-    badge: 'WTP',
-    highlightRoles: ['VOLUNTEER', 'WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'CALEG_OPS'],
-  },
-];
-
 export default function ProfileScreen({ navigation }: any) {
   const {
     role,
@@ -308,10 +45,6 @@ export default function ProfileScreen({ navigation }: any) {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [unlockSaksiModalVisible, setUnlockSaksiModalVisible] = useState(false);
   const [roleModalTab, setRoleModalTab] = useState<'roles' | 'presets'>('roles');
-
-  // State Direktori Menu Lengkap (Pusat Akses Ramah Lansia/Senior/Boomer)
-  const [directorySearch, setDirectorySearch] = useState('');
-  const [directoryCategory, setDirectoryCategory] = useState<'ALL' | 'TUGAS' | 'EDUKASI' | 'ORGANISASI'>('ALL');
 
   const user = currentUser.identity;
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
@@ -403,74 +136,6 @@ export default function ProfileScreen({ navigation }: any) {
         return 'success';
       default:
         return 'primary';
-    }
-  };
-
-  // 1. Menu yang sah dan relevan khusus untuk role aktif (mencegah kebocoran & menu duplikat)
-  const isWitnessMandated =
-    hasWitnessRole ||
-    currentUser.dimensions?.programs?.programSaksi === 'MANDATED' ||
-    currentUser.dimensions?.programs?.programSaksi === 'CERTIFIED';
-
-  // 1. Menu yang sah dan relevan khusus untuk role aktif (mencegah kebocoran & menu duplikat)
-  const roleAccessibleItems = useMemo(() => {
-    return DIRECTORY_PAGES.filter((item) => {
-      // 1. Role match
-      if (!item.highlightRoles.includes(role as MobileRole)) {
-        return false;
-      }
-      // 2. Volunteer state guard (Relawan Murni vs Relawan Mandat Saksi)
-      if (role === 'VOLUNTEER' && !isWitnessMandated) {
-        const witnessOnlyIds = ['c1-ocr', 'assignment-letter', 'tps-detail', 'witness-academy', 'emergency-form'];
-        if (witnessOnlyIds.includes(item.id)) return false;
-      }
-      // 3. Official member guard
-      if (item.id === 'simpan-kta' && !isOfficialMember) {
-        return false;
-      }
-      return true;
-    });
-  }, [role, isWitnessMandated, isOfficialMember]);
-
-  // Hitung jumlah menu per kategori (berbasis roleAccessibleItems)
-  const categoryCounts = useMemo(() => {
-    return {
-      ALL: roleAccessibleItems.length,
-      TUGAS: roleAccessibleItems.filter((i) => i.category === 'TUGAS').length,
-      EDUKASI: roleAccessibleItems.filter((i) => i.category === 'EDUKASI').length,
-      ORGANISASI: roleAccessibleItems.filter((i) => i.category === 'ORGANISASI').length,
-    };
-  }, [roleAccessibleItems]);
-
-  const CATEGORY_TABS = useMemo(() => [
-    { key: 'ALL' as const, label: 'Semua', icon: 'grid' as const, count: categoryCounts.ALL },
-    { key: 'TUGAS' as const, label: 'Tugas', icon: 'check-square' as const, count: categoryCounts.TUGAS },
-    { key: 'EDUKASI' as const, label: 'Edukasi', icon: 'book-open' as const, count: categoryCounts.EDUKASI },
-    { key: 'ORGANISASI' as const, label: 'Organisasi', icon: 'briefcase' as const, count: categoryCounts.ORGANISASI },
-  ], [categoryCounts]);
-
-  // Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori (khusus menu role aktif)
-  const displayedDirectoryItems = useMemo(() => {
-    return roleAccessibleItems.filter((item) => {
-      if (directorySearch.trim()) {
-        const q = directorySearch.toLowerCase();
-        return (
-          item.title.toLowerCase().includes(q) ||
-          item.shortTitle.toLowerCase().includes(q) ||
-          item.subtitle.toLowerCase().includes(q) ||
-          item.category.toLowerCase().includes(q)
-        );
-      }
-      if (directoryCategory === 'ALL') {
-        return true;
-      }
-      return item.category === directoryCategory;
-    });
-  }, [roleAccessibleItems, directorySearch, directoryCategory]);
-
-  const handleDirectoryPress = (item: DirectoryMenuItem) => {
-    if (item.screen) {
-      navigation.navigate(item.screen, item.params);
     }
   };
 
@@ -823,178 +488,7 @@ export default function ProfileScreen({ navigation }: any) {
         </Card>
       )}
 
-      {/* 3. DIREKTORI MENU LENGKAP & PUSAT AKSES SEMUA HALAMAN (BOOMER & SENIOR FRIENDLY) */}
-      <Card style={[styles.directoryCard, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-        {/* Header Section */}
-        <View style={styles.directoryHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-            <View style={[styles.directoryIconCircle, { backgroundColor: colors.primary }]}>
-              <Feather name="grid" size={18} color="#FFFFFF" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={[styles.directoryTitle, { color: colors.text }]}>Pusat Menu & Direktori Layanan</Text>
-                <View style={[styles.directoryRoleTag, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.directoryRoleTagText, { color: colors.primary }]}>
-                    {getRoleFriendlyName(role as MobileRole)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.directorySub, { color: colors.textMuted }]}>
-                Seluruh halaman aplikasi disatukan di sini agar mudah ditemukan dan langsung dibuka.
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Pencarian Cepat Ramah Lansia / Boomer */}
-        <View
-          style={[
-            styles.directorySearchBox,
-            {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <Feather name="search" size={16} color={colors.primary} />
-          <TextInput
-            value={directorySearch}
-            onChangeText={setDirectorySearch}
-            placeholder="Cari menu... (contoh: KTA, Saksi, Peta, C1)"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.directorySearchInput, { color: colors.text }]}
-          />
-          {directorySearch.length > 0 && (
-            <Pressable onPress={() => setDirectorySearch('')} style={{ padding: 4 }}>
-              <Feather name="x-circle" size={15} color={colors.textMuted} />
-            </Pressable>
-          )}
-        </View>
-
-        {/* Filter Kategori Chips (Bebas Emoji, Vector Icon Saja) */}
-        {!directorySearch.trim() && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.directoryFilterScroll}
-          >
-            {CATEGORY_TABS.map((cat) => {
-              const active = directoryCategory === cat.key;
-              return (
-                <Pressable
-                  key={cat.key}
-                  onPress={() => setDirectoryCategory(cat.key)}
-                  style={({ pressed }) => [
-                    styles.directoryFilterChip,
-                    {
-                      backgroundColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
-                      borderColor: active ? colors.primary : colors.border,
-                    },
-                    pressed && { opacity: 0.8 },
-                  ]}
-                >
-                  <Feather
-                    name={cat.icon}
-                    size={12}
-                    color={active ? '#FFFFFF' : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.directoryFilterChipText,
-                      { color: active ? '#FFFFFF' : colors.text, fontFamily: active ? fonts.bold : fonts.medium },
-                    ]}
-                  >
-                    {cat.label} ({cat.count})
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-
-        {/* 4-Column BCA Mobile Quick Menu Style Grid */}
-        <View style={styles.quickIconGrid}>
-          {displayedDirectoryItems.length === 0 ? (
-            <View style={styles.directoryEmptyBox}>
-              <Feather name="inbox" size={24} color={colors.textMuted} />
-              <Text style={[styles.directoryEmptyText, { color: colors.textMuted }]}>
-                Tidak ada menu yang sesuai dengan "{directorySearch}".
-              </Text>
-            </View>
-          ) : (
-            displayedDirectoryItems.map((item) => {
-              const isDanger = item.tone === 'danger';
-              const isSuccess = item.tone === 'success';
-              const isWarning = item.tone === 'warning';
-              const isInfo = item.tone === 'info';
-
-              const iconBg = isDanger
-                ? isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEE2E2'
-                : isSuccess
-                ? isDark ? 'rgba(16, 185, 129, 0.16)' : '#DCFCE7'
-                : isWarning
-                ? isDark ? 'rgba(245, 158, 11, 0.16)' : '#FEF3C7'
-                : isInfo
-                ? isDark ? 'rgba(14, 165, 233, 0.16)' : '#E0F2FE'
-                : colors.primaryLight;
-
-              const iconColor = isDanger
-                ? '#DC2626'
-                : isSuccess
-                ? '#059669'
-                : isWarning
-                ? '#D97706'
-                : isInfo
-                ? '#0284C7'
-                : colors.primary;
-
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={() => handleDirectoryPress(item)}
-                  style={({ pressed }) => [
-                    styles.quickGridItem,
-                    pressed && { opacity: 0.7, transform: [{ scale: 0.94 }] },
-                  ]}
-                >
-                  <View style={styles.quickIconWrapper}>
-                    <View
-                      style={[
-                        styles.quickIconBox,
-                        {
-                          backgroundColor: iconBg,
-                          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                        },
-                      ]}
-                    >
-                      <Feather name={item.icon} size={20} color={iconColor} strokeWidth={2} />
-                    </View>
-                    {item.badge && (
-                      <View
-                        style={[
-                          styles.quickMicroBadge,
-                          {
-                            backgroundColor: isDanger ? '#DC2626' : isWarning ? '#D97706' : colors.primary,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.quickMicroBadgeText}>{item.badge}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={[styles.quickItemLabel, { color: colors.text }]} numberOfLines={2}>
-                    {item.shortTitle}
-                  </Text>
-                </Pressable>
-              );
-            })
-          )}
-        </View>
-      </Card>
-
-      {/* 4. INFORMASI IDENTITAS & WILAYAH */}
+      {/* 3. INFORMASI IDENTITAS & WILAYAH */}
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Informasi Identitas & Wilayah</Text>
 
@@ -1021,7 +515,7 @@ export default function ProfileScreen({ navigation }: any) {
         </View>
       </Card>
 
-      {/* 5. LAYANAN & PENGATURAN PETUGAS */}
+      {/* 4. LAYANAN & PENGATURAN */}
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
 
@@ -1137,6 +631,49 @@ export default function ProfileScreen({ navigation }: any) {
             <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           </>
         )}
+
+        {/* Kantor Sekretariat simPAN */}
+        <Pressable
+          onPress={() => navigation.navigate('SimpanOffices')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+            <Feather name="home" size={15} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>Kantor Sekretariat simPAN</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              Alamat kantor partai & rumah aspirasi di Indonesia
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+
+        {/* Transparansi & Akuntabilitas */}
+        <Pressable
+          onPress={() => navigation.navigate('TransparencyHub')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: '#ECFDF5' }]}>
+            <Feather name="check-circle" size={15} color="#059669" />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Transparansi & Akuntabilitas</Text>
+              <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 8.5, color: '#059669' }}>WTP</Text>
+              </View>
+            </View>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              Struktur, Laporan Keuangan, Banpar & AD/ART
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
         {/* Keamanan & Privasi */}
         <Pressable
@@ -2360,145 +1897,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 4,
-  },
-
-  // Boomer Directory Card Styles
-  directoryCard: {
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-  },
-  directoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  directoryIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  directoryTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 13.5,
-  },
-  directoryRoleTag: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  directoryRoleTagText: {
-    fontFamily: fonts.bold,
-    fontSize: 9.5,
-  },
-  directorySub: {
-    fontFamily: fonts.regular,
-    fontSize: 10.5,
-    marginTop: 2,
-    lineHeight: 14,
-  },
-  directorySearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  directorySearchInput: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    padding: 0,
-  },
-  directoryFilterScroll: {
-    gap: 6,
-    paddingVertical: 2,
-  },
-  directoryFilterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  directoryFilterChipText: {
-    fontSize: 11,
-  },
-  // 4-Column BCA Quick Menu Style Grid
-  quickIconGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    rowGap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  quickGridItem: {
-    width: '25%',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    gap: 5,
-  },
-  quickIconWrapper: {
-    position: 'relative',
-  },
-  quickIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  quickMicroBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: radius.pill,
-  },
-  quickMicroBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 8.5,
-    fontFamily: fonts.bold,
-  },
-  quickItemLabel: {
-    fontFamily: fonts.medium,
-    fontSize: 10.5,
-    textAlign: 'center',
-    lineHeight: 13.5,
-    paddingHorizontal: 2,
-  },
-  directoryEmptyBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: 6,
-    width: '100%',
-  },
-  directoryEmptyText: {
-    fontFamily: fonts.regular,
-    fontSize: 11.5,
-    textAlign: 'center',
-  },
-  directoryToggleBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginTop: 2,
-  },
-  directoryToggleBtnText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
   },
 });
