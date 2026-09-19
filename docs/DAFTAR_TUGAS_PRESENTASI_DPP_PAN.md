@@ -229,7 +229,7 @@ flowchart LR
 ### EPIC 3: Peta Sebaran Relawan & Anggota Resmi (Executive GIS View)
 *Tujuan: Menampilkan peta sebaran kekuatan kader dan pengawal suara se-Indonesia sebagai referensi dari Web Command Center (Information-Only).*
 
-- [ ] **TASK-3.1: Data Sebaran Wilayah Berjenjang (`src/data/sebaranRelawanAnggota.ts`)**
+- [x] **TASK-3.1: Data Sebaran Wilayah Berjenjang (`src/data/sebaranRelawanAnggota.ts` / `src/data/gisRegionalData.ts`)**
   - Susun dataset agregat sebaran riil per DPW (Provinsi), DPD (Kab/Kota), dan kluster DPC/TPS (Coblong & Kota Bandung).
   - Sertakan metrik:
     - Total Kader Ber-KTA simPAN.
@@ -237,7 +237,7 @@ flowchart LR
     - Coverage Saksi TPS (% TPS terisi mandat saksi PAN).
     - Lokasi titik Posko Pemenangan utama (koordinat lat/lng).
 
-- [ ] **TASK-3.2: Screen Peta Sebaran (`src/screens/MapSebaranRelawanAnggotaScreen.tsx`)**
+- [x] **TASK-3.2: Screen Peta Sebaran (`src/screens/MapSebaranRelawanAnggotaScreen.tsx`)**
   - **Header Eksekutif:** Penanda *"DATA REFERENSI WEB COMMAND CENTER (READ-ONLY)"* dengan stempel waktu sinkronisasi terakhir.
   - **Peta Interaktif Visual:**
     - Render visual peta wilayah Indonesia / Jawa Barat / Bandung dengan pins posko, cluster anggota, dan polygon coverage.
@@ -311,7 +311,7 @@ flowchart LR
 ### EPIC 5: Ekosistem Amanat Academy & PANdawa Hub
 *Tujuan: Membangun pilar pembelajaran dan kesiapsiagaan pemuda sesuai dokumen pengayaan PAN Mobile.*
 
-- [ ] **TASK-5.1: Layar Utama Hub Amanat Academy (`src/screens/AmanatAcademyScreen.tsx`)**
+- [x] **TASK-5.1: Layar Utama Hub Amanat Academy (`src/screens/AmanatAcademyScreen.tsx`)**
   - Re-branding & refactoring dari `WitnessAcademyScreen.tsx` menjadi Academy Hub seutuhnya.
   - Bagian-bagian utama:
     - **Header Personal:** Lanjutkan Belajar (*"Komunikasi Politik Lapangan — 80%"*) + Tombol *Lanjutkan*.
@@ -325,13 +325,13 @@ flowchart LR
       - 🗳 **Program Saksi BSN PAN:** Pelatihan & Akreditasi Saksi TPS.
     - **Koleksi Sertifikat Digital:** Daftar sertifikat kelulusan lengkap dengan QR verifikasi.
 
-- [ ] **TASK-5.2: Modul Khusus PANdawa (`src/screens/PandawaProgramScreen.tsx`)**
+- [x] **TASK-5.2: Modul Khusus PANdawa (`src/screens/PandawaProgramScreen.tsx`)**
   - **Overview Program:** Profil satgas kesiapsiagaan, pengamanan, dan pengawalan PAN ("Pasukan Muda Tangguh dan Waspada").
   - **Status Pendaftaran / Keikutsertaan:** Status user saat ini (`REGISTERED` / `TRAINING` / `ACTIVE`).
   - **Modul Diklat Disiplin & Kesiapsiagaan:** Modul kurikulum kesiapsiagaan fisik, safety awareness, pengawalan rapat umum, dan SOP darurat.
   - **Digital Credential PANdawa:** Kartu tanda anggota satuan tugas PANdawa dengan QR Pass terenkripsi.
 
-- [ ] **TASK-5.3: Jalur Khusus Akreditasi Saksi BSN PAN**
+- [x] **TASK-5.3: Jalur Khusus Akreditasi Saksi BSN PAN**
   - Integrasikan simulasi C1 Plano, kuis pemahaman regulasi PKPU, dan penerbitan sertifikat kompetensi saksi sebagai prasyarat unlock peran Saksi TPS.
 
 ---
@@ -408,17 +408,17 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
 
 #### C. Rincian Task Implementasi EPIC 6
 
-- [ ] **TASK-6.1: Audit & Refactor Quick Menu Generator di `src/screens/DashboardScreen.tsx`**
+- [x] **TASK-6.1: Audit & Refactor Quick Menu Generator di `src/screens/DashboardScreen.tsx`**
   - Perbarui fungsi `getQuickMenuItems()` agar mengikuti Matriks Personalisasi Quick Menu di atas.
   - Saring item berdasarkan `currentUser.currentRole`, `currentUser.electoralStatus`, dan `currentUser.candidateStatus`.
   - Hapus semua pemanggilan rute duplikat (`NewsTab`, `ActivitiesTab`, `SimpanKta`, `WitnessAcademy`).
 
-- [ ] **TASK-6.2: Refactor Card Penugasan Saksi, Koordinator, & Warta di `src/screens/DashboardScreen.tsx`**
+- [x] **TASK-6.2: Refactor Card Penugasan Saksi, Koordinator, & Warta di `src/screens/DashboardScreen.tsx`**
   - **Pada Kartu Saksi:** Hapus tombol duplikat "Lapor C1" dan "Surat Mandat". Kartu difokuskan menampilkan status bilik TPS, progress DPT hadir, dan nomor mandat resmi.
   - **Pada Kartu Koordinator:** Hapus tombol duplikat "Supervisi Wilayah" dan "Status Saksi". Jadikan angka statistik dapat diklik langsung ke layar terkait.
   - **Pada Bagian Warta:** Ganti card list berita panjang dengan **Ticker Maklumat Resmi DPP** yang terintegrasi rapi dengan modal arahan instruksi partai.
 
-- [ ] **TASK-6.3: Restrukturisasi Bottom Navigation (`src/navigation/MainTabs.tsx`) ke 5 Pilar Resmi**
+- [x] **TASK-6.3: Restrukturisasi Bottom Navigation (`src/navigation/MainTabs.tsx`) ke 5 Pilar Resmi**
   - Hapus tab `NewsTab` dan `CheckInTab` dari bottom tab bar.
   - Susun 5 tab standar sesuai blueprint pengayaan:
     1. **BERANDA (`HomeTab`):** Dashboard terpersonalisasi bebas duplikasi.
@@ -427,7 +427,7 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
     4. **ACADEMY (`AcademyTab`):** Amanat Academy Hub, PANdawa, & Program Saksi.
     5. **PROFIL (`ProfileTab`):** e-KTA simPAN, Status & Peran Saya, Pengaturan Akun.
 
-- [ ] **TASK-6.4: Pemutakhiran Detail Stack Navigator (`src/navigation/DetailStack.tsx`)**
+- [x] **TASK-6.4: Pemutakhiran Detail Stack Navigator (`src/navigation/DetailStack.tsx`)**
   - Daftarkan screen baru:
     - `StatusPeranSayaScreen` (Status & Peran 7 Dimensi).
     - `KelolaStatusScreen` (Modul Kelola Status Mandiri & Pengunduran Diri/Pause).
@@ -436,7 +436,7 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
     - `PandawaProgramScreen` (Modul Satgas Kesiapsiagaan PANdawa).
   - Pastikan setiap screen memiliki header title, tombol kembali (back), dan bell notifikasi.
 
-- [ ] **TASK-6.5: Verifikasi Anti-Duplikasi Navigasi (Zero Redundancy Audit)**
+- [x] **TASK-6.5: Verifikasi Anti-Duplikasi Navigasi (Zero Redundancy Audit)**
   - Uji alur navigasi tiap role: pastikan tidak ada layar yang dapat diakses dengan 2 tombol berbeda dari layar yang sama.
   - Pastikan pengalaman pengguna terasa rapi, intuitif, dan bebas dari kebingungan navigasi.
 
@@ -495,12 +495,12 @@ flowchart TD
         A5["TASK-7.1: Integrasi Mode Switcher & Presets di ProfileScreen.tsx"]
     end
 
-    subgraph STREAM_B ["PROGRAMMER 2: FEATURE HUBS, GIS VIEW & NAVIGATION REFACTOR"]
-        B1["TASK-3.1 & 3.2: Screen MapSebaranRelawanAnggotaScreen.tsx + Mock GIS"]
-        B2["TASK-5.1: Screen AmanatAcademyScreen.tsx (Modul Bimtek & LKK)"]
-        B3["TASK-5.2: Screen PandawaProgramScreen.tsx (Satgas Muda & Baksos)"]
-        B4["TASK-6.1: Restrukturisasi 5 Tab Resmi di src/navigation/MainTabs.tsx"]
-        B5["TASK-6.2 & 6.3: Refactor DashboardScreen.tsx (Zero Redundancy Quick Menu)"]
+    subgraph STREAM_B ["PROGRAMMER 2: FEATURE HUBS, GIS VIEW & NAVIGATION REFACTOR (COMPLETED)"]
+        B1["TASK-3.1 & 3.2: Screen MapSebaranRelawanAnggotaScreen.tsx + Mock GIS (SELESAI)"]
+        B2["TASK-5.1: Screen AmanatAcademyScreen.tsx (Modul Bimtek & LKK) (SELESAI)"]
+        B3["TASK-5.2: Screen PandawaProgramScreen.tsx (Satgas Muda & Baksos) (SELESAI)"]
+        B4["TASK-6.1: Restrukturisasi 5 Tab Resmi di src/navigation/MainTabs.tsx (SELESAI)"]
+        B5["TASK-6.2 & 6.3: Refactor DashboardScreen.tsx (Zero Redundancy Quick Menu) (SELESAI)"]
     end
 
     STREAM_A --> F_SYNC["FASE INTEGRASI & GLADI RESIK (TASK-7.2 & 7.3)"]
