@@ -28,8 +28,6 @@ export default function KartuPetugasScreen({ route }: any) {
           badgeId={`KORLAP-PAN-${coordinator.id}`}
           avatarSource={getWitnessAvatar(coordinator.avatarIndex)}
           rows={[
-            { icon: 'credit-card', label: 'NIK', value: coordinator.nik },
-            { icon: 'phone', label: 'No. WhatsApp / HP', value: coordinator.phone },
             { icon: 'credit-card', label: 'NIK', value: maskNik(coordinator.nik) },
             { icon: 'phone', label: 'No. WhatsApp / HP', value: maskPhone(coordinator.phone) },
             { icon: 'map-pin', label: 'Alamat Domisili', value: coordinator.address },
@@ -57,8 +55,6 @@ export default function KartuPetugasScreen({ route }: any) {
         badgeId={`SAKSI-PAN-${witness.id}`}
         avatarSource={getWitnessAvatar(witnessIndex)}
         rows={[
-          { icon: 'credit-card', label: 'NIK', value: witness.nik },
-          { icon: 'phone', label: 'No. WhatsApp / HP', value: witness.phone },
           { icon: 'credit-card', label: 'NIK', value: maskNik(witness.nik) },
           { icon: 'phone', label: 'No. WhatsApp / HP', value: maskPhone(witness.phone) },
           { icon: 'map-pin', label: 'Alamat Domisili', value: witness.address },

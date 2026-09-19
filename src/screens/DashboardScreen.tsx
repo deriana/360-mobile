@@ -852,15 +852,16 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 </Text>
               </View>
               <Pressable
-                onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
+                onPress={() => navigation.navigate('QuickCountGame')}
                 style={({ pressed }) => [
                   { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
                   pressed && { opacity: 0.7 },
                 ]}
               >
                 <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
-                  Detail Log Suara TPS →
+                  Detail Log Suara TPS
                 </Text>
+                <Feather name="arrow-right" size={13} color={colors.primary} />
               </Pressable>
             </View>
           </View>
@@ -913,10 +914,17 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   Ketuk angka di atas untuk membuka daftar personel
                 </Text>
               </View>
-              <Pressable onPress={() => navigation.navigate('Supervision')}>
+              <Pressable
+                onPress={() => navigation.navigate('Supervision')}
+                style={({ pressed }) => [
+                  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
                 <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
-                  Supervisi Wilayah →
+                  Supervisi Wilayah
                 </Text>
+                <Feather name="arrow-right" size={13} color={colors.primary} />
               </Pressable>
             </View>
           </View>
@@ -945,7 +953,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   TPS 001 — Kel. Dago, Kec. Coblong
                 </Text>
                 <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
-                  Kota Bandung • Mandat: 042/SM-DPP/2026
+                  Kota Bandung | Mandat: 042/SM-DPP/2026
                 </Text>
               </View>
               <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
@@ -982,8 +990,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 ]}
               >
                 <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
-                  Detail TPS →
+                  Detail TPS
                 </Text>
+                <Feather name="arrow-right" size={13} color={colors.primary} />
               </Pressable>
             </View>
           </View>

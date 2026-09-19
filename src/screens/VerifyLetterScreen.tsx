@@ -69,9 +69,12 @@ export default function VerifyLetterScreen({ route }: any) {
                   {isSigned ? 'Tanda Tangan Digital Pimpinan Sah & Terverifikasi' : 'Stempel Mandat Resmi Terdaftar'}
                 </Text>
               </View>
-              <Text style={{ fontSize: 10, color: colors.primary }}>
-                ✓ Sinkronisasi Offline Cache & Server Pusat Valid
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="shield" size={11} color={colors.primary} />
+                <Text style={{ fontSize: 10, color: colors.primary }}>
+                  Sinkronisasi Offline Cache & Server Pusat Valid
+                </Text>
+              </View>
             </View>
           </View>
         ) : (

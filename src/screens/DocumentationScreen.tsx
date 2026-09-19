@@ -100,9 +100,18 @@ export default function DocumentationScreen({ route, navigation }: any) {
                   <Image source={photo.source} style={styles.gridImage} resizeMode="cover" />
                 </Pressable>
                 <View style={styles.timeBadge} pointerEvents="none">
-                  <Text style={styles.timeBadgeText} numberOfLines={1}>
-                    {photo.watermark ? '🔒 Watermark PAN' : photo.takenAt}
-                  </Text>
+                  {photo.watermark ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <Feather name="lock" size={9} color="#FFFFFF" />
+                      <Text style={styles.timeBadgeText} numberOfLines={1}>
+                        Watermark PAN
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.timeBadgeText} numberOfLines={1}>
+                      {photo.takenAt}
+                    </Text>
+                  )}
                 </View>
                 <Pressable
                   onPress={() => removePhoto(photo.id)}

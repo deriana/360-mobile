@@ -163,7 +163,10 @@ export const WitnessQuizModal: React.FC<WitnessQuizModalProps> = ({
                   <View style={styles.certSignBox}>
                     <Text style={[styles.certDate, { color: colors.textMuted }]}>Jakarta, {certificateData.passedAt}</Text>
                     <Text style={[styles.certSigner, { color: colors.text }]}>Direktur Eksekutif BSN DPP PAN</Text>
-                    <Text style={[styles.certAuthStatus, { color: colors.primary }]}>✓ Dokumen Sah Terakreditasi</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="check-circle" size={11} color={colors.primary} />
+                      <Text style={[styles.certAuthStatus, { color: colors.primary }]}>Dokumen Sah Terakreditasi</Text>
+                    </View>
                   </View>
                 </View>
 

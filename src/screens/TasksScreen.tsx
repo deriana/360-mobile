@@ -177,7 +177,8 @@ export default function TasksScreen({ navigation, route }: any) {
 
                 <View style={{ marginTop: 6 }}>
                   <PrimaryButton
-                    label={item.isJoined ? '✓ Terdaftar (Siap Tugas)' : isFull ? 'Slot Penuh' : 'Ambil Penugasan Ini'}
+                    label={item.isJoined ? 'Terdaftar (Siap Tugas)' : isFull ? 'Slot Penuh' : 'Ambil Penugasan Ini'}
+                    icon={item.isJoined ? 'check' : undefined}
                     variant={item.isJoined ? 'secondary' : 'primary'}
                     disabled={isFull && !item.isJoined}
                     onPress={() => handleJoinOpportunity(item)}

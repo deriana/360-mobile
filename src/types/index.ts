@@ -41,6 +41,7 @@ export interface OrganizationalPosition {
   department?: string;
   periodStart?: string;
   periodEnd?: string;
+  skNumber?: string;
   isPrimary?: boolean;
 }
 
@@ -160,6 +161,7 @@ export interface CurrentUser {
     phone: string;
     role: string;
     posko: string;
+    region?: string;
   };
   dimensions?: UserDimensions;
   resignationRequest?: ResignationRequestPayload;

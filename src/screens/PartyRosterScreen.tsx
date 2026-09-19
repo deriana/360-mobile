@@ -230,7 +230,7 @@ export default function PartyRosterScreen({ route, navigation }: any) {
                 </View>
               ) : displayedCount >= filtered.length && filtered.length > 0 ? (
                 <Text style={[styles.allLoadedText, { color: colors.textMuted }]}>
-                  ✓ Semua {filtered.length} anggota legislatif telah dimuat
+                  Semua {filtered.length} anggota legislatif telah dimuat
                 </Text>
               ) : null}
             </View>

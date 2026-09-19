@@ -38,8 +38,6 @@ export default function CoordinatorDetailScreen({ route, navigation }: any) {
 
       <Card style={{ gap: spacing.xs }}>
         <SectionTitle>Profil Koordinator</SectionTitle>
-        <DetailRow label="NIK" value={coordinator.nik} />
-        <DetailRow label="Nomor Telepon" value={coordinator.phone} />
         <DetailRow label="NIK" value={maskNik(coordinator.nik)} />
         <DetailRow label="Nomor Telepon" value={maskPhone(coordinator.phone)} />
         <DetailRow label="Alamat Domisili" value={coordinator.address} />

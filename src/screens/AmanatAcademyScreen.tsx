@@ -265,8 +265,9 @@ export default function AmanatAcademyScreen() {
             <Text style={styles.specialCardSub}>
               Pasukan Muda Tangguh & Waspada. Pengawalan ketertiban rapat umum & tanggap baksos.
             </Text>
-            <View style={styles.specialCardFooter}>
-              <Text style={[styles.specialCardLink, { color: '#FBBF24' }]}>Buka Modul Satgas →</Text>
+            <View style={[styles.specialCardFooter, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <Text style={[styles.specialCardLink, { color: '#FBBF24' }]}>Buka Modul Satgas</Text>
+              <Feather name="arrow-right" size={13} color="#FBBF24" />
             </View>
           </Pressable>
 
@@ -292,8 +293,9 @@ export default function AmanatAcademyScreen() {
             <Text style={styles.specialCardSub}>
               Bimtek pengawalan bilik TPS, simulasi C1 Plano, dan uji sertifikasi resmi.
             </Text>
-            <View style={styles.specialCardFooter}>
-              <Text style={[styles.specialCardLink, { color: '#60A5FA' }]}>Buka Diklat BSN →</Text>
+            <View style={[styles.specialCardFooter, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <Text style={[styles.specialCardLink, { color: '#60A5FA' }]}>Buka Diklat BSN</Text>
+              <Feather name="arrow-right" size={13} color="#60A5FA" />
             </View>
           </Pressable>
         </View>

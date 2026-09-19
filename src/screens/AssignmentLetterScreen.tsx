@@ -90,7 +90,7 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             </svg>
           </div>
           <p style="font-weight:700; font-size:13px; margin: 4px 0 2px;">${cachedData.signedBy || 'Ketua DPP PAN'}</p>
-          <p style="font-size:10px; color:#10B981; margin: 0;">✓ Kriptografis Sah: ${cachedData.signatureHash || 'SHA256:DPP-PAN'}</p>
+          <p style="font-size:10px; color:#10B981; margin: 0;">Kriptografis Sah: ${cachedData.signatureHash || 'SHA256:DPP-PAN'}</p>
         `
         : `
           <p style="font-style: italic; margin: 20px 0 4px; font-size: 20px;">Ketua DPP PAN</p>

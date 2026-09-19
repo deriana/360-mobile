@@ -64,7 +64,7 @@ export default function SimpanNewsScreen() {
     try {
       await Share.share({
         title: item.title,
-        message: `📰 *${item.title}*\n\n_${item.summary}_\n\n📌 *Kategori:* ${item.categoryLabel}\n🗓 *Rilis:* ${item.publishedAt}\n✍️ *Oleh:* ${item.author.name} (${item.author.role})\n\n📲 _Baca selengkapnya di Aplikasi simPAN 360 (Partai Amanat Nasional)_`,
+        message: `*${item.title}*\n\n_${item.summary}_\n\n*Kategori:* ${item.categoryLabel}\n*Rilis:* ${item.publishedAt}\n*Penulis:* ${item.author.name} (${item.author.role})\n\n_Baca selengkapnya di Aplikasi simPAN 360 (Partai Amanat Nasional)_`,
       });
     } catch (error: any) {
       setShareError(error?.message || 'Terjadi kesalahan saat membagikan berita.');
