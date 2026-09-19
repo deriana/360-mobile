@@ -47,10 +47,14 @@ import ActivitiesScreen from '../screens/ActivitiesScreen';
 import TasksScreen from '../screens/TasksScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import TransparencyHubScreen from '../screens/TransparencyHubScreen';
+import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
+import KelolaStatusScreen from '../screens/KelolaStatusScreen';
 
 const Stack = createNativeStackNavigator<any>();
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string }> = [
+  { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
+  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
   { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
   { name: 'Tasks', component: TasksScreen, title: 'Tugas Lapangan' },
   { name: 'Notifications', component: NotificationsScreen, title: 'Notifikasi' },

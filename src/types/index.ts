@@ -3,7 +3,8 @@ export type MobileRole =
   | 'VOLUNTEER'
   | 'WITNESS'
   | 'TPS_COORDINATOR'
-  | 'FIELD_COORDINATOR';
+  | 'FIELD_COORDINATOR'
+  | 'CALEG_OPS';
 
 export type LegacyRole =
   | 'TPS_WITNESS'
@@ -21,7 +22,85 @@ export type LegacyRole =
 export type Role = MobileRole | LegacyRole;
 
 export type MembershipType = 'member' | 'volunteer';
-export type MembershipStatus = 'pending' | 'verified' | 'active' | 'inactive' | 'suspended';
+export type MembershipStatus =
+  | 'pending'
+  | 'verified'
+  | 'active'
+  | 'inactive'
+  | 'resignation_requested'
+  | 'ended'
+  | 'suspended';
+
+export type KaderStatus = 'non_kader' | 'calon_kader' | 'kader_aktif';
+
+export interface OrganizationalPosition {
+  position: 'NONE' | 'PENGURUS' | 'KOORDINATOR' | 'FUNGSIONAR' | 'ANGGOTA_LEGISLATIF';
+  level?: 'DPP' | 'DPW' | 'DPD' | 'DPC' | 'DPRT';
+  region: string;
+  roleTitle?: string;
+  department?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  isPrimary?: boolean;
+}
+
+export interface ElectoralStatusRecord {
+  status: 'NONE' | 'BACALEG' | 'CALEG' | 'TERPILIH' | 'ANGGOTA_LEGISLATIF';
+  electionYear?: number;
+  legislativeLevel?: 'DPR_RI' | 'DPRD_PROV' | 'DPRD_KAB_KOTA';
+  dapil?: string;
+  periodLabel?: string;
+  ballotNumber?: number;
+}
+
+export type VolunteerStatus = 'none' | 'pending' | 'active' | 'paused' | 'inactive';
+
+export interface ProgramParticipationRecord {
+  amanatAcademy: 'NONE' | 'ENROLLED' | 'ACTIVE' | 'GRADUATED';
+  academyProgress?: number;
+  pandawa: 'NONE' | 'REGISTERED' | 'SELECTED' | 'TRAINING' | 'ACTIVE' | 'COMPLETED';
+  programSaksi: 'NONE' | 'TRAINING' | 'CERTIFIED' | 'MANDATED';
+  saksiProgress?: number;
+  skMandatNumber?: string;
+  certifiedDate?: string;
+}
+
+export interface UserDimensions {
+  membership: MembershipStatus;
+  kader: KaderStatus;
+  position: OrganizationalPosition;
+  electoral: ElectoralStatusRecord;
+  volunteer: VolunteerStatus;
+  programs: ProgramParticipationRecord;
+  operationalRole: MobileRole;
+}
+
+export type CareerStatePresetId =
+  | 'state_1'
+  | 'state_2'
+  | 'state_3'
+  | 'state_4'
+  | 'state_5'
+  | 'state_6';
+
+export type VolunteerStatePresetId = 'state_r1' | 'state_r2';
+
+export interface ResignationRequestPayload {
+  reason: string;
+  note?: string;
+  requestedAt: string;
+}
+
+export interface VolunteerPausePayload {
+  isPaused: boolean;
+  reason?: string;
+  durationMonths?: number;
+}
+
+export interface VolunteerStopPayload {
+  reason: string;
+  note?: string;
+}
 
 export type ScopeLevel = 'NATIONAL' | 'PROVINCE' | 'REGENCY' | 'DISTRICT' | 'TPS';
 
@@ -82,6 +161,9 @@ export interface CurrentUser {
     role: string;
     posko: string;
   };
+  dimensions?: UserDimensions;
+  resignationRequest?: ResignationRequestPayload;
+  volunteerPauseInfo?: VolunteerPausePayload;
 }
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed';

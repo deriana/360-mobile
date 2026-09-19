@@ -27,9 +27,15 @@ export const WITNESS_ACCOUNTS: Account[] = [
 export const VOLUNTEER_ACCOUNTS: Account[] = [
   {
     role: 'VOLUNTEER',
+    email: 'siti.rahmawati@relawanpan.id',
+    password: 'pan123',
+    name: 'Siti Rahmawati (Relawan Murni Simpatisan)',
+  },
+  {
+    role: 'VOLUNTEER',
     email: 'relawan@pan.go.id',
     password: 'relawan123',
-    name: 'Siti Rahmawati (Relawan Simpatisan)',
+    name: 'Siti Rahmawati (Relawan Posko Dago)',
   },
 ];
 
@@ -49,6 +55,12 @@ export const COORDINATOR_ACCOUNTS: Account[] = [
 ];
 
 export const MEMBER_ACCOUNTS: Account[] = [
+  {
+    role: 'MEMBER',
+    email: 'ahmad.fauzan@pan.go.id',
+    password: 'pan123',
+    name: 'Ahmad Fauzan (Kader simPAN • Full Lifecycle)',
+  },
   {
     role: 'MEMBER',
     email: 'kader@pan.go.id',

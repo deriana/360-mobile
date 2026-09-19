@@ -12,6 +12,7 @@ import { IMAGES } from '../data/images';
 import { INITIAL_EVENTS, INITIAL_NOTIFICATIONS, INITIAL_TASKS } from '../data/tasksAndEvents';
 import {
   Broadcast,
+  CareerStatePresetId,
   Coordinator,
   CurrentUser,
   EmergencyReport,
@@ -19,12 +20,17 @@ import {
   MobileRole,
   NotificationItem,
   Payment,
+  ResignationRequestPayload,
   Role,
   TaskItem,
   Tps,
   TpsDocPhoto,
   TpsStatus,
+  UserDimensions,
   VolunteerOpportunity,
+  VolunteerPausePayload,
+  VolunteerStatePresetId,
+  VolunteerStopPayload,
   VoteCounts,
   Witness,
 } from '../types';
@@ -35,7 +41,17 @@ import {
   initNetInfoAutoFlush,
   syncOfflineQueue,
 } from '../utils/offlineQueue';
-import { getPermissionsForRole, getUserContext, INITIAL_VOLUNTEER_OPPORTUNITIES } from '../utils/userContext';
+import {
+  applyCareerPreset,
+  applyVolunteerPreset,
+  CAREER_PRESETS,
+  getPermissionsForRole,
+  getUserContext,
+  INITIAL_VOLUNTEER_OPPORTUNITIES,
+  ROLE_PERMISSIONS_BY_MOBILE_ROLE,
+  VOLUNTEER_PRESETS,
+} from '../utils/userContext';
+import { checkRoleEligibility } from '../utils/roleUnlockRules';
 
 const SEED_DOCUMENTATION: Record<string, TpsDocPhoto[]> = {
   'TPS-001': [
@@ -43,6 +59,23 @@ const SEED_DOCUMENTATION: Record<string, TpsDocPhoto[]> = {
     { id: 'seed-2', source: IMAGES.ballotPaper, takenAt: '08:15 WIB — Papan Hitung' },
     { id: 'seed-3', source: IMAGES.c1Form, takenAt: '13:45 WIB — C1 Plano' },
   ],
+};
+
+const DEFAULT_USER_DIMENSIONS: UserDimensions = {
+  membership: 'active',
+  kader: 'kader_aktif',
+  position: { position: 'NONE', region: 'Kota Bandung' },
+  electoral: { status: 'NONE' },
+  volunteer: 'active',
+  programs: {
+    amanatAcademy: 'GRADUATED',
+    academyProgress: 100,
+    pandawa: 'ACTIVE',
+    programSaksi: 'MANDATED',
+    saksiProgress: 100,
+    skMandatNumber: 'BSN/DPD-BDG/2024/001',
+  },
+  operationalRole: 'WITNESS',
 };
 
 const DEFAULT_USER: CurrentUser = {
@@ -117,6 +150,7 @@ const DEFAULT_USER: CurrentUser = {
     'view_checkin_status',
     'send_task_reminder',
   ],
+  dimensions: DEFAULT_USER_DIMENSIONS,
 };
 
 const AVAILABLE_MOBILE_ROLES: MobileRole[] = [
@@ -125,6 +159,7 @@ const AVAILABLE_MOBILE_ROLES: MobileRole[] = [
   'VOLUNTEER',
   'TPS_COORDINATOR',
   'FIELD_COORDINATOR',
+  'CALEG_OPS',
 ];
 
 interface AppContextValue {
@@ -133,6 +168,14 @@ interface AppContextValue {
   currentUser: CurrentUser;
   availableRoles: MobileRole[];
   switchActiveRole: (nextRole: Role) => void;
+  switchOperationalRoleWithGuard: (nextRole: Role) => { success: boolean; reason?: string };
+  applyCareerStatePreset: (presetId: CareerStatePresetId) => void;
+  applyVolunteerStatePreset: (presetId: VolunteerStatePresetId) => void;
+  requestMembershipResignation: (payload: ResignationRequestPayload) => { success: boolean; reason?: string };
+  cancelMembershipResignation: () => void;
+  setVolunteerPause: (payload: VolunteerPausePayload) => void;
+  stopVolunteer: (payload: VolunteerStopPayload) => void;
+  completeAcademyModule: (moduleId: string) => void;
   hasPermission: (permission: string) => boolean;
   loggedIn: boolean;
   login: (role: Role, email?: string) => void;
@@ -236,12 +279,244 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRole(nextRole);
     const isMobile = AVAILABLE_MOBILE_ROLES.includes(nextRole as MobileRole);
     if (isMobile) {
-      setCurrentUser((prev) => ({
+      setCurrentUser((prev) => {
+        const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+        return {
+          ...prev,
+          currentRole: nextRole as MobileRole,
+          permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[nextRole as MobileRole] ?? getPermissionsForRole(nextRole as MobileRole),
+          dimensions: {
+            ...curDims,
+            operationalRole: nextRole as MobileRole,
+          },
+        };
+      });
+    }
+  };
+
+  const switchOperationalRoleWithGuard: AppContextValue['switchOperationalRoleWithGuard'] = (nextRole: Role) => {
+    const isMobile = AVAILABLE_MOBILE_ROLES.includes(nextRole as MobileRole);
+    if (!isMobile) {
+      return { success: false, reason: 'Peran tidak didukung pada aplikasi mobile.' };
+    }
+
+    const check = checkRoleEligibility(currentUser, nextRole as MobileRole);
+    if (!check.allowed) {
+      return {
+        success: false,
+        reason: check.reason || check.missingRequirements?.join('\n') || 'Persyaratan belum terpenuhi.',
+      };
+    }
+
+    setRole(nextRole);
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
         ...prev,
         currentRole: nextRole as MobileRole,
-        permissions: getPermissionsForRole(nextRole as MobileRole),
-      }));
-    }
+        permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[nextRole as MobileRole] ?? prev.permissions,
+        dimensions: {
+          ...curDims,
+          operationalRole: nextRole as MobileRole,
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-ROLE-${Date.now()}`,
+      type: 'assignment',
+      title: `Peran Operasional Diubah: ${nextRole}`,
+      body: `Antarmuka aplikasi telah beralih ke mode operasional ${nextRole}.`,
+      sentAt: 'Baru saja',
+      sentBy: 'Sistem Akses simPAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return { success: true };
+  };
+
+  const applyCareerStatePreset = (presetId: CareerStatePresetId) => {
+    setCurrentUser((prev) => {
+      const updated = applyCareerPreset(prev, presetId);
+      setRole(updated.currentRole);
+      return updated;
+    });
+
+    const preset = CAREER_PRESETS[presetId];
+    const notif: NotificationItem = {
+      id: `NOTIF-PRESET-${Date.now()}`,
+      type: 'assignment',
+      title: `Preset Karir Diaktifkan: ${preset?.name ?? presetId}`,
+      body: `Profil Anda kini berada di simulasi ${preset?.desc ?? ''}. Seluruh 7 dimensi identitas telah diselaraskan.`,
+      sentAt: 'Baru saja',
+      sentBy: 'DPP PAN Simulator',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const applyVolunteerStatePreset = (presetId: VolunteerStatePresetId) => {
+    setCurrentUser((prev) => {
+      const updated = applyVolunteerPreset(prev, presetId);
+      setRole(updated.currentRole);
+      return updated;
+    });
+
+    const preset = VOLUNTEER_PRESETS[presetId];
+    const notif: NotificationItem = {
+      id: `NOTIF-VOL-PRESET-${Date.now()}`,
+      type: 'assignment',
+      title: `Mode Relawan Diaktifkan: ${preset?.name ?? presetId}`,
+      body: `Status relawan kini diatur ke: ${preset?.desc ?? ''}.`,
+      sentAt: 'Baru saja',
+      sentBy: 'Posko Pemenangan PAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const requestMembershipResignation: AppContextValue['requestMembershipResignation'] = (payload) => {
+    const activeTasksCount = tasks.filter((t) => t.status === 'in_progress' || t.status === 'pending').length;
+
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
+        ...prev,
+        resignationRequest: {
+          ...payload,
+          requestedAt: new Date().toISOString().slice(0, 10),
+        },
+        dimensions: {
+          ...curDims,
+          membership: 'resignation_requested',
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-RESIGN-${Date.now()}`,
+      type: 'reminder',
+      title: 'Pengajuan Pengunduran Diri Diproses',
+      body: `Permohonan Anda telah tercatat dan dikirim ke DPD PAN Kota Bandung. Catatan Active Task: ${activeTasksCount} tugas masih berjalan.`,
+      sentAt: 'Baru saja',
+      sentBy: 'Sekretariat DPD PAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return { success: true };
+  };
+
+  const cancelMembershipResignation = () => {
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
+        ...prev,
+        resignationRequest: undefined,
+        dimensions: {
+          ...curDims,
+          membership: 'active',
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-CANCEL-RESIGN-${Date.now()}`,
+      type: 'reminder',
+      title: 'Pengajuan Pengunduran Diri Dibatalkan',
+      body: 'Status keanggotaan simPAN Anda telah dikembalikan menjadi Aktif penuh.',
+      sentAt: 'Baru saja',
+      sentBy: 'Sekretariat DPD PAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const setVolunteerPause: AppContextValue['setVolunteerPause'] = (payload) => {
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
+        ...prev,
+        volunteerPauseInfo: {
+          isPaused: payload.isPaused,
+          reason: payload.reason,
+          durationMonths: payload.durationMonths,
+        },
+        dimensions: {
+          ...curDims,
+          volunteer: payload.isPaused ? 'paused' : 'active',
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-PAUSE-${Date.now()}`,
+      type: 'reminder',
+      title: payload.isPaused ? 'Partisipasi Relawan Dijeda Sementara' : 'Status Relawan Aktif Kembali',
+      body: payload.isPaused
+        ? `Partisipasi relawan dijeda (${payload.durationMonths ?? 1} bulan) karena: ${payload.reason}. Riwayat aktivitas tetap tersimpan.`
+        : 'Selamat datang kembali! Akun siap menerima penugasan posko.',
+      sentAt: 'Baru saja',
+      sentBy: 'Posko Relawan PAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const stopVolunteer: AppContextValue['stopVolunteer'] = (payload) => {
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
+        ...prev,
+        dimensions: {
+          ...curDims,
+          volunteer: 'inactive',
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-STOP-${Date.now()}`,
+      type: 'reminder',
+      title: 'Partisipasi Relawan Dinonaktifkan',
+      body: 'Status relawan Anda telah dinonaktifkan. Seluruh riwayat pengawalan suara dan sertifikat Anda tetap tersimpan utuh di simPAN.',
+      sentAt: 'Baru saja',
+      sentBy: 'Posko Relawan PAN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
+  const completeAcademyModule = (moduleId: string) => {
+    setCurrentUser((prev) => {
+      const curDims = prev.dimensions ?? DEFAULT_USER_DIMENSIONS;
+      return {
+        ...prev,
+        dimensions: {
+          ...curDims,
+          programs: {
+            ...curDims.programs,
+            amanatAcademy: 'GRADUATED',
+            academyProgress: 100,
+            programSaksi: 'MANDATED',
+            saksiProgress: 100,
+            skMandatNumber: curDims.programs.skMandatNumber || 'BSN/DPD-BDG/2024/018',
+          },
+        },
+      };
+    });
+
+    const notif: NotificationItem = {
+      id: `NOTIF-ACADEMY-DONE-${Date.now()}`,
+      type: 'approval',
+      title: 'Selamat! Modul Bimtek Selesai & Lulus 100%',
+      body: `Modul pelatihan ${moduleId} telah diselesaikan. SK Mandat BSN Saksi TPS kini telah aktif dan terverifikasi.`,
+      sentAt: 'Baru saja',
+      sentBy: 'Amanat Academy BSN',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -585,6 +860,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       currentUser,
       availableRoles: AVAILABLE_MOBILE_ROLES,
       switchActiveRole,
+      switchOperationalRoleWithGuard,
+      applyCareerStatePreset,
+      applyVolunteerStatePreset,
+      requestMembershipResignation,
+      cancelMembershipResignation,
+      setVolunteerPause,
+      stopVolunteer,
+      completeAcademyModule,
       hasPermission,
       loggedIn,
       login,

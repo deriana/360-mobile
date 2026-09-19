@@ -1,4 +1,4 @@
-import { CurrentUser, MobileRole, Role, VolunteerOpportunity } from '../types';
+import { CareerStatePresetId, CurrentUser, MobileRole, Role, UserDimensions, VolunteerOpportunity, VolunteerStatePresetId } from '../types';
 import { Feather } from '@expo/vector-icons';
 
 // ============================================================================
@@ -58,6 +58,13 @@ export const ROLE_CAPABILITIES: Record<MobileRole, RoleCapability[]> = {
     { title: 'Aspirasi & Suara Kader', desc: 'Sampaikan saran dan masukan langsung ke pimpinan struktur partai', icon: 'message-square' },
     { title: 'Perlindungan Data Pribadi', desc: 'NIK dan data identitas dienkripsi sesuai UU No. 27 Tahun 2022', icon: 'lock' },
   ],
+  CALEG_OPS: [
+    { title: 'Monitoring Suara Dapil', desc: 'Pantau perolehan suara caleg & partai di seluruh TPS dapil', icon: 'bar-chart-2' },
+    { title: 'Sebaran Relawan & Saksi', desc: 'Pemetaan penugasan tim pemenangan dan saksi TPS mandiri', icon: 'map' },
+    { title: 'Laporan C1 Saksi Terverifikasi', desc: 'Akses real-time bukti foto C1 plano dari TPS tercover', icon: 'file-text' },
+    { title: 'Aktivitas Lapangan & Kampanye', desc: 'Kelola agenda konsolidasi dan sosialisasi di dapil pemenangan', icon: 'calendar' },
+    { title: 'Instruksi Tim Relawan Caleg', desc: 'Kirim koordinasi dan broadcast taktis ke posko pemenangan caleg', icon: 'message-square' },
+  ],
 };
 
 // Bab 21: Hak Akses Granular per Mobile Role
@@ -111,10 +118,31 @@ export const ROLE_PERMISSIONS_BY_MOBILE_ROLE: Record<MobileRole, string[]> = {
     'apply_volunteer',
     'view_assigned_task',
   ],
+  CALEG_OPS: [
+    'view_own_profile',
+    'view_caleg_dashboard',
+    'view_dapil_votes',
+    'view_assigned_witnesses',
+    'view_assigned_tps',
+    'view_activity',
+    'join_activity',
+    'send_broadcast',
+    'view_assigned_task',
+  ],
 };
 
 // Bab 28 & 29: Riwayat Aktivitas & Assignment Timeline Kader
 export const ROLE_ACTIVITY_TIMELINE: Record<string, ActivityTimelineItem[]> = {
+  'ahmad.fauzan@pan.go.id': [
+    { id: 'act-fz-1', date: '18 Sep 2026', title: 'Lulus Diklat Saksi BSN & Terbit SK Mandat', desc: 'Menyelesaikan modul sertifikasi Saksi Resmi TPS BSN PAN (Skor 100).', icon: 'award', status: 'completed' },
+    { id: 'act-fz-2', date: '15 Agu 2026', title: 'Penugasan Caleg DPR-RI Dapil Jabar I', desc: 'SK Penetapan Calon Legislatif Partai Amanat Nasional Nomor: 128/SK/DPP-PAN/2026.', icon: 'award', status: 'completed' },
+    { id: 'act-fz-3', date: '10 Jan 2024', title: 'Penerbitan e-KTA Digital simPAN', desc: 'Resmi terdaftar sebagai Anggota Tetap PAN Kota Bandung.', icon: 'credit-card', status: 'completed' },
+  ],
+  'siti.rahmawati@relawanpan.id': [
+    { id: 'act-st-1', date: '16 Sep 2026', title: 'Lulus Bimtek Pengawal Suara & Terakreditasi BSN', desc: 'Menyelesaikan modul Bimtek Saksi TPS 018 Braga di Amanat Academy.', icon: 'award', status: 'completed' },
+    { id: 'act-st-2', date: '10 Sep 2026', title: 'Mobilisasi 45 Calon Pemilih Posko Braga', desc: 'Pendataan dan asistensi pemilih pemula & lansia di Kelurahan Braga.', icon: 'users', status: 'completed' },
+    { id: 'act-st-3', date: '01 Mar 2024', title: 'Registrasi Relawan Simpatisan PAN', desc: 'Bergabung di Posko Pemenangan Relawan Kecamatan Sumur Bandung.', icon: 'heart', status: 'completed' },
+  ],
   'saksi@pan.go.id': [
     { id: 'act-1', date: '17 Sep 2026', title: 'Lulus Bimtek & Sertifikasi Saksi BSN', desc: 'Menyelesaikan modul sertifikasi Saksi Resmi TPS PAN dengan skor 95/100.', icon: 'award', status: 'completed' },
     { id: 'act-2', date: '10 Sep 2026', title: 'Menerima SK Mandat Saksi TPS 001', desc: 'SK Penugasan No. 042/MND/PAN-BDG/2026 diterbitkan oleh DPD PAN Kota Bandung.', icon: 'file-text', status: 'completed' },
@@ -138,8 +166,348 @@ export const ROLE_ACTIVITY_TIMELINE: Record<string, ActivityTimelineItem[]> = {
   ],
 };
 
+// ============================================================================
+// STATE PRESETS UNTUK LIVE DEMO DPP PAN
+// ============================================================================
+export interface CareerPresetMeta {
+  id: CareerStatePresetId;
+  name: string;
+  badge: string;
+  desc: string;
+  dimensions: UserDimensions;
+  role: MobileRole;
+}
+
+export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
+  state_1: {
+    id: 'state_1',
+    name: 'State 1: Anggota Pemula',
+    badge: 'Anggota Baru',
+    desc: 'Akun baru mendaftar, e-KTA simPAN aktif, orientasi anggota baru.',
+    role: 'MEMBER',
+    dimensions: {
+      membership: 'active',
+      kader: 'non_kader',
+      position: { position: 'NONE', region: 'Kota Bandung' },
+      electoral: { status: 'NONE' },
+      volunteer: 'none',
+      programs: { amanatAcademy: 'NONE', pandawa: 'NONE', programSaksi: 'NONE' },
+      operationalRole: 'MEMBER',
+    },
+  },
+  state_2: {
+    id: 'state_2',
+    name: 'State 2: Kader LKK + Relawan',
+    badge: 'Kader & Relawan',
+    desc: 'Lulus LKK di Amanat Academy, aktif di posko & Satgas PANdawa, Diklat Saksi 80%.',
+    role: 'VOLUNTEER',
+    dimensions: {
+      membership: 'active',
+      kader: 'kader_aktif',
+      position: { position: 'NONE', region: 'Kota Bandung' },
+      electoral: { status: 'NONE' },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'ACTIVE',
+        academyProgress: 80,
+        pandawa: 'ACTIVE',
+        programSaksi: 'TRAINING',
+        saksiProgress: 80,
+      },
+      operationalRole: 'VOLUNTEER',
+    },
+  },
+  state_3: {
+    id: 'state_3',
+    name: 'State 3: Saksi TPS Resmi BSN',
+    badge: 'Saksi TPS 014',
+    desc: 'Mengantongi SK Mandat BSN, mode saksi bilik suara aktif penuh (C1 Plano & GPS).',
+    role: 'WITNESS',
+    dimensions: {
+      membership: 'active',
+      kader: 'kader_aktif',
+      position: { position: 'NONE', region: 'Kota Bandung' },
+      electoral: { status: 'NONE' },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'GRADUATED',
+        academyProgress: 100,
+        pandawa: 'ACTIVE',
+        programSaksi: 'MANDATED',
+        saksiProgress: 100,
+        skMandatNumber: 'BSN/DPD-BDG/2024/014',
+      },
+      operationalRole: 'WITNESS',
+    },
+  },
+  state_4: {
+    id: 'state_4',
+    name: 'State 4: Koordinator TPS DPC',
+    badge: 'Koordinator 15 TPS',
+    desc: 'Mandat supervisi 15 TPS di Kecamatan Sumur Bandung (monitoring & broadcast).',
+    role: 'TPS_COORDINATOR',
+    dimensions: {
+      membership: 'active',
+      kader: 'kader_aktif',
+      position: {
+        position: 'KOORDINATOR',
+        level: 'DPC',
+        region: 'DPC Sumur Bandung (15 TPS)',
+        roleTitle: 'Koordinator TPS DPC',
+      },
+      electoral: { status: 'NONE' },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'GRADUATED',
+        academyProgress: 100,
+        pandawa: 'ACTIVE',
+        programSaksi: 'MANDATED',
+        saksiProgress: 100,
+      },
+      operationalRole: 'TPS_COORDINATOR',
+    },
+  },
+  state_5: {
+    id: 'state_5',
+    name: 'State 5: Pengurus DPD & Caleg 2029',
+    badge: 'Sekretaris & Caleg',
+    desc: 'Sekretaris DPD Kota Bandung & Caleg DPR-RI Jabar I (Peta Dapil & Audit KPPN).',
+    role: 'CALEG_OPS',
+    dimensions: {
+      membership: 'active',
+      kader: 'kader_aktif',
+      position: {
+        position: 'PENGURUS',
+        level: 'DPD',
+        region: 'DPD PAN Kota Bandung',
+        roleTitle: 'Sekretaris DPD',
+        isPrimary: true,
+      },
+      electoral: {
+        status: 'CALEG',
+        electionYear: 2029,
+        legislativeLevel: 'DPR_RI',
+        dapil: 'Jawa Barat I (Kota Bandung & Cimahi)',
+        periodLabel: 'Caleg PAN DPR-RI 2029',
+        ballotNumber: 1,
+      },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'GRADUATED',
+        academyProgress: 100,
+        pandawa: 'ACTIVE',
+        programSaksi: 'MANDATED',
+        saksiProgress: 100,
+      },
+      operationalRole: 'CALEG_OPS',
+    },
+  },
+  state_6: {
+    id: 'state_6',
+    name: 'State 6: Uji Kelola Status',
+    badge: 'Menunggu Review',
+    desc: 'Simulasi pengunduran diri anggota (Review DPD) dan jeda relawan (Task Guard).',
+    role: 'MEMBER',
+    dimensions: {
+      membership: 'resignation_requested',
+      kader: 'kader_aktif',
+      position: {
+        position: 'PENGURUS',
+        level: 'DPD',
+        region: 'DPD PAN Kota Bandung',
+        roleTitle: 'Sekretaris DPD',
+      },
+      electoral: {
+        status: 'CALEG',
+        electionYear: 2029,
+        legislativeLevel: 'DPR_RI',
+        dapil: 'Jawa Barat I',
+      },
+      volunteer: 'paused',
+      programs: {
+        amanatAcademy: 'GRADUATED',
+        academyProgress: 100,
+        pandawa: 'ACTIVE',
+        programSaksi: 'MANDATED',
+        saksiProgress: 100,
+      },
+      operationalRole: 'MEMBER',
+    },
+  },
+};
+
+export interface VolunteerPresetMeta {
+  id: VolunteerStatePresetId;
+  name: string;
+  badge: string;
+  desc: string;
+  dimensions: UserDimensions;
+  role: MobileRole;
+}
+
+export const VOLUNTEER_PRESETS: Record<VolunteerStatePresetId, VolunteerPresetMeta> = {
+  state_r1: {
+    id: 'state_r1',
+    name: 'Relawan Posko & Lapangan',
+    badge: 'Relawan Posko',
+    desc: 'Bursa tugas posko, presensi giat baksos, dan opsi onboarding KTA simPAN.',
+    role: 'VOLUNTEER',
+    dimensions: {
+      membership: 'inactive',
+      kader: 'non_kader',
+      position: { position: 'NONE', region: 'Kota Bandung' },
+      electoral: { status: 'NONE' },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'ACTIVE',
+        academyProgress: 80,
+        pandawa: 'ACTIVE',
+        programSaksi: 'TRAINING',
+        saksiProgress: 80,
+      },
+      operationalRole: 'VOLUNTEER',
+    },
+  },
+  state_r2: {
+    id: 'state_r2',
+    name: 'Relawan Mandat Saksi TPS 018 Braga',
+    badge: 'Saksi TPS 018 Mandat BSN',
+    desc: 'Telah terakreditasi Bimtek & ber-SK Mandat resmi kawal bilik suara TPS 018.',
+    role: 'WITNESS',
+    dimensions: {
+      membership: 'inactive',
+      kader: 'non_kader',
+      position: { position: 'NONE', region: 'Kota Bandung' },
+      electoral: { status: 'NONE' },
+      volunteer: 'active',
+      programs: {
+        amanatAcademy: 'GRADUATED',
+        academyProgress: 100,
+        pandawa: 'ACTIVE',
+        programSaksi: 'MANDATED',
+        saksiProgress: 100,
+        skMandatNumber: 'BSN/DPD-BDG/2024/018',
+      },
+      operationalRole: 'WITNESS',
+    },
+  },
+};
+
 // Bab 4, 7, 9: Database Profil Terpersonalisasi Tiap Akun Resmi Mobile
-const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
+export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
+  'ahmad.fauzan@pan.go.id': {
+    id: 'USR-FAUZAN',
+    identity: {
+      id: 'USR-FAUZAN',
+      name: 'Ahmad Fauzan',
+      nikMasked: '327301******0892',
+      nikFull: '3273011405900892',
+      phone: '0812-9988-7766',
+      email: 'ahmad.fauzan@pan.go.id',
+      avatarIndex: 1,
+      status: 'active',
+    },
+    memberships: [
+      {
+        type: 'member',
+        status: 'active',
+        ktaNumber: 'PAN-3273-2024-00892',
+        registeredAt: '2024-01-10',
+        dpc: 'DPC Sumur Bandung',
+        dpd: 'DPD Kota Bandung',
+      },
+      {
+        type: 'volunteer',
+        status: 'active',
+        registeredAt: '2024-02-15',
+        dpc: 'DPC Sumur Bandung',
+      },
+    ],
+    roles: [
+      {
+        role: 'MEMBER',
+        status: 'active',
+        scope: { level: 'REGENCY', code: '3273', name: 'DPD PAN Kota Bandung' },
+        assignedAt: '10 Jan 2024',
+      },
+      {
+        role: 'CALEG_OPS',
+        status: 'active',
+        scope: { level: 'PROVINCE', code: 'JABAR-1', name: 'Dapil DPR-RI Jabar I (Kota Bandung & Cimahi)' },
+        assignedAt: '01 Agu 2026',
+      },
+      {
+        role: 'TPS_COORDINATOR',
+        status: 'active',
+        scope: { level: 'DISTRICT', code: '327302', name: 'DPC Sumur Bandung (15 TPS)' },
+        assignedAt: '15 Agu 2026',
+      },
+      {
+        role: 'WITNESS',
+        status: 'assigned',
+        scope: { level: 'TPS', code: 'TPS-014', name: 'TPS 014 Kel. Merdeka' },
+        assignedAt: '01 Sep 2026',
+      },
+      {
+        role: 'VOLUNTEER',
+        status: 'active',
+        scope: { level: 'DISTRICT', code: '327302', name: 'Kecamatan Sumur Bandung' },
+        assignedAt: '15 Feb 2024',
+      },
+    ],
+    currentRole: 'MEMBER',
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.MEMBER,
+    dimensions: CAREER_PRESETS.state_5.dimensions,
+  },
+
+  'siti.rahmawati@relawanpan.id': {
+    id: 'USR-SITI',
+    identity: {
+      id: 'USR-SITI',
+      name: 'Siti Rahmawati',
+      nikMasked: '327301******0042',
+      nikFull: '3273015506990042',
+      phone: '0821-4455-6677',
+      email: 'siti.rahmawati@relawanpan.id',
+      avatarIndex: 5,
+      status: 'active',
+    },
+    memberships: [
+      {
+        type: 'volunteer',
+        status: 'active',
+        ktaNumber: 'REL-3273-2024-0042',
+        registeredAt: '2024-03-01',
+        dpc: 'Posko Sumur Bandung',
+      },
+    ],
+    roles: [
+      {
+        role: 'VOLUNTEER',
+        status: 'active',
+        scope: { level: 'DISTRICT', code: '327301', name: 'Posko Kel. Braga, Kec. Sumur Bandung' },
+        assignedAt: '01 Mar 2024',
+      },
+      {
+        role: 'WITNESS',
+        status: 'assigned',
+        scope: { level: 'TPS', code: 'TPS-018', name: 'TPS 018 Kel. Braga' },
+        assignedAt: '10 Sep 2026',
+      },
+    ],
+    currentRole: 'VOLUNTEER',
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.VOLUNTEER,
+    skills: ['Komunikasi Publik & Warga', 'Administrasi Acara & Presensi', 'Fotografi & Konten Medsos'],
+    interests: ['Event & Sosialisasi', 'Advokasi Lansia/Pemilih', 'Logistik Posko & Dapur Umum'],
+    volunteerStats: {
+      eventsAttended: 6,
+      tasksCompleted: 9,
+      trainingHours: 14,
+      activitiesCount: 16,
+    },
+    dimensions: VOLUNTEER_PRESETS.state_r1.dimensions,
+  },
+
   'saksi@pan.go.id': {
     id: 'USR-001',
     identity: {
@@ -492,3 +860,66 @@ export const INITIAL_VOLUNTEER_OPPORTUNITIES: VolunteerOpportunity[] = [
   },
 ];
 
+
+
+export function applyCareerPreset(user: CurrentUser, presetId: CareerStatePresetId): CurrentUser {
+  const preset = CAREER_PRESETS[presetId];
+  if (!preset) return user;
+
+  const nextDims: UserDimensions = {
+    ...user.dimensions,
+    ...preset.dimensions,
+    operationalRole: preset.role,
+  };
+
+  const nextRoles = [...user.roles];
+  if (!nextRoles.some((r) => r.role === preset.role)) {
+    nextRoles.push({
+      role: preset.role,
+      status: 'active',
+      scope: { level: 'REGENCY', code: '3273', name: 'DPD PAN Kota Bandung' },
+      assignedAt: '10 Jan 2024',
+    });
+  }
+
+  return {
+    ...user,
+    currentRole: preset.role,
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[preset.role as MobileRole] ?? user.permissions,
+    dimensions: nextDims,
+    resignationRequest:
+      presetId === 'state_6'
+        ? {
+            reason: 'Kesibukan Profesional',
+            note: 'Melanjutkan studi doktoral dan penugasan dinas luar kota.',
+            requestedAt: '18 Sep 2026',
+          }
+        : undefined,
+    volunteerPauseInfo:
+      presetId === 'state_6'
+        ? {
+            isPaused: true,
+            reason: 'Pendidikan',
+            durationMonths: 3,
+          }
+        : undefined,
+  };
+}
+
+export function applyVolunteerPreset(user: CurrentUser, presetId: VolunteerStatePresetId): CurrentUser {
+  const preset = VOLUNTEER_PRESETS[presetId];
+  if (!preset) return user;
+
+  const nextDims: UserDimensions = {
+    ...user.dimensions,
+    ...preset.dimensions,
+    operationalRole: preset.role,
+  };
+
+  return {
+    ...user,
+    currentRole: preset.role,
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[preset.role as MobileRole] ?? user.permissions,
+    dimensions: nextDims,
+  };
+}

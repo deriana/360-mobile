@@ -18,6 +18,7 @@ export const ROLE_ICON: Record<Role, keyof typeof Feather.glyphMap> = {
   RELAWAN: 'heart',
   VOLUNTEER: 'heart',
   CALEG: 'award',
+  CALEG_OPS: 'award',
   KADER_ANGGOTA: 'user-check',
   MEMBER: 'user-check',
 };
@@ -37,6 +38,7 @@ export const ROLE_HOME: Record<Role, { province?: string; regency?: string; dist
   RELAWAN: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   VOLUNTEER: { province: 'Jawa Barat', regency: 'Kota Bandung', district: 'Coblong' },
   CALEG: { province: 'Jawa Barat', regency: 'Kota Bandung' },
+  CALEG_OPS: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   KADER_ANGGOTA: { province: 'Jawa Barat', regency: 'Kota Bandung' },
   MEMBER: { province: 'Jawa Barat', regency: 'Kota Bandung' },
 };
@@ -55,6 +57,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   RELAWAN: 'Relawan Simpatisan — PAN 360',
   VOLUNTEER: 'Relawan Simpatisan — PAN 360',
   CALEG: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
+  CALEG_OPS: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
   KADER_ANGGOTA: 'Kader & Anggota Partai — simPAN',
   MEMBER: 'Kader & Anggota Partai — simPAN',
 };
@@ -68,13 +71,14 @@ export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
   TPS_COORDINATOR: 'Cakupan Kluster TPS PAN — Supervisi 6 TPS di wilayah Kelurahan Dago',
   FIELD_COORDINATOR: 'Cakupan Korlap — Supervisi Koordinator TPS se-Kecamatan Coblong',
   OPERATOR: 'Cakupan Operator PAN — Memantau & Mendampingi Saksi se-Kota Bandung',
-  TPS_WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
-  WITNESS: 'Cakupan Saksi PAN — TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
-  RELAWAN: 'Cakupan Relawan — Mobilisasi Pemilih & Pemantauan TPS Wilayah Kelurahan Dago',
-  VOLUNTEER: 'Cakupan Relawan — Mobilisasi Pemilih & Pemantauan TPS Wilayah Kelurahan Dago',
-  CALEG: 'Cakupan Dapil Jabar I — Monitoring Suara Caleg, Perolehan Partai & Rekap C1',
-  KADER_ANGGOTA: 'Cakupan Anggota — Monitoring Suara Partai & Layanan e-KTA simPAN',
-  MEMBER: 'Cakupan Anggota — Monitoring Suara Partai & Layanan e-KTA simPAN',
+  TPS_WITNESS: 'Cakupan TPS — Mengawal proses pemungutan & penghitungan suara bilik',
+  WITNESS: 'Cakupan TPS — Mengawal proses pemungutan & penghitungan suara bilik',
+  RELAWAN: 'Cakupan Posko — Mengawal kegiatan pemenangan & sapa warga Coblong',
+  VOLUNTEER: 'Cakupan Posko — Mengawal kegiatan pemenangan & sapa warga Coblong',
+  CALEG: 'Cakupan Dapil Jabar I — Monitoring perolehan suara Kota Bandung & Cimahi',
+  CALEG_OPS: 'Cakupan Dapil Jabar I — Monitoring perolehan suara Kota Bandung & Cimahi',
+  KADER_ANGGOTA: 'Cakupan Anggota simPAN — Akses keanggotaan dan struktur partai',
+  MEMBER: 'Cakupan Anggota simPAN — Akses keanggotaan dan struktur partai',
 };
 
 export interface UserProfile {
@@ -299,6 +303,15 @@ export const ROLE_PERMISSIONS: Record<Role, RolePermission> = {
     canAccessLeadership: true,
     canAccessSecurity: false,
     canAccessBroadcast: false,
+    canAccessInsights: true,
+    canAccessEmergencyList: true,
+    canAccessAllPayments: false,
+    canMarkPayments: false,
+  },
+  CALEG_OPS: {
+    canAccessLeadership: true,
+    canAccessSecurity: false,
+    canAccessBroadcast: true,
     canAccessInsights: true,
     canAccessEmergencyList: true,
     canAccessAllPayments: false,

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -17,17 +19,31 @@ import { fontSize, fonts, radius, spacing } from '../theme';
 import { ROLE_ICON, ROLE_LABEL } from '../utils/scope';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { maskPhone } from '../utils/masking';
-import { MobileRole } from '../types';
-import { ROLE_ACTIVITY_TIMELINE } from '../utils/userContext';
+import { CareerStatePresetId, MobileRole, VolunteerStatePresetId } from '../types';
+import {
+  CAREER_PRESETS,
+  ROLE_ACTIVITY_TIMELINE,
+  VOLUNTEER_PRESETS,
+} from '../utils/userContext';
+import { checkRoleEligibility } from '../utils/roleUnlockRules';
 
 export default function ProfileScreen({ navigation }: any) {
-  const { role, switchActiveRole, currentUser, logout } = useApp();
+  const {
+    role,
+    switchActiveRole,
+    switchOperationalRoleWithGuard,
+    applyCareerStatePreset,
+    applyVolunteerStatePreset,
+    currentUser,
+    logout,
+  } = useApp();
   const { colors, isDark } = useTheme();
 
   const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
   const [roleSwitchNotice, setRoleSwitchNotice] = useState<string | null>(null);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [roleModalTab, setRoleModalTab] = useState<'roles' | 'presets'>('roles');
 
   const user = currentUser.identity;
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
@@ -47,19 +63,36 @@ export default function ProfileScreen({ navigation }: any) {
     return true;
   });
 
-  const isMultiRole = availableRoles.length > 1;
+  const isMultiRole = true; // Always enable role/mode switching for presentation demo
   const [roleModalVisible, setRoleModalVisible] = useState(false);
 
-  const handleSwitchMode = (targetRole: MobileRole) => {
-    if (targetRole === 'MEMBER' && !isOfficialMember) {
-      setRoleModalVisible(false);
-      setRoleSwitchNotice('Peralihan ke mode Kader memerlukan verifikasi keanggotaan resmi (e-KTA simPAN) oleh Admin Partai.');
+  const handleSwitchRoleWithGuard = (targetRole: MobileRole) => {
+    const res = switchOperationalRoleWithGuard(targetRole);
+    if (!res.success) {
+      Alert.alert(
+        'Persyaratan Peran Belum Terpenuhi',
+        res.reason || 'Anda belum memenuhi kualifikasi untuk peran operasional ini.',
+        [{ text: 'Tutup', style: 'default' }],
+      );
       return;
     }
     setRoleModalVisible(false);
-    switchActiveRole(targetRole);
     const friendlyName = getRoleFriendlyName(targetRole);
     setRoleSwitchNotice(`Mode peran berhasil dialihkan ke ${friendlyName}. Tampilan beranda dan navigasi tugas telah disesuaikan.`);
+  };
+
+  const handleApplyCareerPreset = (presetId: CareerStatePresetId) => {
+    applyCareerStatePreset(presetId);
+    setRoleModalVisible(false);
+    const preset = CAREER_PRESETS[presetId];
+    setRoleSwitchNotice(`Preset "${preset?.name}" aktif! Seluruh 7 dimensi identitas diselaraskan secara real-time.`);
+  };
+
+  const handleApplyVolunteerPreset = (presetId: VolunteerStatePresetId) => {
+    applyVolunteerStatePreset(presetId);
+    setRoleModalVisible(false);
+    const preset = VOLUNTEER_PRESETS[presetId];
+    setRoleSwitchNotice(`Mode Relawan "${preset?.name}" aktif!`);
   };
 
   const getRoleFriendlyName = (r: MobileRole): string => {
@@ -72,6 +105,8 @@ export default function ProfileScreen({ navigation }: any) {
         return 'Koordinator Lapangan';
       case 'VOLUNTEER':
         return 'Relawan Simpatisan';
+      case 'CALEG_OPS':
+        return 'Bakal Calon Legislatif (Caleg)';
       case 'MEMBER':
       default:
         return 'Kader & Anggota Partai';
@@ -411,6 +446,44 @@ export default function ProfileScreen({ navigation }: any) {
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
 
+        {/* Status & Peran Saya (7 Dimensi Identitas) */}
+        <Pressable
+          onPress={() => navigation.navigate('StatusPeranSaya')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: '#E0F2FE' }]}>
+            <Feather name="layers" size={15} color="#0066B3" />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>Status & Peran Saya</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              7 Dimensi Identitas, Perkaderan, Posisi, & SK Mandat
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+
+        {/* Kelola Status Saya (Pengunduran Diri & Jeda) */}
+        <Pressable
+          onPress={() => navigation.navigate('KelolaStatus')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: '#FEF3C7' }]}>
+            <Feather name="user-check" size={15} color="#D97706" />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>Kelola Status & Partisipasi</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              Pengajuan pengunduran diri resmi, jeda, & active task guard
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+
         {/* Surat Mandat Digital (Hanya untuk Saksi / Penugasan Saksi) */}
         {hasWitnessRole && (
           <>
@@ -587,7 +660,7 @@ export default function ProfileScreen({ navigation }: any) {
         </View>
       </Modal>
 
-      {/* MODAL PILIH MODE PERAN OPERASI LAPANGAN */}
+      {/* MODAL ADAPTIF: PILIH MODE PERAN LAPANGAN & STATE PRESETS (DPP DEMO) */}
       <Modal
         visible={roleModalVisible}
         transparent
@@ -596,14 +669,19 @@ export default function ProfileScreen({ navigation }: any) {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContentCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <View style={{ gap: 2 }}>
+              <View style={{ gap: 2, flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Feather name="layers" size={16} color={colors.primary} />
-                  <Text style={[styles.modalTitle, { color: colors.text }]}>Pilih Mode Peran Lapangan</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    {isOfficialMember ? 'Ganti Mode & Simulasi Karir' : 'Mode Transisi Relawan PAN'}
+                  </Text>
                 </View>
                 <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
-                  Satu akun dengan berbagai amanah penugasan resmi Partai
+                  {isOfficialMember
+                    ? 'Peralihan peran operasional & 6 state presets demonstrasi DPP'
+                    : 'Peralihan mode relawan posko menuju mandat saksi TPS'}
                 </Text>
               </View>
               <Pressable onPress={() => setRoleModalVisible(false)} style={styles.modalCloseBtn}>
@@ -611,86 +689,289 @@ export default function ProfileScreen({ navigation }: any) {
               </Pressable>
             </View>
 
-            <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
-              <View style={{ gap: spacing.xs, paddingVertical: spacing.xs }}>
-                {availableRoles.map((assignment) => {
-                  const isCurrent = role === assignment.role;
-                  const iconName = ROLE_ICON[assignment.role] || 'user';
-                  const friendlyName = getRoleFriendlyName(assignment.role);
+            {/* If Official Member (Ahmad Fauzan / Kader): Show Tabs for Peran Operasional vs State Presets */}
+            {isOfficialMember && (
+              <View style={styles.modalTabRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.modalTabBtn,
+                    roleModalTab === 'roles' && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  ]}
+                  onPress={() => setRoleModalTab('roles')}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="users" size={13} color={roleModalTab === 'roles' ? '#FFFFFF' : colors.textMuted} />
+                  <Text
+                    style={[
+                      styles.modalTabText,
+                      { color: roleModalTab === 'roles' ? '#FFFFFF' : colors.textMuted },
+                    ]}
+                  >
+                    Peran Operasional
+                  </Text>
+                </TouchableOpacity>
 
-                  return (
-                    <Pressable
-                      key={assignment.role}
-                      onPress={() => handleSwitchMode(assignment.role)}
-                      style={({ pressed }) => [
-                        styles.roleModalCard,
-                        {
-                          backgroundColor: isCurrent
-                            ? isDark
-                              ? 'rgba(0, 66, 128, 0.4)'
-                              : '#F0F9FF'
-                            : colors.surface,
-                          borderColor: isCurrent ? colors.primary : colors.border,
-                        },
-                        pressed && { opacity: 0.85 },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.roleIconCircle,
+                <TouchableOpacity
+                  style={[
+                    styles.modalTabBtn,
+                    roleModalTab === 'presets' && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  ]}
+                  onPress={() => setRoleModalTab('presets')}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="play-circle" size={13} color={roleModalTab === 'presets' ? '#FFFFFF' : colors.textMuted} />
+                  <Text
+                    style={[
+                      styles.modalTabText,
+                      { color: roleModalTab === 'presets' ? '#FFFFFF' : colors.textMuted },
+                    ]}
+                  >
+                    Preset Karir (Demo)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* MODAL CONTENT: ROLE SWITCHER (AKUN ANGGOTA) */}
+            {isOfficialMember && roleModalTab === 'roles' && (
+              <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
+                <View style={{ gap: spacing.xs, paddingVertical: spacing.xs }}>
+                  {availableRoles.map((assignment) => {
+                    const isCurrent = role === assignment.role;
+                    const iconName = ROLE_ICON[assignment.role] || 'user';
+                    const friendlyName = getRoleFriendlyName(assignment.role);
+                    const eligibility = checkRoleEligibility(currentUser, assignment.role);
+
+                    return (
+                      <Pressable
+                        key={assignment.role}
+                        onPress={() => handleSwitchRoleWithGuard(assignment.role)}
+                        style={({ pressed }) => [
+                          styles.roleModalCard,
                           {
-                            backgroundColor: isCurrent ? colors.primary : isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                            backgroundColor: isCurrent
+                              ? isDark
+                                ? 'rgba(0, 66, 128, 0.4)'
+                                : '#F0F9FF'
+                              : !eligibility.allowed
+                              ? isDark
+                                ? 'rgba(245, 158, 11, 0.08)'
+                                : '#FFFBEB'
+                              : colors.surface,
+                            borderColor: isCurrent
+                              ? colors.primary
+                              : !eligibility.allowed
+                              ? '#FDE68A'
+                              : colors.border,
                           },
+                          pressed && { opacity: 0.85 },
                         ]}
                       >
-                        <Feather
-                          name={iconName}
-                          size={16}
-                          color={isCurrent ? '#FFFFFF' : colors.textMuted}
-                        />
-                      </View>
-
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <Text
-                            style={[
-                              styles.roleCardTitle,
-                              { color: isCurrent ? colors.primary : colors.text },
-                            ]}
-                          >
-                            {friendlyName}
-                          </Text>
-                          <Pill
-                            label={getStatusLabel(assignment.status)}
-                            tone={getStatusTone(assignment.status)}
+                        <View
+                          style={[
+                            styles.roleIconCircle,
+                            {
+                              backgroundColor: isCurrent
+                                ? colors.primary
+                                : !eligibility.allowed
+                                ? '#FEF3C7'
+                                : isDark
+                                ? 'rgba(255,255,255,0.08)'
+                                : '#F1F5F9',
+                            },
+                          ]}
+                        >
+                          <Feather
+                            name={iconName}
+                            size={16}
+                            color={isCurrent ? '#FFFFFF' : !eligibility.allowed ? '#D97706' : colors.textMuted}
                           />
                         </View>
 
-                        <Text style={[styles.roleCardScope, { color: colors.textMuted }]} numberOfLines={1}>
-                          📍 {assignment.scope.name}
-                        </Text>
-                      </View>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <Text
+                              style={[
+                                styles.roleCardTitle,
+                                { color: isCurrent ? colors.primary : colors.text },
+                              ]}
+                            >
+                              {friendlyName}
+                            </Text>
+                            {!eligibility.allowed ? (
+                              <View style={[styles.lockedPill, { backgroundColor: '#FEF3C7' }]}>
+                                <Feather name="lock" size={9} color="#B45309" />
+                                <Text style={styles.lockedPillText}>Prasyarat BSN</Text>
+                              </View>
+                            ) : (
+                              <Pill
+                                label={getStatusLabel(assignment.status)}
+                                tone={getStatusTone(assignment.status)}
+                              />
+                            )}
+                          </View>
 
-                      {isCurrent ? (
-                        <View style={[styles.activeRolePill, { backgroundColor: colors.primary }]}>
-                          <Feather name="check" size={11} color="#FFFFFF" strokeWidth={3} />
-                          <Text style={styles.activeRoleText}>Aktif</Text>
+                          <Text style={[styles.roleCardScope, { color: colors.textMuted }]} numberOfLines={1}>
+                            📍 {assignment.scope.name}
+                          </Text>
+                          {!eligibility.allowed && (
+                            <Text style={styles.eligibilityHint} numberOfLines={1}>
+                              ⚠️ {eligibility.reason}
+                            </Text>
+                          )}
                         </View>
-                      ) : (
-                        <View style={[styles.switchRoleBtn, { borderColor: colors.border }]}>
-                          <Text style={[styles.switchRoleText, { color: colors.primary }]}>Pilih</Text>
-                          <Feather name="chevron-right" size={13} color={colors.primary} />
+
+                        {isCurrent ? (
+                          <View style={[styles.activeRolePill, { backgroundColor: colors.primary }]}>
+                            <Feather name="check" size={11} color="#FFFFFF" strokeWidth={3} />
+                            <Text style={styles.activeRoleText}>Aktif</Text>
+                          </View>
+                        ) : !eligibility.allowed ? (
+                          <View style={[styles.switchRoleBtn, { borderColor: '#FDE68A', backgroundColor: '#FEF3C7' }]}>
+                            <Feather name="lock" size={12} color="#B45309" />
+                          </View>
+                        ) : (
+                          <View style={[styles.switchRoleBtn, { borderColor: colors.border }]}>
+                            <Text style={[styles.switchRoleText, { color: colors.primary }]}>Pilih</Text>
+                            <Feather name="chevron-right" size={13} color={colors.primary} />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
+
+            {/* MODAL CONTENT: 6 STATE PRESETS (AKUN ANGGOTA AHMAD FAUZAN) */}
+            {isOfficialMember && roleModalTab === 'presets' && (
+              <ScrollView style={{ maxHeight: 370 }} showsVerticalScrollIndicator={false}>
+                <View style={{ gap: 8, paddingVertical: spacing.xs }}>
+                  {(Object.keys(CAREER_PRESETS) as CareerStatePresetId[]).map((presetId) => {
+                    const preset = CAREER_PRESETS[presetId];
+                    const isPresetRole = role === preset.role;
+
+                    return (
+                      <TouchableOpacity
+                        key={presetId}
+                        onPress={() => handleApplyCareerPreset(presetId)}
+                        style={[
+                          styles.presetCard,
+                          {
+                            backgroundColor: isPresetRole
+                              ? isDark
+                                ? 'rgba(0, 66, 128, 0.4)'
+                                : '#F0F9FF'
+                              : colors.surface,
+                            borderColor: isPresetRole ? colors.primary : colors.border,
+                          },
+                        ]}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.presetTopRow}>
+                          <Text style={[styles.presetName, { color: colors.text }]}>{preset.name}</Text>
+                          <View style={[styles.presetBadge, { backgroundColor: '#E0F2FE' }]}>
+                            <Text style={[styles.presetBadgeText, { color: '#0066B3' }]}>{preset.badge}</Text>
+                          </View>
                         </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </ScrollView>
+                        <Text style={[styles.presetDesc, { color: colors.textMuted }]}>{preset.desc}</Text>
+                        <View style={styles.presetFooter}>
+                          <View style={styles.presetRolePill}>
+                            <Feather name="tag" size={10} color={colors.primary} />
+                            <Text style={[styles.presetRoleText, { color: colors.primary }]}>
+                              Role: {getRoleFriendlyName(preset.role)}
+                            </Text>
+                          </View>
+                          {isPresetRole ? (
+                            <View style={[styles.activePillSmall, { backgroundColor: colors.primary }]}>
+                              <Feather name="check" size={10} color="#FFFFFF" />
+                              <Text style={styles.activePillSmallText}>Aktif</Text>
+                            </View>
+                          ) : (
+                            <Text style={[styles.applyText, { color: colors.primary }]}>Aktifkan →</Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
+
+            {/* MODAL CONTENT: VOLUNTEER TRANSITION (AKUN RELAWAN SITI RAHMAWATI) */}
+            {!isOfficialMember && (
+              <ScrollView style={{ maxHeight: 370 }} showsVerticalScrollIndicator={false}>
+                <View style={{ gap: 10, paddingVertical: spacing.xs }}>
+                  <Text style={[styles.volunteerSectionNotice, { color: colors.textMuted }]}>
+                    Transisi dinamis relawan murni: beralih antara status pengawalan posko simpatisan vs saksi ber-SK Mandat resmi TPS 018 Braga.
+                  </Text>
+
+                  {(Object.keys(VOLUNTEER_PRESETS) as VolunteerStatePresetId[]).map((presetId) => {
+                    const preset = VOLUNTEER_PRESETS[presetId];
+                    const isCurrent = role === preset.role;
+
+                    return (
+                      <TouchableOpacity
+                        key={presetId}
+                        onPress={() => handleApplyVolunteerPreset(presetId)}
+                        style={[
+                          styles.presetCard,
+                          {
+                            backgroundColor: isCurrent
+                              ? isDark
+                                ? 'rgba(0, 66, 128, 0.4)'
+                                : '#F0F9FF'
+                              : colors.surface,
+                            borderColor: isCurrent ? colors.primary : colors.border,
+                          },
+                        ]}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.presetTopRow}>
+                          <Text style={[styles.presetName, { color: colors.text }]}>{preset.name}</Text>
+                          <View
+                            style={[
+                              styles.presetBadge,
+                              { backgroundColor: presetId === 'state_r2' ? '#DCFCE7' : '#FEF3C7' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.presetBadgeText,
+                                { color: presetId === 'state_r2' ? '#166534' : '#92400E' },
+                              ]}
+                            >
+                              {preset.badge}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.presetDesc, { color: colors.textMuted }]}>{preset.desc}</Text>
+                        <View style={styles.presetFooter}>
+                          <View style={styles.presetRolePill}>
+                            <Feather name="shield" size={10} color={colors.primary} />
+                            <Text style={[styles.presetRoleText, { color: colors.primary }]}>
+                              Akses: {preset.role === 'WITNESS' ? 'Mode Saksi TPS Penuh' : 'Mode Relawan Posko'}
+                            </Text>
+                          </View>
+                          {isCurrent ? (
+                            <View style={[styles.activePillSmall, { backgroundColor: colors.primary }]}>
+                              <Feather name="check" size={10} color="#FFFFFF" />
+                              <Text style={styles.activePillSmallText}>Aktif</Text>
+                            </View>
+                          ) : (
+                            <Text style={[styles.applyText, { color: colors.primary }]}>Terapkan Mode →</Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
 
             <Pressable
               onPress={() => setRoleModalVisible(false)}
-              style={[styles.modalActionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}
+              style={[styles.modalActionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0', marginTop: 10 }]}
             >
               <Text style={[styles.modalActionBtnText, { color: colors.text }]}>Tutup</Text>
             </Pressable>
@@ -1240,5 +1521,113 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     marginTop: spacing.xs,
+  },
+  modalTabRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginVertical: 10,
+  },
+  modalTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+  },
+  modalTabText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+  },
+  lockedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  lockedPillText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: '#B45309',
+  },
+  eligibilityHint: {
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    color: '#D97706',
+    marginTop: 2,
+  },
+  presetCard: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  presetTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  presetName: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    flex: 1,
+  },
+  presetBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  presetBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+  },
+  presetDesc: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: 8,
+  },
+  presetFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  presetRolePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  presetRoleText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+  },
+  activePillSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  activePillSmallText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: '#FFFFFF',
+  },
+  applyText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
+  volunteerSectionNotice: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 4,
   },
 });
