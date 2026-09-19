@@ -106,16 +106,22 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             onLongPress={onLongPress}
             style={({ pressed }) => [
               styles.tabItem,
-              isFocused && [styles.activeRedCapsule, { backgroundColor: colors.primary }],
               pressed && { opacity: 0.8 },
             ]}
           >
-            {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color, size: 18 }) : null}
+            <View
+              style={[
+                styles.iconWrap,
+                isFocused && [styles.activeIconCapsule, { backgroundColor: colors.primary }],
+              ]}
+            >
+              {options.tabBarIcon ? options.tabBarIcon({ focused: isFocused, color: isFocused ? '#FFFFFF' : colors.textMuted, size: 18 }) : null}
+            </View>
             <Text
               style={[
                 styles.tabLabel,
                 {
-                  color,
+                  color: isFocused ? colors.primary : colors.textMuted,
                   fontFamily: isFocused ? fonts.bold : fonts.medium,
                   fontWeight: isFocused ? '700' : '500',
                 },
@@ -180,21 +186,21 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    borderRadius: 999,
-    gap: 2,
+    paddingVertical: 4,
+    gap: 3,
   },
-  activeRedCapsule: {
-    borderRadius: 999,
-    shadowColor: '#0066B3',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+  iconWrap: {
+    width: 54,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeIconCapsule: {
+    borderRadius: 15,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 10.5,
     textAlign: 'center',
   },
 });

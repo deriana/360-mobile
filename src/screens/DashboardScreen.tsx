@@ -305,38 +305,38 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       ];
     }
 
-    // 2. Relawan Biasa (Murni)
+    // 2. Relawan Biasa (Murni) Sesuai Desain & Screenshot
     if (isVolunteerOnly) {
       return [
         {
-          id: 'peta_sebaran',
-          icon: 'map',
-          title: 'Peta Sebaran',
-          subtitle: 'GIS Relawan',
-          badge: 'GIS',
+          id: 'bursa_tugas',
+          icon: 'briefcase',
+          title: 'Bursa Tugas',
+          subtitle: 'Aksi Lapangan',
+          badge: '4',
           tone: 'primary',
-          onPress: navigateToMap,
+          onPress: () => navigation.navigate('Tasks'),
         },
         {
-          id: 'aspirasi_warga',
-          icon: 'message-square',
-          title: 'Catat Aspirasi',
-          subtitle: 'Suara Warga',
-          badge: `${aspirasiItems.length}`,
+          id: 'pan_academy',
+          icon: 'award',
+          title: 'PAN Academy',
+          subtitle: 'Modul Pelatihan',
+          badge: 'Modul',
           tone: 'primary',
-          onPress: () => setShowAspirasiModal(true),
+          onPress: () => navigation.navigate('AmanatAcademy'),
         },
         {
           id: 'titik_posko',
           icon: 'map-pin',
-          title: 'Titik Posko',
+          title: 'Posko Relawan',
           subtitle: 'Posko Wilayah',
           tone: 'info',
           onPress: () => navigation.navigate('SimpanOffices'),
         },
         {
           id: 'kontak_korlap',
-          icon: 'phone-call',
+          icon: 'phone',
           title: 'Kontak Korlap',
           subtitle: currentUser.coordinatorContact?.name || 'Asep Ridwan',
           tone: 'info',
@@ -611,11 +611,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[styles.roleBadgeDot, { backgroundColor: colors.primary }]} />
               <Text style={[styles.swRoleName, { color: colors.primary }]}>
-                {ROLE_LABEL[role] || profile.roleLabel}
+                {isVolunteerOnly ? 'Relawan Simpatisan — PAN 360' : (ROLE_LABEL[role] || profile.roleLabel)}
               </Text>
             </View>
             <Text style={[styles.swScopeText, { color: colors.textMuted }]} numberOfLines={1}>
-              {profile.scopeLocation}
+              {isVolunteerOnly ? 'Kel. Dago, Kec. Coblong, Kota Bandung' : profile.scopeLocation}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
               <Text style={[styles.swIdText, { color: colors.text }]}>
@@ -627,19 +627,21 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Pressable
-              onPress={() => navigation.navigate('StatusPeranSaya')}
-              style={({ pressed }) => [
-                styles.switchModeBtn,
-                { backgroundColor: isDark ? 'rgba(0,102,179,0.3)' : '#E0F2FE' },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather name="user-check" size={12} color={colors.primary} />
-              <Text style={[styles.switchModeBtnText, { color: colors.primary }]}>Peran</Text>
-            </Pressable>
+            {!isVolunteerOnly && (
+              <Pressable
+                onPress={() => navigation.navigate('StatusPeranSaya')}
+                style={({ pressed }) => [
+                  styles.switchModeBtn,
+                  { backgroundColor: isDark ? 'rgba(0,102,179,0.3)' : '#E0F2FE' },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Feather name="user-check" size={12} color={colors.primary} />
+                <Text style={[styles.switchModeBtnText, { color: colors.primary }]}>Peran</Text>
+              </Pressable>
+            )}
 
-            {currentUser.roles.length > 1 && (
+            {!isVolunteerOnly && currentUser.roles.length > 1 && (
               <Pressable
                 onPress={() => setShowRoleModal(true)}
                 style={({ pressed }) => [
@@ -1032,60 +1034,132 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   {ev.dateLabel} • {ev.location}
                 </Text>
               </View>
-              <Pill label={ev.isRegistered ? 'Terdaftar' : 'Buka'} tone={ev.isRegistered ? 'success' : 'info'} />
+              <Pill label={isVolunteerOnly ? 'Terdaftar' : (ev.isRegistered ? 'Terdaftar' : 'Buka')} tone={isVolunteerOnly || ev.isRegistered ? 'success' : 'info'} />
             </Pressable>
           ))}
         </View>
       </Card>
 
       {/* ========================================================================= */}
-      {/* 5. TICKER MAKLUMAT RESMI DPP PAN (ZERO REDUNDANCY — ARAHAN KOMANDO PUSAT)  */}
+      {/* 5. KABAR & BERITA TERBARU (SESUAI SCREENSHOT)                             */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#E60012' }} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Maklumat Resmi DPP PAN</Text>
+            <Feather name="book-open" size={16} color={colors.primary} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
           </View>
-          <Pill label="Instruksi Pimpinan" tone="danger" />
+          <Pressable onPress={() => navigation.navigate('NewsTab')} hitSlop={8}>
+            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          onPress={() => setShowMaklumatModal(true)}
-          style={({ pressed }) => [
-            styles.newsHighlightCard,
-            {
-              backgroundColor: isDark ? 'rgba(230, 0, 18, 0.12)' : '#FEF2F2',
-              borderColor: isDark ? 'rgba(230, 0, 18, 0.35)' : '#FCA5A5',
-            },
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <View style={{ flex: 1, gap: 4 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: '#DC2626', letterSpacing: 0.5 }}>
-                MAKLUMAT STRATEGIS • NO. 082/DPP/IX/2026
+        {/* Featured News Box with Thumbnail */}
+        {PORTAL_NEWS_LIST.length > 0 && (
+          <Pressable
+            onPress={() => navigation.navigate('NewsTab')}
+            style={({ pressed }) => [
+              styles.featuredNewsBox,
+              {
+                backgroundColor: isDark ? 'rgba(0, 43, 82, 0.25)' : '#F0F7FF',
+                borderColor: isDark ? '#0A3D6B' : '#BAE6FD',
+              },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <View style={{ flex: 1, gap: 4, marginRight: 10 }}>
+              <Text style={[styles.featuredNewsCategory, { color: colors.primary }]}>
+                {PORTAL_NEWS_LIST[0].categoryLabel.toUpperCase()} • {PORTAL_NEWS_LIST[0].timeAgo}
               </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
-                18 Sep 2026
+              <Text style={[styles.featuredNewsTitle, { color: colors.text }]} numberOfLines={2}>
+                {PORTAL_NEWS_LIST[0].title}
+              </Text>
+              <Text style={[styles.featuredNewsAuthor, { color: colors.textMuted }]}>
+                {PORTAL_NEWS_LIST[0].author.name} • {PORTAL_NEWS_LIST[0].readTime}
               </Text>
             </View>
-            <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
-              Instruksi DPP PAN: Siaga Total Mengawal Suara Pemilu & Konsolidasi Pengawal Suara Se-Indonesia
-            </Text>
-            <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
-              Sekretariat Jenderal DPP PAN • Ketuk untuk membaca arahan resmi Ketum & Sekjen
-            </Text>
+
+            <Image
+              source={PORTAL_NEWS_LIST[0].localFallbackImage}
+              style={styles.featuredNewsImage}
+            />
+          </Pressable>
+        )}
+
+        {/* Secondary News Items List */}
+        <View style={{ gap: 2, marginTop: 4 }}>
+          {PORTAL_NEWS_LIST.slice(1, 3).map((news, idx) => (
+            <React.Fragment key={news.id}>
+              {idx > 0 && <View style={[styles.newsDivider, { backgroundColor: colors.border }]} />}
+              <Pressable
+                onPress={() => navigation.navigate('NewsTab')}
+                style={({ pressed }) => [
+                  styles.newsItemRow,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View style={{ flex: 1, gap: 2, paddingRight: 8 }}>
+                  <Text style={[styles.newsItemTitle, { color: colors.text }]} numberOfLines={1}>
+                    {news.title}
+                  </Text>
+                  <Text style={[styles.newsItemSub, { color: colors.textMuted }]}>
+                    {news.categoryLabel} • {news.timeAgo}
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.textMuted} />
+              </Pressable>
+            </React.Fragment>
+          ))}
+        </View>
+      </Card>
+
+      {!isVolunteerOnly && (
+        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+          <View style={styles.sectionHeaderBetween}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#E60012' }} />
+              <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Maklumat Resmi DPP PAN</Text>
+            </View>
+            <Pill label="Instruksi Pimpinan" tone="danger" />
           </View>
 
-          <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
-            <View style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: '#E60012', justifyContent: 'center', alignItems: 'center' }}>
-              <Feather name="volume-2" size={18} color="#FFFFFF" />
+          <Pressable
+            onPress={() => setShowMaklumatModal(true)}
+            style={({ pressed }) => [
+              styles.newsHighlightCard,
+              {
+                backgroundColor: isDark ? 'rgba(230, 0, 18, 0.12)' : '#FEF2F2',
+                borderColor: isDark ? 'rgba(230, 0, 18, 0.35)' : '#FCA5A5',
+              },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <View style={{ flex: 1, gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 9.5, fontFamily: fonts.bold, color: '#DC2626', letterSpacing: 0.5 }}>
+                  MAKLUMAT STRATEGIS • NO. 082/DPP/IX/2026
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 10 }}>•</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 10.5, fontFamily: fonts.regular }}>
+                  18 Sep 2026
+                </Text>
+              </View>
+              <Text style={[styles.newsHighlightTitle, { color: colors.text }]} numberOfLines={2}>
+                Instruksi DPP PAN: Siaga Total Mengawal Suara Pemilu & Konsolidasi Pengawal Suara Se-Indonesia
+              </Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: fonts.regular }} numberOfLines={1}>
+                Sekretariat Jenderal DPP PAN • Ketuk untuk membaca arahan resmi Ketum & Sekjen
+              </Text>
             </View>
-          </View>
-        </Pressable>
-      </Card>
+
+            <View style={{ justifyContent: 'center', alignItems: 'center', paddingLeft: 6 }}>
+              <View style={{ width: 38, height: 38, borderRadius: radius.full, backgroundColor: '#E60012', justifyContent: 'center', alignItems: 'center' }}>
+                <Feather name="volume-2" size={18} color="#FFFFFF" />
+              </View>
+            </View>
+          </Pressable>
+        </Card>
+      )}
 
 
       {/* Role Switcher Modal ("Mode Saya") */}
@@ -2202,6 +2276,52 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 10,
     letterSpacing: 0.4,
+  },
+  featuredNewsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 2,
+  },
+  featuredNewsCategory: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.4,
+  },
+  featuredNewsTitle: {
+    fontSize: 12,
+    fontFamily: fonts.bold,
+    lineHeight: 16,
+  },
+  featuredNewsAuthor: {
+    fontSize: 10.5,
+    fontFamily: fonts.regular,
+  },
+  featuredNewsImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+  },
+  newsDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 2,
+  },
+  newsItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+  },
+  newsItemTitle: {
+    fontSize: 11.5,
+    fontFamily: fonts.bold,
+  },
+  newsItemSub: {
+    fontSize: 10.5,
+    fontFamily: fonts.regular,
   },
   // 4-Column Quick Menu Icon Grid
   quickIconGrid: {
