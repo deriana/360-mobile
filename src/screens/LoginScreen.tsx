@@ -28,7 +28,7 @@ const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
 
 export default function LoginScreen() {
   const { login } = useApp();
-  const { colors, shadow } = useTheme();
+  const { colors, shadow, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
@@ -164,6 +164,70 @@ export default function LoginScreen() {
             <Feather name="arrow-right" size={16} color={colors.primary} />
           </Pressable>
 
+          {/* Persona Demo DPP PAN: 1-Tap Login Presentasi */}
+          <View style={{ gap: 8, marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary, letterSpacing: 0.5 }}>
+                DEMO PERSONA UTAMA DPP PAN
+              </Text>
+              <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 10, fontFamily: fonts.bold, color: colors.primary }}>1-Tap Demo</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Persona 1: Ahmad Fauzan */}
+              <Pressable
+                onPress={() => handleQuickLogin('MEMBER', 'ahmad.fauzan@pan.go.id')}
+                style={({ pressed }) => [
+                  styles.personaDemoCard,
+                  { backgroundColor: colors.surface, borderColor: colors.primary },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <View style={[styles.personaIconBox, { backgroundColor: colors.primaryLight }]}>
+                  <Feather name="user-check" size={16} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={[styles.personaName, { color: colors.text }]} numberOfLines={1}>
+                    Ahmad Fauzan
+                  </Text>
+                  <Text style={[styles.personaRole, { color: colors.primary }]} numberOfLines={1}>
+                    Kader simPAN
+                  </Text>
+                  <Text style={[styles.personaSub, { color: colors.textMuted }]} numberOfLines={1}>
+                    Full Lifecycle
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Persona 2: Siti Rahmawati */}
+              <Pressable
+                onPress={() => handleQuickLogin('VOLUNTEER', 'siti.rahmawati@relawanpan.id')}
+                style={({ pressed }) => [
+                  styles.personaDemoCard,
+                  { backgroundColor: colors.surface, borderColor: '#0284C7' },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <View style={[styles.personaIconBox, { backgroundColor: isDark ? 'rgba(2,132,199,0.2)' : '#E0F2FE' }]}>
+                  <Feather name="heart" size={16} color="#0284C7" />
+                </View>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={[styles.personaName, { color: colors.text }]} numberOfLines={1}>
+                    Siti Rahmawati
+                  </Text>
+                  <Text style={[styles.personaRole, { color: '#0284C7' }]} numberOfLines={1}>
+                    Relawan Murni
+                  </Text>
+                  <Text style={[styles.personaSub, { color: colors.textMuted }]} numberOfLines={1}>
+                    Non-KTA • Simpatisan
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
           <QuickLoginPicker
             categories={QUICK_LOGIN_CATEGORIES}
             onSelectRole={handleQuickLogin}
@@ -276,5 +340,33 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 10.5,
     marginTop: 1,
+  },
+  personaDemoCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  personaIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  personaName: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+  },
+  personaRole: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+  },
+  personaSub: {
+    fontFamily: fonts.regular,
+    fontSize: 9.5,
   },
 });

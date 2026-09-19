@@ -149,36 +149,29 @@ flowchart LR
 ### EPIC 1: Perombakan Data Model Identitas Multidimensi & Context Store
 *Tujuan: Memastikan fondasi sistem mengenali 7 layer identitas secara independen tanpa bug atau tumpang tindih state.*
 
-- [ ] **TASK-1.1: Pembaruan Types Definitif (`src/types/index.ts`)**
-  - Definisikan tipe `MembershipStatus`: `'pending' | 'active' | 'resignation_requested' | 'inactive' | 'suspended' | 'ended'`.
-  - Definisikan tipe `KaderStatus`: `'non_kader' | 'calon_kader' | 'kader_aktif'`.
-  - Definisikan tipe `OrganizationalPosition`:
-    - `position`: `'NONE' | 'PENGURUS' | 'KOORDINATOR' | 'FUNGSIONAR' | 'ANGGOTA_LEGISLATIF'`
-    - `level`: `'DPP' | 'DPW' | 'DPD' | 'DPC' | 'DPRT'`
-    - `region`: string (misal: "DPD PAN Kota Bandung")
-    - `roleTitle`: string (misal: "Ketua", "Sekretaris", "Bendahara", "Wakil Ketua")
-  - Definisikan tipe `ElectoralStatusRecord`:
-    - `status`: `'NONE' | 'BACALEG' | 'CALEG' | 'TERPILIH' | 'ANGGOTA_LEGISLATIF'`
-    - `electionYear`: number (misal: 2029)
-    - `legislativeLevel`: `'DPR_RI' | 'DPRD_PROV' | 'DPRD_KAB_KOTA'`
-    - `dapil`: string (misal: "Jawa Barat I", "Dapil 3 Kota Bandung")
-    - `periodLabel`: string (misal: "Caleg PAN 2029", "Periode 2024–2029")
-  - Definisikan tipe `VolunteerStatus`: `'none' | 'pending' | 'active' | 'paused' | 'inactive'`.
-  - Definisikan tipe `ProgramParticipationRecord`:
-    - `amanatAcademy`: `'NONE' | 'ENROLLED' | 'ACTIVE' | 'GRADUATED'`
-    - `pandawa`: `'NONE' | 'REGISTERED' | 'SELECTED' | 'TRAINING' | 'ACTIVE' | 'COMPLETED'`
-    - `programSaksi`: `'NONE' | 'TRAINING' | 'CERTIFIED' | 'MANDATED'`
+- [x] **TASK-1.1: Perluasan Type Definition 7 Dimensi (`src/types/index.ts`)**
+  - Terapkan 7 dimensi identitas mandiri sesuai Bab 2 dokumen ini.
+  - Sediakan tipe data eksplisit untuk:
+    - `MembershipStatus`: `'PENDING' | 'ACTIVE' | 'RESIGNATION_REQUESTED' | 'INACTIVE' | 'SUSPENDED' | 'ENDED'`
+    - `KaderStatus`: `'NON_KADER' | 'CALON_KADER' | 'KADER_AKTIF'`
+    - `OrganizationalPosition`: `position` ('NONE' | 'PENGURUS' | 'KOORDINATOR' | 'FUNGSIONAR' | 'ANGGOTA_LEGISLATIF'), `scopeLevel` ('DPP' | 'DPW' | 'DPD' | 'DPC' | 'DPRT'), `region`, `specificRole`, `decreeNumber`, `term`.
+    - `ElectoralStatusRecord`: `status` ('NONE' | 'BACALEG' | 'CALEG' | 'TERPILIH' | 'ANGGOTA_LEGISLATIF'), `year`, `legislativeLevel` ('DPR_RI' | 'DPRD_PROVINSI' | 'DPRD_KAB_KOTA'), `electoralArea`, `period`.
+    - `VolunteerStatus`: `'NONE' | 'PENDING' | 'ACTIVE' | 'PAUSED' | 'INACTIVE'`
+    - `ProgramParticipationRecord`:
+      - `amanatAcademy`: `'NONE' | 'ENROLLED' | 'ACTIVE' | 'GRADUATED'`
+      - `pandawa`: `'NONE' | 'REGISTERED' | 'SELECTED' | 'TRAINING' | 'ACTIVE' | 'COMPLETED'`
+      - `programSaksi`: `'NONE' | 'TRAINING' | 'CERTIFIED' | 'MANDATED'`
   - Definisikan tipe `OperationalRole`: `'VOLUNTEER' | 'WITNESS_CANDIDATE' | 'OFFICIAL_WITNESS' | 'TPS_COORDINATOR' | 'FIELD_COORDINATOR' | 'CALEG_OPS' | 'MEMBER'`.
   - Definisikan tipe `StatusLifecycleItem`:
     - `statusName`: string, `startDate`: string, `endDate`?: string, `term`: string, `source`: string, `verifiedBy`: string, `verificationDate`: string, `documentRef`?: string.
   - Gabungkan ke dalam interface `CurrentUser` baru dengan mempertahankan backward compatibility jika diperlukan.
 
-- [ ] **TASK-1.2: Pemodelan 2 Akun Komplementer & State Presets Engine (`src/data/accounts.ts` & `src/utils/userContext.ts`)**
+- [x] **TASK-1.2: Pemodelan 2 Akun Komplementer & State Presets Engine (`src/data/accounts.ts` & `src/utils/userContext.ts`)**
   - Definisikan **Akun 1 (Ahmad Fauzan - Kader & Anggota Resmi)**: `ahmad.fauzan@pan.go.id` dengan 7 layer identitas lengkap dan 6 State Presets perjalanan karir fungsionaris.
   - Definisikan **Akun 2 (Siti Rahmawati - Relawan Murni Simpatisan)**: `siti.rahmawati@relawanpan.id` dengan `membershipStatus: 'none'`, `volunteerStatus: 'active'`, ID Relawan Digital, dan banner onboarding kaderisasi simPAN.
   - Tambahkan konfigurasi akun ini ke dalam `ACCOUNTS` dan integrasikan dengan fitur Login Cepat di `LoginScreen.tsx`.
 
-- [ ] **TASK-1.3: Full Frontend Reactive State Engine di AppContext (`src/context/AppContext.tsx`)**
+- [x] **TASK-1.3: Full Frontend Reactive State Engine di AppContext (`src/context/AppContext.tsx`)**
   - Bangun state engine lokal 100% reaktif tanpa backend, mengelola state akun tunggal, status 7 dimensi, dan operational role.
   - Sediakan method mutasi state lokal dengan instant UI reactivity:
     - `applyCareerStatePreset(presetId: 'state_1' | 'state_2' | 'state_3' | 'state_4' | 'state_5' | 'state_6')` untuk demo instan di panggung DPP.
@@ -193,7 +186,7 @@ flowchart LR
 ### EPIC 2: Fitur "Switch Mode Operational Role" yang State-Aware & Gamified (Level Unlock)
 *Tujuan: Menyediakan selector peran operasional lapangan yang memeriksa kelayakan user secara ketat dan edukatif.*
 
-- [ ] **TASK-2.1: Logika Pemeriksa Kelayakan (Eligibility & Prerequisite Rules Engine)**
+- [x] **TASK-2.1: Logika Pemeriksa Kelayakan (Eligibility & Prerequisite Rules Engine)**
   - Bangun validator prasyarat perpindahan peran di `src/utils/roleUnlockRules.ts`:
     - **Mode Relawan Biasa:** Terbuka untuk semua akun yang memiliki `volunteerStatus === 'active'`. (Jika `volunteerStatus === 'paused'` atau `'inactive'`, tampilkan opsi mengaktifkan kembali partisipasi).
     - **Mode Saksi TPS (Untuk Akun Relawan):**
@@ -208,7 +201,7 @@ flowchart LR
     - **Mode Koordinator TPS / Lapangan:**
       - *Syarat:* Memiliki penugasan koordinator sah dari DPD/DPC dengan SK wilayah dampingan.
 
-- [ ] **TASK-2.2: Komponen Interaktif Modal "Pilih Mode Operasional (Mode Saya)"**
+- [x] **TASK-2.2: Komponen Interaktif Modal "Pilih Mode Operasional (Mode Saya)"**
   - Rancang ulang modal `showRoleModal` di `DashboardScreen.tsx` dan `ProfileScreen.tsx`.
   - Format visual kartu peran:
     - **Kartu Aktif:** Border biru PAN, badge "Sedang Digunakan", icon centang hijau.
@@ -218,7 +211,7 @@ flowchart LR
     - Contoh: *Syarat belum selesai: Bimtek Saksi* -> Tombol: `[ Buka Amanat Academy ]`.
     - Contoh: *Syarat belum selesai: SK Mandat* -> Tombol: `[ Hubungi Korlap DPD ]`.
 
-- [ ] **TASK-2.3: Konsekuensi Tampilan & Navigasi Saat Ganti Mode**
+- [x] **TASK-2.3: Konsekuensi Tampilan & Navigasi Saat Ganti Mode**
   - Mode Saksi TPS -> Beranda memunculkan: Status TPS Dampingan, Presensi GPS TPS, Input C1 Plano, Scan AI C1, Lapor Insiden Darurat.
   - Mode Relawan -> Beranda memunculkan: Bursa Tugas Posko, Giat Sapa Warga, Posko Dago, Kontak Korlap.
   - Mode Caleg Pemenangan -> Beranda memunculkan: Peta Suara Dapil, Progres Timses Lapangan, Target Suara Kursi Parlemen.
@@ -255,7 +248,7 @@ flowchart LR
 ### EPIC 4: Layar "Status & Peran Saya", Modul "Kelola Status Saya", & Refactor Header Beranda
 *Tujuan: Memberikan visualisasi transparan atas 7 lapisan identitas, menyediakan kontrol status mandiri (pengunduran diri anggota berjenjang, opsi berhenti sementara/tetap relawan, dan proteksi tugas aktif), serta header beranda ringkas.*
 
-- [ ] **TASK-4.1: Layar Khusus "Status & Peran Saya" (`src/screens/StatusPeranSayaScreen.tsx`)**
+- [x] **TASK-4.1: Layar Khusus "Status & Peran Saya" (`src/screens/StatusPeranSayaScreen.tsx`)**
   - Akses dari: **Profil → Status & Peran Saya**.
   - Tampilan visual berlapis kartu:
     1. **Kartu Keanggotaan (Membership):** Status 🟢 Anggota Aktif / 🟡 Dalam Proses Pengunduran Diri / ⚪ Ended, Nomor e-KTA simPAN, Tanggal Bergabung, Asal DPC/DPD.
@@ -270,14 +263,14 @@ flowchart LR
     7. **Timeline Riwayat Status (Lifecycle History):** Log perubahan peran lengkap dengan tanggal, verifikator, dan nomor surat keputusan.
     8. **Action Bar Bawah:** Tombol besar `[ Kelola Status Saya ]` mengarah ke layar `KelolaStatusScreen`.
 
-- [ ] **TASK-4.2: Pembaruan Header Beranda (`DashboardScreen.tsx`)**
+- [x] **TASK-4.2: Pembaruan Header Beranda (`DashboardScreen.tsx`)**
   - Buat sub-komponen header identitas multi-layer yang ringkas dan padat:
     - Baris 1: Nama Kader + Badge Verifikasi Biru.
     - Baris 2: Teks Gabungan Identitas: `Anggota PAN • Pengurus DPD • Caleg 2029`.
     - Baris 3: Badge Status Operasional Aktif saat ini: `Mode Operasional: Saksi TPS 001 Kel. Dago`.
   - Tombol Quick Actions mini: `[ Ganti Mode ]` dan `[ Status & Peran ]`.
 
-- [ ] **TASK-4.3: Modul Baru: "Kelola Status Saya" (`src/screens/KelolaStatusScreen.tsx`)**
+- [x] **TASK-4.3: Modul Baru: "Kelola Status Saya" (`src/screens/KelolaStatusScreen.tsx`)**
   - *Tujuan Arsitektur:* Mengakomodir tata kelola siklus hidup status secara independen tanpa menghapus akun (*Never Delete User Hard*).
   - **A. Bagian Keanggotaan (Membership):**
     - Tombol: `[ Pengajuan Pengunduran Diri Anggota ]`.
@@ -445,7 +438,7 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
 ### EPIC 7: Skenario Gladi Resik & Presentation Rig DPP PAN
 *Tujuan: Memastikan saat presentasi di hadapan pimpinan DPP PAN, aplikasi berjalan 100% tanpa kendala teknis dan alur demonstrasi memukau.*
 
-- [ ] **TASK-7.1: Penyempurnaan Login Cepat (`LoginScreen.tsx`) & Mode Switcher (`ProfileScreen.tsx`)**
+- [x] **TASK-7.1: Penyempurnaan Login Cepat (`LoginScreen.tsx`) & Mode Switcher (`ProfileScreen.tsx`)**
   - **A. Pada `src/screens/LoginScreen.tsx` (Fitur Login Cepat):**
     - Perbarui `QuickLoginPicker` agar menampilkan 2 kartu akun representatif utama:
       1. 👤 **Ahmad Fauzan** — *Kader & Anggota Resmi simPAN (Full Lifecycle)*.
@@ -455,16 +448,16 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
     - Tombol chip eksisting `Ganti Mode` di samping nama user membuka modal yang menyesuaikan profil akun aktif:
       - **Jika Login sebagai Ahmad Fauzan (Kader):** Menampilkan selector peran operasional fungsionaris & 6 State Presets Karir (Anggota Baru $\rightarrow$ Saksi TPS $\rightarrow$ Korlap $\rightarrow$ Caleg 2029).
       - **Jika Login sebagai Siti Rahmawati (Relawan):** Menampilkan switcher transisi **State R-1 (Relawan Posko)** $\leftrightarrow$ **State R-2 (Relawan Mandat Saksi TPS 018)** dengan visual meteran Level-Unlock 4 syarat BSN & tombol simulasi kelulusan diklat.
-- [ ] **TASK-7.2: Checklist Skenario Demo Live di Depan DPP PAN (Akun Tunggal State-Aware):**
-  - [ ] **Scene 1: Login Cepat Akun Kader Resmi (Ahmad Fauzan)**. Masuk dari Login Cepat `LoginScreen.tsx`, tunjukkan profil kader ber-eKTA resmi, State 5 (Sekretaris DPD & Caleg DPR-RI 2029), Quick Menu khusus caleg (Peta Basis Dapil & Audit KPPN), dan ketiadaan menu duplikat.
-  - [ ] **Scene 2: Eksplorasi Status & Peran Saya**. Buka menu dari Profil, paparkan visualisasi 7 dimensi identitas kader yang transparan kepada pimpinan DPP PAN.
-  - [ ] **Scene 3: Pengujian Modul Kelola Status (State 6)**. Buka **[ Kelola Status Saya ]**, simulasikan pengajuan pengunduran diri anggota (status bergeser ke `RESIGNATION_REQUESTED`), dan simulasi jeda relawan (`PAUSED`) yang memicu peringatan *Active Task Guard*. Tunjukkan bahwa akun dan histori tidak pernah di-*hard delete*.
-  - [ ] **Scene 4: Peta Sebaran Relawan & Anggota Resmi (GIS View)**. Buka dari Quick Menu Beranda, perlihatkan agregasi kekuatan kader di Dapil Jabar I & Kota Bandung.
-  - [ ] **Scene 5: Beralih ke Akun Relawan Murni (Siti Rahmawati)**. Lakukan logout $\rightarrow$ di `LoginScreen.tsx`, ketuk kartu **Siti Rahmawati (Relawan Simpatisan)**. Perlihatkan tampilan relawan murni: Digital ID Relawan (non-KTA), bursa tugas aksi sosial, ajakan daftar anggota simPAN, dan tantangan gamified unlock Saksi BSN.
-  - [ ] **Scene 6: Pembelajaran & Level Unlock Real-Time**. Buka tab **ACADEMY**, klik selesaikan modul saksi $\rightarrow$ kembali ke Beranda, peran Saksi TPS otomatis ter-unlock! Alihkan ke Mode Saksi TPS (State 3), dan perlihatkan Quick Menu berubah menjadi menu Hari-H (C1 Plano, Presensi TPS GPS, SOS Insiden).
-  - [ ] **Scene 7: Program Satgas PANdawa**. Tunjukkan modul PANdawa sebagai bukti kesiapsiagaan kader muda partai.
-  - [ ] **Scene 8: Keandalan Offline Mode**. Matikan koneksi, simulasikan input form $\rightarrow$ tersimpan di antrean offline lokal $\rightarrow$ koneksi nyala $\rightarrow$ sinkronisasi otomatis.
-- [ ] **TASK-7.3: Quality Assurance & Polish Eksekutif**
+- [x] **TASK-7.2: Checklist Skenario Demo Live di Depan DPP PAN (Akun Tunggal State-Aware):**
+  - [x] **Scene 1: Login Cepat Akun Kader Resmi (Ahmad Fauzan)**. Masuk dari Login Cepat `LoginScreen.tsx`, tunjukkan profil kader ber-eKTA resmi, State 5 (Sekretaris DPD & Caleg DPR-RI 2029), Quick Menu khusus caleg (Peta Basis Dapil & Audit KPPN), dan ketiadaan menu duplikat.
+  - [x] **Scene 2: Eksplorasi Status & Peran Saya**. Buka menu dari Profil, paparkan visualisasi 7 dimensi identitas kader yang transparan kepada pimpinan DPP PAN.
+  - [x] **Scene 3: Pengujian Modul Kelola Status (State 6)**. Buka **[ Kelola Status Saya ]**, simulasikan pengajuan pengunduran diri anggota (status bergeser ke `RESIGNATION_REQUESTED`), dan simulasi jeda relawan (`PAUSED`) yang memicu peringatan *Active Task Guard*. Tunjukkan bahwa akun dan histori tidak pernah di-*hard delete*.
+  - [x] **Scene 4: Peta Sebaran Relawan & Anggota Resmi (GIS View)**. Buka dari Quick Menu Beranda, perlihatkan agregasi kekuatan kader di Dapil Jabar I & Kota Bandung.
+  - [x] **Scene 5: Beralih ke Akun Relawan Murni (Siti Rahmawati)**. Lakukan logout $\rightarrow$ di `LoginScreen.tsx`, ketuk kartu **Siti Rahmawati (Relawan Simpatisan)**. Perlihatkan tampilan relawan murni: Digital ID Relawan (non-KTA), bursa tugas aksi sosial, ajakan daftar anggota simPAN, dan tantangan gamified unlock Saksi BSN.
+  - [x] **Scene 6: Pembelajaran & Level Unlock Real-Time**. Buka tab **ACADEMY**, klik selesaikan modul saksi $\rightarrow$ kembali ke Beranda, peran Saksi TPS otomatis ter-unlock! Alihkan ke Mode Saksi TPS (State 3), dan perlihatkan Quick Menu berubah menjadi menu Hari-H (C1 Plano, Presensi TPS GPS, SOS Insiden).
+  - [x] **Scene 7: Program Satgas PANdawa**. Tunjukkan modul PANdawa sebagai bukti kesiapsiagaan kader muda partai.
+  - [x] **Scene 8: Keandalan Offline Mode**. Matikan koneksi, simulasikan input form $\rightarrow$ tersimpan di antrean offline lokal $\rightarrow$ koneksi nyala $\rightarrow$ sinkronisasi otomatis.
+- [x] **TASK-7.3: Quality Assurance & Polish Eksekutif**
   - Pastikan tipografi Poppins konsisten di seluruh layar.
   - Pastikan kontras warna PAN (#0066B3, #002B52, #E60012) tajam dan profesional baik di Light Mode maupun Dark Mode.
   - Uji seluruh link tombol (zero broken links dan zero redundant access).
