@@ -101,7 +101,7 @@ const OFFICIAL_CHANNEL_POSTS: ChannelPost[] = [
     senderName: 'Zulkifli Hasan',
     senderRole: 'Ketua Umum DPP PAN',
     senderAvatar: LEADER_AVATARS.ketuaUmum,
-    dateBadge: 'Hari Ini • 19 September 2026',
+    dateBadge: 'Hari Ini',
     time: '08:30 WIB',
     type: 'video',
     mediaImage: IMAGES.tpsHero,

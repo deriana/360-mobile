@@ -270,7 +270,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       icon: 'volume-2',
       title: 'Broadcast',
       subtitle: 'Saluran Resmi',
-      badge: hasOfficialWitnessAssignment ? 'Grup' : 'Saluran',
+      // badge: hasOfficialWitnessAssignment ? 'Grup' : 'Saluran',
       tone: 'primary',
       onPress: () => navigation.navigate('Broadcast'),
     };
@@ -292,7 +292,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           icon: 'award',
           title: 'PAN Academy',
           subtitle: 'Modul Pelatihan',
-          badge: 'Modul',
+          // badge: 'Modul',
           tone: 'primary',
           onPress: () => navigation.navigate('AmanatAcademy'),
         },
@@ -886,7 +886,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <Feather name="book-open" size={16} color={colors.primary} />
             <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('NewsTab')} hitSlop={8}>
+          <Pressable onPress={() => navigation.navigate('SimpanNews')} hitSlop={8}>
             <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
           </Pressable>
         </View>
@@ -894,7 +894,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         {/* Featured News Box with Thumbnail */}
         {PORTAL_NEWS_LIST.length > 0 && (
           <Pressable
-            onPress={() => navigation.navigate('NewsTab')}
+            onPress={() => navigation.navigate('SimpanNews')}
             style={({ pressed }) => [
               styles.featuredNewsBox,
               {
@@ -929,7 +929,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <React.Fragment key={news.id}>
               {idx > 0 && <View style={[styles.newsDivider, { backgroundColor: colors.border }]} />}
               <Pressable
-                onPress={() => navigation.navigate('NewsTab')}
+                onPress={() => navigation.navigate('SimpanNews')}
                 style={({ pressed }) => [
                   styles.newsItemRow,
                   pressed && { opacity: 0.7 },
@@ -959,7 +959,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <Feather name="calendar" size={15} color={colors.primary} />
             <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Agenda Kegiatan Terdekat</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('ActivitiesTab')} hitSlop={8}>
+          <Pressable onPress={() => navigation.navigate('Activities')} hitSlop={8}>
             <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
           </Pressable>
         </View>
@@ -968,7 +968,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           {events.slice(0, 3).map((ev) => (
             <Pressable
               key={ev.id}
-              onPress={() => navigation.navigate('ActivitiesTab')}
+              onPress={() => navigation.navigate('Activities')}
               style={({ pressed }) => [
                 styles.miniAgendaRow,
                 { borderColor: colors.border },

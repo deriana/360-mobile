@@ -583,7 +583,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                   </Text>
                 </View>
                 <Pressable
-                  onPress={() => navigation.navigate('ActivitiesTab', { screen: 'Activities', params: { tab: 'agenda' } })}
+                  onPress={() => navigation.navigate('Activities', { tab: 'agenda' })}
                   style={[styles.emptyActionBtn, { backgroundColor: colors.primary }]}
                 >
                   <Text style={styles.emptyActionBtnText}>Buka Kegiatan</Text>

@@ -22,15 +22,11 @@ const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Presensi Kehadi
 const NewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta & Kabar PAN');
 const ProfileStack = buildDetailStack('Profile', ProfileScreen, 'Profil Saya');
 
-/**
- * 5 Standard Bottom Navigation Tabs Sesuai Blueprint DPP PAN & Screenshot:
- * BERANDA | KEGIATAN | PRESENSI | KABAR | PROFIL
- */
 const STANDARD_BOTTOM_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
-  { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
+  // { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
   { name: 'CheckInTab', component: CheckInStack, label: 'Presensi', icon: 'map-pin' as const },
-  { name: 'NewsTab', component: NewsStack, label: 'Kabar', icon: 'book-open' as const },
+  // { name: 'NewsTab', component: NewsStack, label: 'Kabar', icon: 'book-open' as const },
   { name: 'ProfileTab', component: ProfileStack, label: 'Profil', icon: 'user' as const },
 ];
 
