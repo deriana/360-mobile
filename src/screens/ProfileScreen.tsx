@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Image,
   Modal,
@@ -155,7 +155,19 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'alert-triangle',
     tone: 'danger',
     badge: 'SOS',
-    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR'],
+    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
+  },
+  {
+    id: 'activity-timeline',
+    title: 'Riwayat Aktivitas & Penugasan',
+    shortTitle: 'Aktivitas',
+    subtitle: 'Jejak rekam penugasan dan aksi resmi partai',
+    screen: '',
+    category: 'TUGAS',
+    icon: 'clock',
+    tone: 'info',
+    badge: 'Jejak',
+    highlightRoles: ['WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER'],
   },
 
   // EDUKASI & KADERISASI
@@ -169,7 +181,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'book-open',
     tone: 'primary',
     badge: 'Akademi',
-    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR'],
+    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'pandawa-program',
@@ -193,7 +205,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'award',
     tone: 'primary',
     badge: 'Bimtek',
-    highlightRoles: ['WITNESS', 'VOLUNTEER'],
+    highlightRoles: ['WITNESS'],
   },
 
   // ORGANISASI, DATA PARTAI & PETA
@@ -241,7 +253,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'home',
     tone: 'info',
-    highlightRoles: ['MEMBER', 'VOLUNTEER'],
+    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'simpan-bacaleg',
@@ -264,7 +276,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'rss',
     tone: 'info',
-    highlightRoles: ['MEMBER', 'VOLUNTEER'],
+    highlightRoles: ['MEMBER', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'party-roster',
@@ -287,7 +299,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'check-circle',
     tone: 'success',
     badge: 'WTP',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR'],
+    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
   {
     id: 'status-peran',
@@ -299,17 +311,6 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     icon: 'user',
     tone: 'primary',
     highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
-  },
-  {
-    id: 'kelola-status',
-    title: 'Kelola Status (Resign / Jeda Relawan)',
-    shortTitle: 'Kelola Status',
-    subtitle: 'Alur mandiri penonaktifan peran & permohonan berhenti',
-    screen: 'KelolaStatus',
-    category: 'ORGANISASI',
-    icon: 'settings',
-    tone: 'info',
-    highlightRoles: ['MEMBER', 'VOLUNTEER'],
   },
   {
     id: 'register-member',
@@ -332,7 +333,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'help-circle',
     tone: 'info',
-    highlightRoles: ['WITNESS', 'TPS_COORDINATOR', 'MEMBER', 'VOLUNTEER'],
+    highlightRoles: ['WITNESS', 'TPS_COORDINATOR', 'FIELD_COORDINATOR', 'MEMBER', 'VOLUNTEER'],
   },
   {
     id: 'security-center',
@@ -343,7 +344,7 @@ const DIRECTORY_PAGES: DirectoryMenuItem[] = [
     category: 'ORGANISASI',
     icon: 'shield',
     tone: 'primary',
-    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR'],
+    highlightRoles: ['MEMBER', 'WITNESS', 'VOLUNTEER', 'TPS_COORDINATOR', 'FIELD_COORDINATOR'],
   },
 ];
 
@@ -358,7 +359,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   // State Direktori Menu Lengkap (Pusat Akses Ramah Lansia/Senior/Boomer)
   const [directorySearch, setDirectorySearch] = useState('');
-  const [directoryCategory, setDirectoryCategory] = useState<'UTAMA' | 'TUGAS' | 'EDUKASI' | 'ORGANISASI' | 'ALL'>('UTAMA');
+  const [directoryCategory, setDirectoryCategory] = useState<'ALL' | 'TUGAS' | 'EDUKASI' | 'ORGANISASI'>('ALL');
   const [showAllDirectory, setShowAllDirectory] = useState(false);
 
   const user = currentUser.identity;
@@ -435,29 +436,70 @@ export default function ProfileScreen({ navigation }: any) {
     }
   };
 
-  // Filter Direktori Menu Lengkap
-  const filteredDirectoryItems = DIRECTORY_PAGES.filter((item) => {
-    if (directorySearch.trim()) {
-      const q = directorySearch.toLowerCase();
-      return (
-        item.title.toLowerCase().includes(q) ||
-        item.subtitle.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q)
-      );
-    }
-    if (directoryCategory === 'UTAMA') {
-      return item.highlightRoles.includes(role as MobileRole);
-    }
-    if (directoryCategory === 'ALL') {
+  // 1. Menu yang sah dan relevan khusus untuk role aktif (mencegah kebocoran & menu duplikat)
+  const roleAccessibleItems = useMemo(() => {
+    return DIRECTORY_PAGES.filter((item) => {
+      if (!item.highlightRoles.includes(role as MobileRole)) {
+        return false;
+      }
+      if (item.id === 'simpan-kta' && !isOfficialMember) {
+        return false;
+      }
+      if (item.id === 'register-member' && isOfficialMember) {
+        return false;
+      }
       return true;
-    }
-    return item.category === directoryCategory;
-  });
+    });
+  }, [role, isOfficialMember]);
+
+  // Hitung jumlah menu per kategori untuk role aktif saat ini
+  const categoryCounts = useMemo(() => {
+    return {
+      ALL: roleAccessibleItems.length,
+      TUGAS: roleAccessibleItems.filter((i) => i.category === 'TUGAS').length,
+      EDUKASI: roleAccessibleItems.filter((i) => i.category === 'EDUKASI').length,
+      ORGANISASI: roleAccessibleItems.filter((i) => i.category === 'ORGANISASI').length,
+    };
+  }, [roleAccessibleItems]);
+
+  const CATEGORY_TABS = useMemo(() => [
+    { key: 'ALL' as const, label: 'Semua', icon: 'grid' as const, count: categoryCounts.ALL },
+    { key: 'TUGAS' as const, label: 'Tugas', icon: 'check-square' as const, count: categoryCounts.TUGAS },
+    { key: 'EDUKASI' as const, label: 'Edukasi', icon: 'book-open' as const, count: categoryCounts.EDUKASI },
+    { key: 'ORGANISASI' as const, label: 'Organisasi', icon: 'briefcase' as const, count: categoryCounts.ORGANISASI },
+  ], [categoryCounts]);
+
+  // 2. Filter Direktori Menu Lengkap berdasarkan pencarian dan kategori
+  const filteredDirectoryItems = useMemo(() => {
+    return roleAccessibleItems.filter((item) => {
+      if (directorySearch.trim()) {
+        const q = directorySearch.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.shortTitle.toLowerCase().includes(q) ||
+          item.subtitle.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q)
+        );
+      }
+      if (directoryCategory === 'ALL') {
+        return true;
+      }
+      return item.category === directoryCategory;
+    });
+  }, [roleAccessibleItems, directorySearch, directoryCategory]);
 
   const displayedDirectoryItems =
-    !directorySearch.trim() && directoryCategory === 'UTAMA' && !showAllDirectory
+    !directorySearch.trim() && directoryCategory === 'ALL' && !showAllDirectory
       ? filteredDirectoryItems.slice(0, 8)
       : filteredDirectoryItems;
+
+  const handleDirectoryPress = (item: DirectoryMenuItem) => {
+    if (item.id === 'activity-timeline') {
+      setActivityModalVisible(true);
+    } else if (item.screen) {
+      navigation.navigate(item.screen, item.params);
+    }
+  };
 
   return (
     <ScrollView
@@ -733,6 +775,21 @@ export default function ProfileScreen({ navigation }: any) {
               </View>
             </View>
           </View>
+          {/* Tombol Lihat Riwayat Aktivitas Relawan */}
+          <Pressable
+            onPress={() => setActivityModalVisible(true)}
+            style={({ pressed }) => [
+              styles.viewTimelineBtn,
+              { borderColor: colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC' },
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <Feather name="clock" size={12} color={colors.primary} />
+            <Text style={[styles.viewTimelineBtnText, { color: colors.primary }]}>
+              Lihat Riwayat & Aktivitas Lengkap
+            </Text>
+            <Feather name="chevron-right" size={12} color={colors.primary} />
+          </Pressable>
         </Card>
       )}
 
@@ -774,6 +831,22 @@ export default function ProfileScreen({ navigation }: any) {
               <Text style={[styles.volunteerStatLabel, { color: colors.textMuted }]}>Bimtek BSN</Text>
             </View>
           </View>
+
+          {/* Tombol Lihat Riwayat Aktivitas Kader */}
+          <Pressable
+            onPress={() => setActivityModalVisible(true)}
+            style={({ pressed }) => [
+              styles.viewTimelineBtn,
+              { borderColor: colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC' },
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <Feather name="clock" size={12} color={colors.primary} />
+            <Text style={[styles.viewTimelineBtnText, { color: colors.primary }]}>
+              Lihat Riwayat & Timeline Penugasan ({activityTimeline.length})
+            </Text>
+            <Feather name="chevron-right" size={12} color={colors.primary} />
+          </Pressable>
         </Card>
       )}
 
@@ -826,20 +899,14 @@ export default function ProfileScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Filter Kategori Chips */}
+        {/* Filter Kategori Chips (Bebas Emoji, Vector Icon Saja) */}
         {!directorySearch.trim() && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.directoryFilterScroll}
           >
-            {[
-              { key: 'UTAMA' as const, label: '⭐ Rekomendasi Peran' },
-              { key: 'TUGAS' as const, label: '📋 Tugas Lapangan' },
-              { key: 'EDUKASI' as const, label: '🎓 Edukasi & Diklat' },
-              { key: 'ORGANISASI' as const, label: '🏛️ Partai & Peta' },
-              { key: 'ALL' as const, label: `Semua Menu (${DIRECTORY_PAGES.length})` },
-            ].map((cat) => {
+            {CATEGORY_TABS.map((cat) => {
               const active = directoryCategory === cat.key;
               return (
                 <Pressable
@@ -854,13 +921,18 @@ export default function ProfileScreen({ navigation }: any) {
                     pressed && { opacity: 0.8 },
                   ]}
                 >
+                  <Feather
+                    name={cat.icon}
+                    size={12}
+                    color={active ? '#FFFFFF' : colors.textMuted}
+                  />
                   <Text
                     style={[
                       styles.directoryFilterChipText,
                       { color: active ? '#FFFFFF' : colors.text, fontFamily: active ? fonts.bold : fonts.medium },
                     ]}
                   >
-                    {cat.label}
+                    {cat.label} ({cat.count})
                   </Text>
                 </Pressable>
               );
@@ -907,7 +979,7 @@ export default function ProfileScreen({ navigation }: any) {
               return (
                 <Pressable
                   key={item.id}
-                  onPress={() => navigation.navigate(item.screen, item.params)}
+                  onPress={() => handleDirectoryPress(item)}
                   style={({ pressed }) => [
                     styles.quickGridItem,
                     pressed && { opacity: 0.7, transform: [{ scale: 0.94 }] },
@@ -948,8 +1020,8 @@ export default function ProfileScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Toggle Expand/Collapse jika kategori UTAMA dan tidak sedang search */}
-        {!directorySearch.trim() && directoryCategory === 'UTAMA' && filteredDirectoryItems.length > 8 && (
+        {/* Toggle Expand/Collapse jika kategori ALL dan tidak sedang search */}
+        {!directorySearch.trim() && directoryCategory === 'ALL' && filteredDirectoryItems.length > 8 && (
           <Pressable
             onPress={() => setShowAllDirectory(!showAllDirectory)}
             style={({ pressed }) => [
@@ -958,10 +1030,15 @@ export default function ProfileScreen({ navigation }: any) {
               pressed && { opacity: 0.8 },
             ]}
           >
+            <Feather
+              name={showAllDirectory ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={colors.primary}
+            />
             <Text style={[styles.directoryToggleBtnText, { color: colors.primary }]}>
               {showAllDirectory
-                ? 'Tampilkan Lebih Ringkas (8 Menu) ▲'
-                : `Lihat Semua Menu Rekomendasi (${filteredDirectoryItems.length}) ▼`}
+                ? 'Tampilkan Lebih Ringkas (8 Menu)'
+                : `Lihat Semua Menu (${filteredDirectoryItems.length})`}
             </Text>
           </Pressable>
         )}
@@ -992,105 +1069,6 @@ export default function ProfileScreen({ navigation }: any) {
             {currentMembership?.registeredAt || '01 Maret 2024'}
           </Text>
         </View>
-      </Card>
-
-      {/* 4. LAYANAN & PENGATURAN PETUGAS */}
-      <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
-
-        {/* Surat Mandat Digital (Hanya untuk Saksi / Penugasan Saksi) */}
-        {hasWitnessRole && (
-          <>
-            <Pressable
-              onPress={() => navigation.navigate('AssignmentLetter', { witnessId: 'SAKSI-001' })}
-              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-            >
-              <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-                <Feather name="file-text" size={15} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1, gap: 1 }}>
-                <Text style={[styles.actionTitle, { color: colors.text }]}>Surat Tugas Digital (E-Mandat)</Text>
-                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>Surat Mandat resmi saksi TPS Partai</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={colors.textMuted} />
-            </Pressable>
-
-            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-          </>
-        )}
-
-        {/* Riwayat Aktivitas Modal Trigger */}
-        <Pressable
-          onPress={() => setActivityModalVisible(true)}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="clock" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Riwayat Aktivitas & Penugasan</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>{activityTimeline.length} rekam jejak kegiatan resmi</Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        {/* Keamanan & Privasi */}
-        <Pressable
-          onPress={() => navigation.navigate('Security')}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="shield" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Keamanan & Privasi Akun</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>Proteksi PIN & autentikasi biometric</Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        {/* Transparansi & Akuntabilitas Partai */}
-        <Pressable
-          onPress={() => navigation.navigate('TransparencyHub')}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="shield" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.actionTitle, { color: colors.text }]}>Transparansi & Akuntabilitas</Text>
-              <View style={{ backgroundColor: '#ECFDF5', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 8.5, color: '#059669' }}>WTP</Text>
-              </View>
-            </View>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
-              Struktur, Laporan Keuangan, Banpar & AD/ART
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        {/* Pusat Bantuan */}
-        <Pressable
-          onPress={() => navigation.navigate('HelpCenter')}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
-            <Feather name="help-circle" size={15} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Pusat Bantuan & Panduan</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>FAQ, kontak call center & regulasi saksi</Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
       </Card>
 
       {/* 5. TOMBOL LOGOUT & FOOTER APLIKASI */}
@@ -1253,9 +1231,12 @@ export default function ProfileScreen({ navigation }: any) {
                           />
                         </View>
 
-                        <Text style={[styles.roleCardScope, { color: colors.textMuted }]} numberOfLines={1}>
-                          📍 {assignment.scope.name}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Feather name="map-pin" size={11} color={colors.textMuted} />
+                          <Text style={[styles.roleCardScope, { color: colors.textMuted }]} numberOfLines={1}>
+                            {assignment.scope.name}
+                          </Text>
+                        </View>
                       </View>
 
                       {isCurrent ? (
@@ -1828,6 +1809,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: spacing.xs,
   },
+  viewTimelineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.xs,
+  },
+  viewTimelineBtnText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+  },
 
   // Boomer Directory Card Styles
   directoryCard: {
@@ -1887,6 +1883,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   directoryFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 11,
     paddingVertical: 6,
     borderRadius: radius.pill,

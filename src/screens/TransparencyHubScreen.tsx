@@ -130,7 +130,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
             <div class="header">
               <h1 class="title">PARTAI AMANAT NASIONAL (PAN)</h1>
               <p class="subtitle">Publikasi Resmi Transparansi Keuangan Tahunan • Tahun Anggaran ${fin.fiscalYear}</p>
-              <div class="badge-wtp">✓ Opini Audit: ${fin.auditOpinionLabel}</div>
+              <div class="badge-wtp">Opini Audit: ${fin.auditOpinionLabel}</div>
             </div>
 
             <p style="font-size: 12px; color: #475569;">

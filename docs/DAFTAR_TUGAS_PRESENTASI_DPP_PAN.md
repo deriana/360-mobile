@@ -468,6 +468,11 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
   - Pastikan tipografi Poppins konsisten di seluruh layar.
   - Pastikan kontras warna PAN (#0066B3, #002B52, #E60012) tajam dan profesional baik di Light Mode maupun Dark Mode.
   - Uji seluruh link tombol (zero broken links dan zero redundant access).
+- [x] **TASK-7.4: Eliminasi Duplikasi Menu Profil, Filter Berbasis Role, & Pembersihan Total Emoji (Zero Emoji Policy - SELESAI):**
+  - [x] **Eliminasi Duplikasi Menu Profil:** Menghapus card "Layanan & Pengaturan" di Profil yang menduplikasi menu E-Mandat, Keamanan, Transparansi, dan Pusat Bantuan. Memindahkan akses riwayat aktivitas langsung ke card Rekam Jejak dan Quick Menu direktori.
+  - [x] **Pembersihan Redundansi Direktori:** Menghapus `kelola-status` (sub-alur `StatusPeranSaya`), memisahkan `simpan-kta` (hanya `MEMBER`) dan `register-member` (hanya `VOLUNTEER`), serta memisahkan `witness-academy` (khusus `WITNESS`) dan `amanat-academy`.
+  - [x] **Filter Direktori Role-First:** Seluruh kategori tab (`Semua`, `Tugas`, `Edukasi`, `Organisasi`) dan kolom pencarian menu membatasi pencarian hanya pada item yang sah untuk role aktif pengguna (`roleAccessibleItems`), mencegah kebocoran fitur antar-role.
+  - [x] **Pembersihan Total Emoji (Zero Emoji Policy):** Seluruh emoji di aplikasi (seperti `⭐`, `📋`, `🎓`, `🏛️`, `📍`, `🚩`, `🇮🇩`, `🏆`, `🔒`, `✓`, `▲`, `▼`) 100% diganti dengan vector icon resmi (`Feather` & SVG icon) di seluruh screen: `ProfileScreen`, `MapSebaranRelawanAnggotaScreen`, `MoreMenuScreen`, `QuickCountGameScreen`, `CheckInScreen`, `DocumentationScreen`, `SimpanNewsScreen`, `WitnessQuizModal`, `AssignmentLetterScreen`, `PartyRosterScreen`, `TasksScreen`, `TransparencyHubScreen`, `VerifyLetterScreen`.
 
 ---
 

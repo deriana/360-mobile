@@ -139,7 +139,7 @@ function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | n
       dashArray: '4, 6'
     }).addTo(map);
   } catch(e) {
-    document.body.innerHTML = '<div class="radar-fallback"><div class="radar-ring">📍</div><b style="font-size:12px;color:#FFFFFF">Radar GPS Geofence Aktif</b><span style="font-size:10px;margin-top:2px;color:#94A3B8">Koordinat: ${lat.toFixed(4)}, ${lng.toFixed(4)} • Radius ${GEOFENCE_RADIUS_M}m</span></div>';
+    document.body.innerHTML = '<div class="radar-fallback"><div class="radar-ring"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div><b style="font-size:12px;color:#FFFFFF">Radar GPS Geofence Aktif</b><span style="font-size:10px;margin-top:2px;color:#94A3B8">Koordinat: ${lat.toFixed(4)}, ${lng.toFixed(4)} • Radius ${GEOFENCE_RADIUS_M}m</span></div>';
   }
 </script>
 </body></html>`;

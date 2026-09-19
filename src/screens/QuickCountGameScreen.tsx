@@ -42,7 +42,7 @@ function Billboard({ votes, colors }: { votes: Record<string, number>; colors: a
 
   return (
     <Card style={{ gap: spacing.sm }}>
-      <SectionTitle>🏆 Papan Peringkat Suara TPS Anda</SectionTitle>
+      <SectionTitle>Papan Peringkat Suara TPS Anda</SectionTitle>
       {ranked.map((key, idx) => {
         const { number, name } = paslonParts(key);
         const count = votes[key] ?? 0;

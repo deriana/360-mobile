@@ -522,9 +522,12 @@ export default function MoreMenuScreen({ navigation }: any) {
               </Text>
             </View>
 
-            <Text style={[styles.profileHeaderScope, { color: colors.textMuted }]} numberOfLines={1}>
-              📍 {userProfile.scopeLocation}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Feather name="map-pin" size={11} color={colors.textMuted} />
+              <Text style={[styles.profileHeaderScope, { color: colors.textMuted }]} numberOfLines={1}>
+                {userProfile.scopeLocation}
+              </Text>
+            </View>
           </View>
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </View>

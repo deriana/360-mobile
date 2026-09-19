@@ -162,7 +162,7 @@ function buildIndonesiaGisMapHtml(
       // Render Posko Markers
       poskos.forEach(function(p) {
         var isMain = p.isMainCommandCenter;
-        var iconHtml = '<div class="posko-pin ' + (isMain ? '' : 'sub') + '">🚩</div>';
+        var iconHtml = '<div class="posko-pin ' + (isMain ? '' : 'sub') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15" stroke="#FFFFFF" stroke-width="2"></line></svg></div>';
         var markerIcon = L.divIcon({
           className: '',
           html: iconHtml,
@@ -186,7 +186,7 @@ function buildIndonesiaGisMapHtml(
         var isProv = c.level === 'PROVINSI';
         var label = isProv ? c.name : c.name.replace('Kecamatan ', '');
         var stat = c.totalCadres > 1000 ? (c.totalCadres / 1000).toFixed(1) + 'k' : c.totalCadres;
-        var badgeHtml = '<div class="cluster-badge ' + (isProv ? 'prov' : '') + '">📍 ' + label + ' (' + stat + ')</div>';
+        var badgeHtml = '<div class="cluster-badge ' + (isProv ? 'prov' : '') + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:2px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>' + label + ' (' + stat + ')</div>';
 
         var clusterIcon = L.divIcon({
           className: '',
@@ -503,8 +503,9 @@ export default function MapSebaranRelawanAnggotaScreen() {
                   { backgroundColor: activeMapScope === 'NATIONAL' ? colors.primary : colors.surface, borderColor: colors.border },
                 ]}
               >
+                <Feather name="globe" size={12} color={activeMapScope === 'NATIONAL' ? '#FFFFFF' : colors.text} />
                 <Text style={[styles.fullscreenControlText, { color: activeMapScope === 'NATIONAL' ? '#FFFFFF' : colors.text }]}>
-                  🇮🇩 Se-Indonesia
+                  Se-Indonesia
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -514,8 +515,9 @@ export default function MapSebaranRelawanAnggotaScreen() {
                   { backgroundColor: activeMapScope === 'LOCAL' ? colors.primary : colors.surface, borderColor: colors.border },
                 ]}
               >
+                <Feather name="map-pin" size={12} color={activeMapScope === 'LOCAL' ? '#FFFFFF' : colors.text} />
                 <Text style={[styles.fullscreenControlText, { color: activeMapScope === 'LOCAL' ? '#FFFFFF' : colors.text }]}>
-                  📍 Fokus Dapil Jabar I
+                  Fokus Dapil Jabar I
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1122,6 +1124,9 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   fullscreenControlBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.pill,
