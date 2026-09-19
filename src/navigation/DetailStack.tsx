@@ -54,7 +54,7 @@ import MapSebaranRelawanAnggotaScreen from '../screens/MapSebaranRelawanAnggotaS
 import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
 import KelolaStatusScreen from '../screens/KelolaStatusScreen';
 
-const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string }> = [
+const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string; headerShown?: boolean }> = [
   { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
   { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
   { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
@@ -99,9 +99,9 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
   { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy Hub' },
   { name: 'PandawaProgram', component: PandawaProgramScreen, title: 'Satgas Muda PANdawa' },
-  { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
-  { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
-  { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
+  { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
+  { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
+  { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
 ];
 
 /**
@@ -192,7 +192,15 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
           }}
         />
         {DETAIL_SCREENS.filter((s) => s.name !== homeName).map((s) => (
-          <Stack.Screen key={s.name} name={s.name} component={s.component} options={{ title: s.title }} />
+          <Stack.Screen
+            key={s.name}
+            name={s.name}
+            component={s.component}
+            options={{
+              title: s.title,
+              ...(s.headerShown !== undefined ? { headerShown: s.headerShown } : {}),
+            }}
+          />
         ))}
       </Stack.Navigator>
     );

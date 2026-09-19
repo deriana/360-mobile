@@ -878,13 +878,13 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. KABAR & BERITA TERBARU                                                 */}
+      {/* 4. BERITA TERBARU                                                 */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Feather name="book-open" size={16} color={colors.primary} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Berita Terbaru</Text>
           </View>
           <Pressable
             onPress={() =>
@@ -948,7 +948,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         <View style={styles.sectionHeaderBetween}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Feather name="calendar" size={15} color={colors.primary} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Agenda Kegiatan Terdekat</Text>
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text, marginTop: 8 }]}>Agenda Kegiatan Terdekat</Text>
           </View>
           <Pressable onPress={() => navigation.navigate('Activities')} hitSlop={8}>
             <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>

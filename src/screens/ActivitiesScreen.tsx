@@ -328,14 +328,13 @@ export default function ActivitiesScreen({ route, navigation }: any) {
 
       {mainTab === 'agenda' ? (
         <ScrollView contentContainerStyle={styles.agendaScrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header Kalender & Agenda Ormas (Matching Screenshot) */}
           <View style={styles.topHeaderSection}>
             <Text style={[styles.topHeaderTitle, { color: colors.text }]}>
-              Kalender & Agenda Ormas
+              Kalender Agenda Kegiatan
             </Text>
-            <Text style={[styles.topHeaderSubtitle, { color: colors.textMuted }]}>
+            {/* <Text style={[styles.topHeaderSubtitle, { color: colors.textMuted }]}>
               Jadwal musyawarah, bakti sosial, dan pelatihan resmi
-            </Text>
+            </Text> */}
           </View>
 
           {/* Card Kalender Bulan Penuh (Matching Screenshot) */}
@@ -1768,8 +1767,9 @@ const styles = StyleSheet.create({
   },
   topHeaderTitle: {
     fontFamily: fonts.bold,
-    fontSize: 20,
+    fontSize: 18,
     lineHeight: 26,
+    marginTop: 8,
   },
   topHeaderSubtitle: {
     fontFamily: fonts.regular,
