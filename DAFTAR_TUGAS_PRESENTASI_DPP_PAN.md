@@ -2,7 +2,7 @@
 ## SAKSI 360 / simPAN Mobile — Ekosistem Digital Kader, Relawan, Caleg & Pengawal Suara PAN
 
 **Dokumen:** Strategic Task List & Implementation Blueprint for DPP Presentation  
-**Versi:** 1.4 (DPP PAN Ready — Single Account State-Aware, Full Frontend Dynamic Engine, Zero Duplication, & 2-Programmer Parallel Architecture)  
+**Versi:** 1.6 (DPP PAN Ready — 2 Akun Komplementer, State Switcher Relawan Posko to Saksi TPS, & Zero Conflict)  
 **Status:** Comprehensive Analysis & Master Action Plan  
 **Target Pemangku Kepentingan:** Ketua Umum DPP PAN, Sekjen DPP PAN, Waketum / Kepala BSN PAN, Bapilu / KPPN, Pengelola simPAN, Amanat Academy & PANdawa  
 
@@ -82,26 +82,51 @@ USER (Akun Terpadu)
 
 ---
 
-## 3. Arsitektur Akun Tunggal Berbasis State-Aware (Single Unified Account with Full Frontend Dynamic State Engine)
+## 3. Arsitektur Akun: 2 Akun Komplementer (Kader Full Lifecycle & Relawan Non-KTA)
 
 > [!IMPORTANT]
-> **Arsitektur Front-End Only & Paradigma Akun Tunggal (Single Identity, Multi-State Awareness):**
-> 1. **Full Frontend (Zero Backend Integration):** Aplikasi saat ini sepenuhnya beroperasi di sisi frontend tanpa ketergantungan API/backend server. Seluruh logika akses, transisi status, validasi prasyarat, dan persistensi data dikelola secara lokal dan reaktif di dalam React Native (`AppContext` + In-Memory / Local Storage).
-> 2. **Satu Akun Kader Tunggal (Bukan Gonta-Ganti Akun):** Selaras dengan filosofi inti: *"1 User → banyak Role → setiap Role memiliki Scope → setiap Scope memiliki Permission"*. Pengguna tidak perlu logout-login atau memiliki akun ganda yang berbeda. Di hadapan DPP PAN, aplikasi didemokan menggunakan **Satu Akun Utama Kader PAN** (misalnya: **Ahmad Fauzan**, No. KTA: `PAN-3273-2024-00892`, Domisili: Kota Bandung, Jawa Barat).
-> 3. **Semua Elemen Frontend Bersifat State-Aware & Sangat Dinamis:** Ketika status atau mode operasional akun berubah, seluruh elemen UI (Header, Lencana Pangkat, Quick Menu 4-Kolom, Kartu Beranda, Banner Tugas, hingga Tab Navigasi) **bertransformasi secara reaktif dan otomatis seketika**, tanpa memerlukan refresh atau reload layar.
+> **Keputusan Arsitektur: 2 Akun Komplementer dengan Perpindahan Akun di `LoginScreen.tsx`:**
+> 1. **Dua Entitas Nyata Partai (Opsi 2 Resmi):** Di lapangan, PAN berinteraksi dengan dua kelompok utama: **Kader/Anggota Resmi Ber-KTA** dan **Relawan Simpatisan Non-KTA** (anak muda, pemilih independen, relawan posko). Menyediakan 2 akun ini membuktikan kepada DPP PAN bahwa aplikasi mampu melayani struktur internal partai sekaligus merangkul massa publik secara inklusif.
+> 2. **Perpindahan Akun Terpusat di Fitur "Login Cepat" (`src/screens/LoginScreen.tsx`):** Sesuai arahan arsitektur, pergantian antar kedua entitas akun ini dilakukan secara natural dan formal melalui fitur **Login Cepat (`QuickLoginPicker`) pada layar `LoginScreen.tsx`**. Presenter cukup logout untuk beralih antara perspektif Kader Resmi dan perspektif Relawan Simpatisan.
+> 3. **Peran Tombol "Ganti Mode" di `ProfileScreen.tsx`:** Di dalam sesi akun yang sedang aktif (khususnya Akun Kader Ahmad Fauzan), tombol *"Ganti Mode"* berfungsi sebagai **Operational Role Switcher & Career State Presets Simulator** (mengubah peran operasional lapangan tanpa berganti identitas orang).
 
-### Matriks State Presets (Simulasi Siklus Hidup & Karir Kader pada Akun Tunggal)
+---
 
-Untuk keperluan presentasi live di depan pimpinan DPP PAN, akun tunggal **Ahmad Fauzan** dilengkapi dengan fitur demo **"Simulasi Fase Karir & Siklus Hidup Kader" (State Presets)**. Presenter dapat menekan 1 tombol untuk memperlihatkan bagaimana aplikasi beradaptasi saat Ahmad Fauzan berada di berbagai fase perjalanan organisasinya:
+### Profil 2 Akun Komplementer Resmi:
 
-| Fase State | Fase Perjalanan Kader | Kombinasi 7 Dimensi State Aktif | Label Dinamis Header Mobile | Transformasi Elemen UI Frontend |
-| :--- | :--- | :--- | :--- | :--- |
-| **State 1** | **Anggota Pemula**<br>(Baru Bergabung / Onboarding) | • Membership: `ACTIVE`<br>• Kader: `NON_KADER`<br>• Posisi: `NONE`<br>• Electoral: `NONE`<br>• Volunteer: `NONE`<br>• Program: `NONE`<br>• Operational: `MEMBER` | `Ahmad Fauzan`<br>**Anggota PAN Aktif** | • e-KTA simPAN Digital aktif<br>• Quick Menu: e-KTA, Warta PAN, Agenda Partai, Daftar Relawan<br>• Kartu Beranda: Sambutan Kader Baru & Ajakan Mengikuti Perkaderan |
-| **State 2** | **Kader LKK + Relawan & Satgas**<br>(Aktif di Lapangan & Program) | • Membership: `ACTIVE`<br>• Kader: `KADER_AKTIF` (Lulus LKK)<br>• Posisi: `NONE`<br>• Electoral: `NONE`<br>• Volunteer: `ACTIVE`<br>• Program: Amanat Academy (Modul Diklat Saksi 80%), Satgas PANdawa (`ACTIVE`)<br>• Operational: `VOLUNTEER` | `Ahmad Fauzan`<br>**Kader Aktif • Satgas PANdawa & Relawan** | • Header menampilkan badge kelulusan LKK & lencana satgas PANdawa<br>• Quick Menu: Bursa Tugas Relawan, Laporkan Kegiatan, Amanat Academy, Presensi Aksi<br>• Kartu Beranda: Misi Relawan Hari Ini & Progress Bimtek Saksi (Tantangan Level-Unlock) |
-| **State 3** | **Saksi TPS Resmi BSN**<br>(Hari-H Pengawalan Suara) | • Membership: `ACTIVE`<br>• Kader: `KADER_AKTIF`<br>• Volunteer: `ACTIVE`<br>• Program: Saksi BSN (`CERTIFIED` & `MANDATED`)<br>• Operational: `OFFICIAL_WITNESS` (TPS 014 Kel. Merdeka) | `Ahmad Fauzan`<br>**Saksi Resmi TPS 014 • BSN PAN** | • Mode Saksi BSN aktif penuh (Level-Unlock terpenuhi)<br>• Quick Menu: Input C1 Plano, Presensi TPS GPS, Unggah Bukti, Lapor Insiden SOS<br>• Kartu Beranda: Status TPS 014, Jam Pembukaan TPS, dan Checklist Formulir C1 |
-| **State 4** | **Koordinator TPS DPC**<br>(Supervisi Lapangan 15 TPS) | • Membership: `ACTIVE`<br>• Kader: `KADER_AKTIF`<br>• Posisi: `KOORDINATOR` (Kecamatan Sumur Bandung)<br>• Scope: 15 TPS Dampingan<br>• Operational: `TPS_COORDINATOR` | `Ahmad Fauzan`<br>**Koordinator TPS • DPC Sumur Bandung** | • Quick Menu: Monitor TPS, Broadcast Tim Saksi, Rekap Suara Dapil, Peta GIS Sebaran<br>• Kartu Beranda: Matriks Progres 15 TPS (12 Hadir, 2 Input C1, 1 Insiden) |
-| **State 5** | **Pengurus DPD & Caleg 2029**<br>(Fungsionaris & Pemenangan) | • Membership: `ACTIVE`<br>• Kader: `KADER_AKTIF`<br>• Posisi: `PENGURUS` (Sekretaris DPD Kota Bandung)<br>• Electoral: `CALEG` (DPR-RI Jabar I, No. Urut 1)<br>• Operational: `MEMBER` & `CALEG_OPS` | `Ahmad Fauzan`<br>**Sekretaris DPD • Caleg DPR-RI 2029** | • Quick Menu: Peta Basis Suara Dapil, Audit Berkas KPPN, Konsolidasi Relawan, Warta simPAN<br>• Kartu Beranda: Dashboard Elektoral Pemenangan Dapil Jabar I & Struktur DPD |
-| **State 6** | **Uji Kelola Status & Transisi**<br>(Pengunduran Diri / Pause / Task Guard) | • Membership: `RESIGNATION_REQUESTED`<br>• Volunteer: `PAUSED`<br>• Program: Riwayat Terpreservasi (*Never Hard-Delete*)<br>• Operational: `MEMBER` | `Ahmad Fauzan`<br>**Status: Menunggu Review Pengunduran Diri** | • Banner Peringatan Status: Pengajuan Pengunduran Diri dalam Review DPD<br>• Kartu Relawan berstatus JEDA SEMENTARA (*PAUSED*) dengan tombol aktifkan kembali<br>• Demonstrasi dialog *Active Task Guard* dan proteksi seluruh sertifikat/histori lampau |
+| Parameter | 👤 Akun 1: Kader & Pengurus (Ahmad Fauzan) | 🤝 Akun 2: Relawan Murni Simpatisan (Siti Rahmawati) |
+| :--- | :--- | :--- |
+| **Email Akun** | `ahmad.fauzan@pan.go.id` | `siti.rahmawati@relawanpan.id` |
+| **Status Keanggotaan** | `Membership: ACTIVE` (e-KTA simPAN Terverifikasi) | `Membership: NONE / UNREGISTERED` (Bukan Anggota) |
+| **Status Relawan** | `Volunteer: ACTIVE` (Merangkap tugas lapangan) | `Volunteer: ACTIVE` (Relawan Murni Posko) |
+| **Identitas Digital** | **e-KTA simPAN Resmi** (`PAN-3273-2024-00892`) | **Digital ID Relawan Simpatisan** (`REL-3273-2024-0042`) |
+| **Fitur "Ganti Mode" Profil** | Memiliki **6 State Presets Karir Fungsionaris** (Anggota Baru $\rightarrow$ Saksi TPS $\rightarrow$ Koordinator $\rightarrow$ Caleg 2029) di modal *Ganti Mode* Profil | Memiliki **2 State Transisi Relawan**: (1) **Relawan Posko Lapangan** vs (2) **Relawan Mandat Saksi TPS** (dengan Level-Unlock 4 syarat BSN) |
+| **Fitur di Kelola Status** | Lengkap: Pengajuan Pengunduran Diri Anggota + Jeda/Berhenti Relawan | Hanya opsi: Berhenti / Jeda Sementara Relawan (`PAUSED`). Tidak ada menu resign anggota |
+| **Nilai Jual ke DPP PAN** | Membuktikan tata kelola pengkaderan terstruktur, pengamanan suara BSN, dan pemenangan caleg internal. | Membuktikan daya tarik aplikasi dalam merekrut generasi muda & simpatisan publik tanpa paksaan KTA di awal. |
+
+### A. Matriks State Presets pada Akun 1 (Ahmad Fauzan — Kader Resmi):
+
+Untuk mendemonstrasikan kelincahan 1 akun kader melintasi berbagai jenjang karir organisasi, akun **Ahmad Fauzan** dilengkapi dengan 6 State Presets yang dapat di-switch melalui tombol *"Ganti Mode"* di `ProfileScreen.tsx`:
+
+1. **State 1 (Anggota Pemula):** KTA baru terbit, orientasi anggota baru di Beranda.
+2. **State 2 (Kader LKK + Relawan Lapangan):** Lulus LKK di Amanat Academy, bertugas di posko & Satgas PANdawa, Diklat Saksi progress 80%.
+3. **State 3 (Saksi TPS 014 Resmi BSN):** Telah mengantongi SK Mandat BSN, mode saksi bilik suara aktif penuh (Form C1 Plano & Presensi GPS).
+4. **State 4 (Koordinator TPS DPC):** Diberi mandat supervisi 15 TPS di Kecamatan Sumur Bandung (monitoring saksi & broadcast tim).
+5. **State 5 (Fungsionaris DPD & Caleg DPR-RI 2029):** Menjabat Sekretaris DPD Kota Bandung & Caleg Terdaftar Dapil Jabar I (menu peta basis suara & audit KPPN aktif).
+6. **State 6 (Uji Kelola Status):** Simulasi pengajuan resign anggota (`RESIGNATION_REQUESTED`) dan jeda relawan (`PAUSED`) dengan dialog *Active Task Guard*.
+
+### B. Matriks State Transisi pada Akun 2 (Siti Rahmawati — Relawan Murni):
+
+Untuk memperagakan jalur naik kelas simpatisan masyarakat menjadi pengawal suara resmi partai, akun **Siti Rahmawati** memiliki 2 State Transisi pada tombol *"Ganti Mode"* di `ProfileScreen.tsx`:
+
+1. **State R-1 (Relawan Posko & Lapangan - Default):**
+   - **Peran Operasional:** `VOLUNTEER`
+   - **Tampilan Beranda:** Bursa Tugas Aksi Posko, Presensi Giat Sosial/Baksos, dan Banner Onboarding: *"Tertarik Menjadi Kader Resmi? Ajukan e-KTA simPAN"*.
+   - **Kondisi Saksi TPS:** Status **LOCKED (Terkunci)** dengan badge gembok emas: *"Kurang 1 Syarat: Selesaikan Modul Diklat Saksi BSN (Progress 80%)"*.
+2. **State R-2 (Relawan Mandat Saksi TPS 018 Braga - Unlocked):**
+   - **Peran Operasional:** `OFFICIAL_WITNESS`
+   - **Tampilan Beranda:** Berubah total menjadi **Mode Kawal Suara TPS 018 Kel. Braga** (Tombol Unggah Form C1 Plano, Presensi TPS GPS, Checklist Kotak Suara, dan Tombol SOS Insiden).
+   - **Digital ID:** Tetap mencantumkan identitas Siti Rahmawati sebagai Relawan Simpatisan, namun disematkan pita mandat resmi: *"Saksi Resmi Terakreditasi BSN — SK Mandat: BSN/DPD-BDG/2024/018"*.
 
 ---
 
@@ -148,10 +173,10 @@ flowchart LR
     - `statusName`: string, `startDate`: string, `endDate`?: string, `term`: string, `source`: string, `verifiedBy`: string, `verificationDate`: string, `documentRef`?: string.
   - Gabungkan ke dalam interface `CurrentUser` baru dengan mempertahankan backward compatibility jika diperlukan.
 
-- [ ] **TASK-1.2: Pemodelan Akun Tunggal Ahmad Fauzan & Career State Presets Engine (`src/data/accounts.ts` & `src/utils/userContext.ts`)**
-  - Definisikan 1 Master User Account tunggal (**Ahmad Fauzan**) dengan 7 layer identitas yang sepenuhnya fleksibel dan reaktif.
-  - Konfigurasikan 6 State Presets (State 1 s/d State 6) yang memetakan evolusi perjalanan karir dan status kader Ahmad Fauzan.
-  - Sediakan riwayat perkaderan LKK, SK kepengurusan DPD Kota Bandung, mandat BSN, dan arsip pencalegan DPR-RI Jabar I dalam lifecycle record akun tersebut.
+- [ ] **TASK-1.2: Pemodelan 2 Akun Komplementer & State Presets Engine (`src/data/accounts.ts` & `src/utils/userContext.ts`)**
+  - Definisikan **Akun 1 (Ahmad Fauzan - Kader & Anggota Resmi)**: `ahmad.fauzan@pan.go.id` dengan 7 layer identitas lengkap dan 6 State Presets perjalanan karir fungsionaris.
+  - Definisikan **Akun 2 (Siti Rahmawati - Relawan Murni Simpatisan)**: `siti.rahmawati@relawanpan.id` dengan `membershipStatus: 'none'`, `volunteerStatus: 'active'`, ID Relawan Digital, dan banner onboarding kaderisasi simPAN.
+  - Tambahkan konfigurasi akun ini ke dalam `ACCOUNTS` dan integrasikan dengan fitur Login Cepat di `LoginScreen.tsx`.
 
 - [ ] **TASK-1.3: Full Frontend Reactive State Engine di AppContext (`src/context/AppContext.tsx`)**
   - Bangun state engine lokal 100% reaktif tanpa backend, mengelola state akun tunggal, status 7 dimensi, dan operational role.
@@ -420,21 +445,22 @@ Quick Menu di `DashboardScreen.tsx` disusun dalam format **4-Kolom (1 Baris Esen
 ### EPIC 7: Skenario Gladi Resik & Presentation Rig DPP PAN
 *Tujuan: Memastikan saat presentasi di hadapan pimpinan DPP PAN, aplikasi berjalan 100% tanpa kendala teknis dan alur demonstrasi memukau.*
 
-- [ ] **TASK-7.1: Integrasi Mode Switcher & Career State Presets pada Fitur "Ganti Mode" Eksisting di `ProfileScreen.tsx`**
-  - Manfaatkan tombol chip eksisting `{isMultiRole && (<Pressable onPress={() => setRoleModalVisible(true)} style={styles.changeRoleChipBtn}><Feather name="refresh-cw" size={10} color={colors.primary} /><Text style={styles.changeRoleChipText}>Ganti Mode</Text></Pressable>)}` yang terletak tepat di samping `{user.name}` pada Hero Profile Card di `src/screens/ProfileScreen.tsx`.
-  - Tingkatkan modal `roleModalVisible` eksisting menjadi **Modal Interaktif Multi-Tab: Peran Operasional & Simulasi Karir**:
-    - **Tab 1: Ganti Mode Peran Operasional (Operational Role):** Menampilkan opsi peran operasional lapangan (Kader/Anggota, Relawan, Saksi TPS BSN dengan evaluasi Level-Unlock 4 syarat, Koordinator 15 TPS DPC, serta Caleg DPR-RI 2029).
-    - **Tab 2: Simulasi Fase Karir & Siklus Hidup Kader (State Presets 1–6 untuk Demo Panggung DPP PAN):** Memungkinkan presenter memilih langsung State 1 (Anggota Pemula), State 2 (Kader LKK + Relawan), State 3 (Saksi Resmi TPS 014), State 4 (Koordinator DPC), State 5 (Sekretaris DPD & Caleg 2029), atau State 6 (Uji Kelola Status: Resign / Pause / Task Guard).
-  - Ketika peran atau state preset dipilih:
-    - Mutasi state di `AppContext` terjadi seketika (100% client-side reactive store tanpa server backend).
-    - Modal menutup otomatis dengan notifikasi feedback banner halus (`setRoleSwitchNotice`).
-    - Seluruh elemen frontend di `ProfileScreen.tsx` (nama tetap Ahmad Fauzan, namun lencana peran, KTA status, nomor SK, dan statistik rekam jejak) serta di seluruh tab lainnya (Dashboard Beranda, Tugas, Kegiatan, Academy) langsung ter-update secara mulus (*Zero Reload*).
+- [ ] **TASK-7.1: Penyempurnaan Login Cepat (`LoginScreen.tsx`) & Mode Switcher (`ProfileScreen.tsx`)**
+  - **A. Pada `src/screens/LoginScreen.tsx` (Fitur Login Cepat):**
+    - Perbarui `QuickLoginPicker` agar menampilkan 2 kartu akun representatif utama:
+      1. 👤 **Ahmad Fauzan** — *Kader & Anggota Resmi simPAN (Full Lifecycle)*.
+      2. 🤝 **Siti Rahmawati** — *Relawan Simpatisan Non-KTA (Bursa Tugas & Posko)*.
+    - Satu sentuhan langsung login ke profil yang dipilih tanpa perlu mengetik email/password saat demo panggung.
+  - **B. Pada `src/screens/ProfileScreen.tsx` (Fitur Ganti Mode yang Adaptif):**
+    - Tombol chip eksisting `Ganti Mode` di samping nama user membuka modal yang menyesuaikan profil akun aktif:
+      - **Jika Login sebagai Ahmad Fauzan (Kader):** Menampilkan selector peran operasional fungsionaris & 6 State Presets Karir (Anggota Baru $\rightarrow$ Saksi TPS $\rightarrow$ Korlap $\rightarrow$ Caleg 2029).
+      - **Jika Login sebagai Siti Rahmawati (Relawan):** Menampilkan switcher transisi **State R-1 (Relawan Posko)** $\leftrightarrow$ **State R-2 (Relawan Mandat Saksi TPS 018)** dengan visual meteran Level-Unlock 4 syarat BSN & tombol simulasi kelulusan diklat.
 - [ ] **TASK-7.2: Checklist Skenario Demo Live di Depan DPP PAN (Akun Tunggal State-Aware):**
-  - [ ] **Scene 1: Akun Tunggal Ahmad Fauzan dalam State 5 (Sekretaris DPD & Caleg DPR-RI 2029)**. Sorot header dinamis multi-identitas, Quick Menu khusus fungsionaris/caleg (Peta Basis Dapil & Audit KPPN), dan ketiadaan menu duplikat.
+  - [ ] **Scene 1: Login Cepat Akun Kader Resmi (Ahmad Fauzan)**. Masuk dari Login Cepat `LoginScreen.tsx`, tunjukkan profil kader ber-eKTA resmi, State 5 (Sekretaris DPD & Caleg DPR-RI 2029), Quick Menu khusus caleg (Peta Basis Dapil & Audit KPPN), dan ketiadaan menu duplikat.
   - [ ] **Scene 2: Eksplorasi Status & Peran Saya**. Buka menu dari Profil, paparkan visualisasi 7 dimensi identitas kader yang transparan kepada pimpinan DPP PAN.
   - [ ] **Scene 3: Pengujian Modul Kelola Status (State 6)**. Buka **[ Kelola Status Saya ]**, simulasikan pengajuan pengunduran diri anggota (status bergeser ke `RESIGNATION_REQUESTED`), dan simulasi jeda relawan (`PAUSED`) yang memicu peringatan *Active Task Guard*. Tunjukkan bahwa akun dan histori tidak pernah di-*hard delete*.
   - [ ] **Scene 4: Peta Sebaran Relawan & Anggota Resmi (GIS View)**. Buka dari Quick Menu Beranda, perlihatkan agregasi kekuatan kader di Dapil Jabar I & Kota Bandung.
-  - [ ] **Scene 5: Transisi ke State 2 (Kader LKK + Relawan Lapangan)**. Lewat preset switcher, ubah state akun Ahmad Fauzan ke State 2. Tunjukkan selector mode peran di mana Saksi TPS terkunci (karena Bimtek baru 80%).
+  - [ ] **Scene 5: Beralih ke Akun Relawan Murni (Siti Rahmawati)**. Lakukan logout $\rightarrow$ di `LoginScreen.tsx`, ketuk kartu **Siti Rahmawati (Relawan Simpatisan)**. Perlihatkan tampilan relawan murni: Digital ID Relawan (non-KTA), bursa tugas aksi sosial, ajakan daftar anggota simPAN, dan tantangan gamified unlock Saksi BSN.
   - [ ] **Scene 6: Pembelajaran & Level Unlock Real-Time**. Buka tab **ACADEMY**, klik selesaikan modul saksi $\rightarrow$ kembali ke Beranda, peran Saksi TPS otomatis ter-unlock! Alihkan ke Mode Saksi TPS (State 3), dan perlihatkan Quick Menu berubah menjadi menu Hari-H (C1 Plano, Presensi TPS GPS, SOS Insiden).
   - [ ] **Scene 7: Program Satgas PANdawa**. Tunjukkan modul PANdawa sebagai bukti kesiapsiagaan kader muda partai.
   - [ ] **Scene 8: Keandalan Offline Mode**. Matikan koneksi, simulasikan input form $\rightarrow$ tersimpan di antrean offline lokal $\rightarrow$ koneksi nyala $\rightarrow$ sinkronisasi otomatis.
