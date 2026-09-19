@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   Dimensions,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -25,6 +28,195 @@ type GisFilterType = 'ALL' | 'MEMBERS' | 'VOLUNTEERS' | 'WITNESSES';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+function buildIndonesiaGisMapHtml(
+  isFullscreen: boolean,
+  centerLat: number,
+  centerLng: number,
+  zoom: number,
+  clusters: RegionalCluster[],
+  poskos: PoskoLocation[],
+  filterType: GisFilterType,
+  isDark: boolean
+) {
+  const filteredClusters = clusters.filter((c) => {
+    if (filterType === 'MEMBERS') return c.totalCadres > 0;
+    if (filterType === 'VOLUNTEERS') return c.totalVolunteers > 0;
+    if (filterType === 'WITNESSES') return c.witnessCount > 0;
+    return true;
+  });
+
+  const clustersJson = JSON.stringify(filteredClusters);
+  const poskosJson = JSON.stringify(poskos);
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Peta Sebaran GIS PAN</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { width: 100%; height: 100%; background: ${isDark ? '#091322' : '#F1F5F9'}; }
+    .leaflet-control-attribution { display: none !important; }
+    
+    .posko-pin {
+      background: #E60012;
+      width: 28px;
+      height: 28px;
+      border-radius: 14px;
+      border: 2px solid #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      font-size: 13px;
+      cursor: pointer;
+      animation: pulse 2.5s infinite;
+    }
+    .posko-pin.sub {
+      background: #D97706;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(230,0,18,0.6); }
+      70% { box-shadow: 0 0 0 10px rgba(230,0,18,0); }
+      100% { box-shadow: 0 0 0 0 rgba(230,0,18,0); }
+    }
+
+    .cluster-badge {
+      background: #0066B3;
+      color: #FFFFFF;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 2px solid #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 10.5px;
+      font-weight: bold;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    .cluster-badge.prov {
+      background: #004280;
+      font-size: 11px;
+      padding: 4px 9px;
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: ${isDark ? '#0F172A' : '#FFFFFF'};
+      color: ${isDark ? '#F8FAFC' : '#1E293B'};
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 4px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .leaflet-popup-tip {
+      background: ${isDark ? '#0F172A' : '#FFFFFF'};
+    }
+    .popup-card {
+      padding: 6px 4px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .popup-title {
+      font-weight: bold;
+      font-size: 13px;
+      color: #0066B3;
+      margin-bottom: 3px;
+    }
+    .popup-stat {
+      color: #10B981;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    try {
+      // Batasan Ketat Wilayah NKRI (Se-Indonesia)
+      var southWest = L.latLng(-11.5, 94.0);
+      var northEast = L.latLng(6.5, 141.5);
+      var indonesiaBounds = L.latLngBounds(southWest, northEast);
+
+      var isFull = ${isFullscreen ? 'true' : 'false'};
+      var map = L.map('map', {
+        center: isFull ? [-2.5489, 118.0149] : [${centerLat}, ${centerLng}],
+        zoom: isFull ? 5 : ${zoom},
+        minZoom: isFull ? 4.5 : 8,
+        maxZoom: 18,
+        maxBounds: indonesiaBounds,
+        maxBoundsViscosity: 1.0, // Kunci peta agar tidak bisa keluar dari wilayah Indonesia!
+        zoomControl: isFull,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      var clusters = ${clustersJson};
+      var poskos = ${poskosJson};
+
+      // Render Posko Markers
+      poskos.forEach(function(p) {
+        var isMain = p.isMainCommandCenter;
+        var iconHtml = '<div class="posko-pin ' + (isMain ? '' : 'sub') + '">🚩</div>';
+        var markerIcon = L.divIcon({
+          className: '',
+          html: iconHtml,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        var m = L.marker([p.lat, p.lng], { icon: markerIcon }).addTo(map);
+        var popupContent = '<div class="popup-card">' +
+          '<div class="popup-title">' + p.name + '</div>' +
+          '<div><b>' + p.categoryLabel + '</b></div>' +
+          '<div>Alamat: ' + p.address + '</div>' +
+          '<div>PIC: <b>' + p.picName + '</b></div>' +
+          '<div class="popup-stat">Relawan Siaga: ' + p.activeVolunteers + ' orang</div>' +
+          '</div>';
+        m.bindPopup(popupContent);
+      });
+
+      // Render Cluster Markers
+      clusters.forEach(function(c) {
+        var isProv = c.level === 'PROVINSI';
+        var label = isProv ? c.name : c.name.replace('Kecamatan ', '');
+        var stat = c.totalCadres > 1000 ? (c.totalCadres / 1000).toFixed(1) + 'k' : c.totalCadres;
+        var badgeHtml = '<div class="cluster-badge ' + (isProv ? 'prov' : '') + '">📍 ' + label + ' (' + stat + ')</div>';
+
+        var clusterIcon = L.divIcon({
+          className: '',
+          html: badgeHtml,
+          iconAnchor: [35, 14]
+        });
+
+        var cm = L.marker([c.lat, c.lng], { icon: clusterIcon }).addTo(map);
+        var clusterPopup = '<div class="popup-card">' +
+          '<div class="popup-title">' + c.name + '</div>' +
+          '<div>Total Kader: <b>' + c.totalCadres.toLocaleString('id-ID') + '</b></div>' +
+          '<div>Total Relawan: <b>' + c.totalVolunteers.toLocaleString('id-ID') + '</b></div>' +
+          '<div class="popup-stat">Cakupan Saksi: ' + c.witnessCount.toLocaleString('id-ID') + ' (' + c.tpsCoveragePct + '%)</div>' +
+          '<div>Target Kursi: <b>' + c.targetSeats + ' Kursi</b></div>' +
+          '</div>';
+        cm.bindPopup(clusterPopup);
+      });
+
+      if (isFull) {
+        map.fitBounds(indonesiaBounds, { padding: [15, 15] });
+      }
+
+    } catch(err) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#0066B3;font-family:sans-serif;padding:20px;text-align:center;"><b>Peta Interaktif GIS Siap Digunakan</b></div>';
+    }
+  </script>
+</body>
+</html>`;
+}
+
 export default function MapSebaranRelawanAnggotaScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
@@ -32,6 +224,8 @@ export default function MapSebaranRelawanAnggotaScreen() {
   const [filterType, setFilterType] = useState<GisFilterType>('ALL');
   const [selectedCluster, setSelectedCluster] = useState<RegionalCluster>(GIS_REGIONAL_CLUSTERS[3]); // Default: Coblong
   const [selectedPosko, setSelectedPosko] = useState<PoskoLocation | null>(null);
+  const [isFullscreenMap, setIsFullscreenMap] = useState(false);
+  const [activeMapScope, setActiveMapScope] = useState<'LOCAL' | 'NATIONAL'>('LOCAL');
   const [dialogConfig, setDialogConfig] = useState<{
     visible: boolean;
     title: string;
@@ -151,121 +345,52 @@ export default function MapSebaranRelawanAnggotaScreen() {
         </View>
       </View>
 
-      {/* 4. Interactive GIS Map Canvas Simulation */}
+      {/* 4. Interactive GIS Map Canvas (Real Leaflet OpenStreetMap) */}
       <Card style={{ padding: 0, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={[styles.mapContainer, { backgroundColor: isDark ? '#091322' : '#E2E8F0' }]}>
-          {/* Grid lines background simulation */}
-          <View style={styles.mapGridPattern}>
-            {[...Array(6)].map((_, i) => (
-              <View key={`grid-h-${i}`} style={[styles.gridLineH, { top: i * 36 }]} />
-            ))}
-            {[...Array(8)].map((_, i) => (
-              <View key={`grid-v-${i}`} style={[styles.gridLineV, { left: i * 44 }]} />
-            ))}
+        <View style={[styles.mapContainer, { backgroundColor: isDark ? '#091322' : '#E2E8F0', height: 260 }]}>
+          <WebView
+            key={`embedded-map-${filterType}-${selectedCluster.id}`}
+            source={{
+              html: buildIndonesiaGisMapHtml(
+                false,
+                selectedCluster.lat,
+                selectedCluster.lng,
+                12,
+                GIS_REGIONAL_CLUSTERS,
+                GIS_POSKO_LOCATIONS,
+                filterType,
+                isDark
+              ),
+            }}
+            style={{ width: '100%', height: '100%' }}
+            originWhitelist={['*']}
+          />
+
+          {/* Floating Area Tag */}
+          <View
+            style={[
+              styles.mapScopeBadge,
+              {
+                backgroundColor: isDark ? 'rgba(0, 43, 82, 0.92)' : 'rgba(255, 255, 255, 0.95)',
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Feather name="map-pin" size={11} color={colors.primary} />
+            <Text style={[styles.mapScopeBadgeText, { color: colors.text }]}>
+              Dapil Jabar I • {selectedCluster.name}
+            </Text>
           </View>
 
-          {/* Regional Territory Shape Outline (Simulated SVG/Vector Map) */}
-          <View style={styles.territoryOutline}>
-            <View style={[styles.regionPolygon, { borderColor: isDark ? 'rgba(0,102,179,0.5)' : 'rgba(0,102,179,0.3)', backgroundColor: isDark ? 'rgba(0,102,179,0.1)' : 'rgba(0,102,179,0.06)' }]}>
-              <Text style={styles.regionPolygonLabel}>DAPIL JAWA BARAT I • KOTA BANDUNG</Text>
-            </View>
-          </View>
-
-          {/* Interactive Cluster Nodes */}
-          {GIS_REGIONAL_CLUSTERS.slice(3, 7).map((cluster, index) => {
-            const isSelected = selectedCluster.id === cluster.id;
-            const positions = [
-              { top: 40, left: 60 },
-              { top: 65, left: 190 },
-              { top: 120, left: 110 },
-              { top: 140, left: 230 },
-            ];
-            const pos = positions[index] || { top: 80, left: 100 };
-
-            return (
-              <TouchableOpacity
-                key={cluster.id}
-                style={[
-                  styles.clusterPin,
-                  {
-                    top: pos.top,
-                    left: pos.left,
-                    backgroundColor: isSelected ? colors.primary : colors.surface,
-                    borderColor: isSelected ? '#FFFFFF' : colors.primary,
-                    transform: [{ scale: isSelected ? 1.15 : 1.0 }],
-                  },
-                ]}
-                onPress={() => setSelectedCluster(cluster)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.pinHeader}>
-                  <Feather
-                    name={filterType === 'WITNESSES' ? 'check-circle' : filterType === 'VOLUNTEERS' ? 'heart' : 'users'}
-                    size={10}
-                    color={isSelected ? '#FFFFFF' : colors.primary}
-                  />
-                  <Text
-                    style={[
-                      styles.pinCountText,
-                      { color: isSelected ? '#FFFFFF' : colors.primary },
-                    ]}
-                  >
-                    {cluster.totalCadres > 1000 ? `${(cluster.totalCadres / 1000).toFixed(1)}k` : cluster.totalCadres}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.pinNameText,
-                    { color: isSelected ? '#FFFFFF' : colors.text },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {cluster.name.replace('Kecamatan ', '')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Posko Pins */}
-          {GIS_POSKO_LOCATIONS.map((posko, idx) => {
-            const coords = [
-              { top: 130, left: 200 },
-              { top: 35, left: 130 },
-              { top: 55, left: 40 },
-              { top: 105, left: 80 },
-            ];
-            const c = coords[idx] || { top: 90, left: 90 };
-            return (
-              <TouchableOpacity
-                key={posko.id}
-                style={[styles.poskoPin, { top: c.top, left: c.left }]}
-                onPress={() => handleSelectPosko(posko)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.poskoBadge, { backgroundColor: posko.isMainCommandCenter ? '#E60012' : '#F59E0B' }]}>
-                  <Feather name="flag" size={9} color="#FFFFFF" />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Map Controls Overlay */}
-          <View style={styles.mapControlsOverlay}>
-            <View style={[styles.legendBox, { backgroundColor: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.9)' }]}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Basis Kader</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#E60012' }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Posko Komando</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>95%+ Saksi TPS</Text>
-              </View>
-            </View>
-          </View>
+          {/* Floating Fullscreen Trigger Button */}
+          <TouchableOpacity
+            onPress={() => setIsFullscreenMap(true)}
+            style={[styles.openFullscreenBtn, { backgroundColor: colors.primary }]}
+            activeOpacity={0.85}
+          >
+            <Feather name="maximize-2" size={13} color="#FFFFFF" />
+            <Text style={styles.openFullscreenBtnText}>Buka Layar Penuh (Batas Se-Indonesia)</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Info Strip Selected Cluster */}
@@ -289,6 +414,140 @@ export default function MapSebaranRelawanAnggotaScreen() {
           </View>
         </View>
       </Card>
+
+      {/* FULLSCREEN MAP MODAL: Batas Terkunci Se-Indonesia (NKRI Bounds) */}
+      <Modal
+        visible={isFullscreenMap}
+        animationType="slide"
+        onRequestClose={() => setIsFullscreenMap(false)}
+      >
+        <View style={[styles.fullscreenContainer, { backgroundColor: isDark ? '#091322' : '#F1F5F9' }]}>
+          {/* Fullscreen Header */}
+          <View style={[styles.fullscreenHeader, { backgroundColor: isDark ? '#002B52' : '#003366' }]}>
+            <TouchableOpacity
+              onPress={() => setIsFullscreenMap(false)}
+              style={styles.fullscreenBackBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="arrow-left" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fullscreenHeaderTitle}>Peta Sebaran Nasional simPAN</Text>
+              <Text style={styles.fullscreenHeaderSub}>
+                Batas navigasi dikunci wilayah NKRI • Se-Indonesia
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsFullscreenMap(false)}
+              style={styles.fullscreenCloseChip}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.fullscreenCloseChipText}>Tutup</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Quick Filter Bar inside Fullscreen */}
+          <View style={[styles.fullscreenFilterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, paddingVertical: 8 }}>
+              {[
+                { key: 'ALL' as const, label: 'Semua Layer' },
+                { key: 'MEMBERS' as const, label: 'Kader Ber-KTA' },
+                { key: 'VOLUNTEERS' as const, label: 'Relawan Posko' },
+                { key: 'WITNESSES' as const, label: 'Saksi TPS BSN' },
+              ].map((f) => (
+                <TouchableOpacity
+                  key={f.key}
+                  onPress={() => setFilterType(f.key)}
+                  style={[
+                    styles.fullscreenFilterPill,
+                    {
+                      backgroundColor: filterType === f.key ? colors.primary : isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                      borderColor: filterType === f.key ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.fullscreenFilterPillText, { color: filterType === f.key ? '#FFFFFF' : colors.text }]}>
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Real Fullscreen Leaflet Map WebView */}
+          <View style={{ flex: 1, position: 'relative' }}>
+            <WebView
+              key={`fullscreen-map-${filterType}-${activeMapScope}`}
+              source={{
+                html: buildIndonesiaGisMapHtml(
+                  true,
+                  activeMapScope === 'LOCAL' ? selectedCluster.lat : -2.5489,
+                  activeMapScope === 'LOCAL' ? selectedCluster.lng : 118.0149,
+                  activeMapScope === 'LOCAL' ? 12 : 5,
+                  GIS_REGIONAL_CLUSTERS,
+                  GIS_POSKO_LOCATIONS,
+                  filterType,
+                  isDark
+                ),
+              }}
+              style={{ width: '100%', height: '100%' }}
+              originWhitelist={['*']}
+            />
+
+            {/* Floating Scope Controls in Fullscreen */}
+            <View style={styles.fullscreenMapControls}>
+              <TouchableOpacity
+                onPress={() => setActiveMapScope('NATIONAL')}
+                style={[
+                  styles.fullscreenControlBtn,
+                  { backgroundColor: activeMapScope === 'NATIONAL' ? colors.primary : colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.fullscreenControlText, { color: activeMapScope === 'NATIONAL' ? '#FFFFFF' : colors.text }]}>
+                  🇮🇩 Se-Indonesia
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveMapScope('LOCAL')}
+                style={[
+                  styles.fullscreenControlBtn,
+                  { backgroundColor: activeMapScope === 'LOCAL' ? colors.primary : colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.fullscreenControlText, { color: activeMapScope === 'LOCAL' ? '#FFFFFF' : colors.text }]}>
+                  📍 Fokus Dapil Jabar I
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Bottom Summary Bar in Fullscreen */}
+            <View style={[styles.fullscreenBottomBar, { backgroundColor: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)', borderColor: colors.border }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[styles.fullscreenStatNum, { color: colors.primary }]}>
+                    {GIS_NATIONAL_SUMMARY.totalNationalCadres.toLocaleString('id-ID')}
+                  </Text>
+                  <Text style={[styles.fullscreenStatLbl, { color: colors.textMuted }]}>Kader Nasional</Text>
+                </View>
+                <View style={[styles.fullscreenStatDivider, { backgroundColor: colors.border }]} />
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[styles.fullscreenStatNum, { color: '#10B981' }]}>
+                    {GIS_NATIONAL_SUMMARY.nationalCoveragePct}%
+                  </Text>
+                  <Text style={[styles.fullscreenStatLbl, { color: colors.textMuted }]}>Cakupan TPS</Text>
+                </View>
+                <View style={[styles.fullscreenStatDivider, { backgroundColor: colors.border }]} />
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[styles.fullscreenStatNum, { color: '#E60012' }]}>
+                    {GIS_POSKO_LOCATIONS.length} Posko
+                  </Text>
+                  <Text style={[styles.fullscreenStatLbl, { color: colors.textMuted }]}>Markas Komando</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* 5. Kartu Statistik Utama Wilayah */}
       <View style={styles.statsCardsRow}>
@@ -762,5 +1021,145 @@ const styles = StyleSheet.create({
   poskoCardAddress: {
     fontSize: 10.5,
     fontFamily: fonts.regular,
+  },
+  mapScopeBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    zIndex: 10,
+  },
+  mapScopeBadgeText: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+  },
+  openFullscreenBtn: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    zIndex: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  openFullscreenBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: fonts.bold,
+  },
+  fullscreenContainer: {
+    flex: 1,
+  },
+  fullscreenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 48 : 16,
+    paddingBottom: 14,
+    gap: spacing.sm,
+  },
+  fullscreenBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullscreenHeaderTitle: {
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
+  fullscreenHeaderSub: {
+    fontSize: 10,
+    fontFamily: fonts.regular,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 1,
+  },
+  fullscreenCloseChip: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  fullscreenCloseChipText: {
+    fontSize: 11.5,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
+  fullscreenFilterBar: {
+    borderBottomWidth: 1,
+  },
+  fullscreenFilterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  fullscreenFilterPillText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+  },
+  fullscreenMapControls: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    gap: 8,
+    zIndex: 20,
+  },
+  fullscreenControlBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  fullscreenControlText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+  },
+  fullscreenBottomBar: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    zIndex: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  fullscreenStatNum: {
+    fontSize: 13.5,
+    fontFamily: fonts.bold,
+  },
+  fullscreenStatLbl: {
+    fontSize: 9.5,
+    fontFamily: fonts.medium,
+  },
+  fullscreenStatDivider: {
+    width: 1,
+    height: 24,
   },
 });
