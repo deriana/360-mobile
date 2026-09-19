@@ -886,7 +886,17 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <Feather name="book-open" size={16} color={colors.primary} />
             <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Kabar & Berita Terbaru</Text>
           </View>
-          <Pressable onPress={() => navigation.navigate('SimpanNews')} hitSlop={8}>
+          <Pressable
+            onPress={() =>
+              navigation.navigate('SimpanNews', {
+                newsId: undefined,
+                selectedNewsId: undefined,
+                resetSelected: true,
+                timestamp: Date.now(),
+              })
+            }
+            hitSlop={8}
+          >
             <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
           </Pressable>
         </View>
@@ -897,7 +907,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <React.Fragment key={news.id}>
               {idx > 0 && <View style={[styles.newsDivider, { backgroundColor: colors.border }]} />}
               <Pressable
-                onPress={() => navigation.navigate('SimpanNews')}
+                onPress={() =>
+                  navigation.navigate('SimpanNews', {
+                    newsId: news.id,
+                    timestamp: Date.now(),
+                  })
+                }
                 style={({ pressed }) => [
                   styles.newsItemRow,
                   pressed && { opacity: 0.7 },

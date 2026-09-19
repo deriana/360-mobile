@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Modal,
@@ -21,17 +21,26 @@ import {
   PORTAL_NEWS_LIST,
   NewsCategory,
   PortalNewsItem,
+  getNewsById,
 } from '../data/portalNews';
 import { getWitnessAvatar } from '../data/images';
 
-export default function SimpanNewsScreen() {
+export default function SimpanNewsScreen({ route, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { colors, radius, spacing, isDark, iconStrokeWidth } = useTheme();
 
   // Screen State
-  const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<NewsCategory>(() => {
+    return route?.params?.category || 'ALL';
+  });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedNews, setSelectedNews] = useState<PortalNewsItem | null>(null);
+  const [selectedNews, setSelectedNews] = useState<PortalNewsItem | null>(() => {
+    const targetId = route?.params?.newsId || route?.params?.selectedNewsId;
+    if (targetId) {
+      return getNewsById(targetId) || null;
+    }
+    return route?.params?.newsItem || null;
+  });
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(['NEWS-001']);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
   const [likedIds, setLikedIds] = useState<string[]>([]);
@@ -39,6 +48,43 @@ export default function SimpanNewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  // Sync route params when navigating into screen
+  useEffect(() => {
+    const targetId = route?.params?.newsId || route?.params?.selectedNewsId;
+    if (targetId) {
+      const found = getNewsById(targetId);
+      if (found) {
+        setSelectedNews(found);
+      }
+    } else if (route?.params?.newsItem) {
+      setSelectedNews(route.params.newsItem);
+    } else if (route?.params?.resetSelected || route?.params?.showAll) {
+      setSelectedNews(null);
+    }
+
+    if (route?.params?.category) {
+      setSelectedCategory(route.params.category);
+    }
+  }, [
+    route?.params?.newsId,
+    route?.params?.selectedNewsId,
+    route?.params?.newsItem,
+    route?.params?.resetSelected,
+    route?.params?.showAll,
+    route?.params?.category,
+    route?.params?.timestamp,
+  ]);
+
+  const handleCloseReader = useCallback(() => {
+    setSelectedNews(null);
+    navigation?.setParams?.({
+      newsId: undefined,
+      selectedNewsId: undefined,
+      newsItem: undefined,
+      resetSelected: undefined,
+    });
+  }, [navigation]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -464,7 +510,7 @@ export default function SimpanNewsScreen() {
           visible={true}
           animationType="slide"
           presentationStyle="pageSheet"
-          onRequestClose={() => setSelectedNews(null)}
+          onRequestClose={handleCloseReader}
         >
           <View style={[styles.readerContainer, { backgroundColor: colors.background }]}>
             {/* Top Navigation Bar */}
@@ -479,7 +525,7 @@ export default function SimpanNewsScreen() {
               ]}
             >
               <Pressable
-                onPress={() => setSelectedNews(null)}
+                onPress={handleCloseReader}
                 style={({ pressed }) => [styles.readerNavButton, pressed && { opacity: 0.7 }]}
                 accessibilityLabel="Tutup Artikel"
               >

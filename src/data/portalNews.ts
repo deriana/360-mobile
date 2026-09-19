@@ -213,3 +213,12 @@ export const PORTAL_NEWS_LIST: PortalNewsItem[] = [
     isFeatured: false,
   },
 ];
+
+export function getNewsById(id: string): PortalNewsItem | undefined {
+  return PORTAL_NEWS_LIST.find((item) => item.id === id);
+}
+
+export function getNewsBySlug(slug: string): PortalNewsItem | undefined {
+  return PORTAL_NEWS_LIST.find((item) => item.slug === slug);
+}
+
