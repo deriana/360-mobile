@@ -47,6 +47,9 @@ import ActivitiesScreen from '../screens/ActivitiesScreen';
 import TasksScreen from '../screens/TasksScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import TransparencyHubScreen from '../screens/TransparencyHubScreen';
+import AmanatAcademyScreen from '../screens/AmanatAcademyScreen';
+import PandawaProgramScreen from '../screens/PandawaProgramScreen';
+import MapSebaranRelawanAnggotaScreen from '../screens/MapSebaranRelawanAnggotaScreen';
 import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
 import KelolaStatusScreen from '../screens/KelolaStatusScreen';
 
@@ -94,6 +97,11 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
   { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
   { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
+  { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy Hub' },
+  { name: 'PandawaProgram', component: PandawaProgramScreen, title: 'Satgas Muda PANdawa' },
+  { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
+  { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
+  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
 ];
 
 /**
