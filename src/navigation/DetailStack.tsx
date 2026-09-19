@@ -53,8 +53,6 @@ import MapSebaranRelawanAnggotaScreen from '../screens/MapSebaranRelawanAnggotaS
 import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
 import KelolaStatusScreen from '../screens/KelolaStatusScreen';
 
-const Stack = createNativeStackNavigator<any>();
-
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string }> = [
   { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
   { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
@@ -100,6 +98,10 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy Hub' },
   { name: 'PandawaProgram', component: PandawaProgramScreen, title: 'Satgas Muda PANdawa' },
   { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
+  { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
+  { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
+  { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
+  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
 ];
 
 /**
@@ -154,6 +156,7 @@ function HeaderRight({
 }
 
 export function buildDetailStack(homeName: string, HomeComponent: React.ComponentType<any>, homeTitle: string) {
+  const Stack = createNativeStackNavigator<any>();
   return function Navigator() {
     const { colors, isDark, toggleTheme } = useTheme();
     const { notifications } = useApp();

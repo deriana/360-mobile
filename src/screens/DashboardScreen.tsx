@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
@@ -31,7 +32,17 @@ interface BcaQuickActionItem {
   onPress: () => void;
 }
 
-export default function DashboardScreen({ navigation }: any) {
+export default function DashboardScreen({ navigation: propNav }: any) {
+  const hookNav = useNavigation<any>();
+  const navigation = propNav || hookNav;
+
+  const navigateToMap = () => {
+    if (navigation?.navigate) {
+      navigation.navigate('MapSebaranRelawanAnggota');
+    } else if (hookNav?.navigate) {
+      hookNav.navigate('MapSebaranRelawanAnggota');
+    }
+  };
   const {
     role,
     currentUser,
@@ -272,7 +283,7 @@ export default function DashboardScreen({ navigation }: any) {
           subtitle: 'GIS Relawan',
           badge: 'GIS',
           tone: 'primary',
-          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+          onPress: navigateToMap,
         },
         {
           id: 'aspirasi_warga',
@@ -304,7 +315,7 @@ export default function DashboardScreen({ navigation }: any) {
           subtitle: 'GIS Relawan',
           badge: 'GIS',
           tone: 'primary',
-          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+          onPress: navigateToMap,
         },
         {
           id: 'aspirasi_warga',
@@ -353,7 +364,7 @@ export default function DashboardScreen({ navigation }: any) {
           subtitle: 'GIS Wilayah',
           badge: 'GIS',
           tone: 'primary',
-          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+          onPress: navigateToMap,
         },
         {
           id: 'broadcast',
@@ -385,7 +396,7 @@ export default function DashboardScreen({ navigation }: any) {
           subtitle: 'GIS Suara Masuk',
           badge: 'Dapil',
           tone: 'primary',
-          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+          onPress: navigateToMap,
         },
         {
           id: 'daftar_bacaleg',
@@ -473,7 +484,7 @@ export default function DashboardScreen({ navigation }: any) {
         subtitle: 'GIS Kekuatan',
         badge: 'GIS',
         tone: 'primary',
-        onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+        onPress: navigateToMap,
       },
       {
         id: 'kantor_dpd',
