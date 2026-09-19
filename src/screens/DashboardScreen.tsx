@@ -22,7 +22,7 @@ import { maskNik } from '../utils/masking';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { MobileRole } from '../types';
 
-interface BcaQuickActionItem {
+interface QuickActionItem {
   id: string;
   icon: keyof typeof Feather.glyphMap;
   title: string;
@@ -264,8 +264,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     isWitnessRole || (isVolunteer && currentUser.dimensions?.programs?.programSaksi === 'MANDATED');
 
   // Quick Action items: 4 menu esensial 1 baris per role dengan menu "Broadcast" selalu di posisi paling kanan
-  const getQuickMenuItems = (): BcaQuickActionItem[] => {
-    const broadcastItem: BcaQuickActionItem = {
+  const getQuickMenuItems = (): QuickActionItem[] => {
+    const broadcastItem: QuickActionItem = {
       id: 'broadcast',
       icon: 'volume-2',
       title: 'Broadcast',
@@ -297,12 +297,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           onPress: () => navigation.navigate('AmanatAcademy'),
         },
         {
-          id: 'titik_posko',
-          icon: 'map-pin',
-          title: 'Posko Relawan',
-          subtitle: 'Posko Wilayah',
+          id: 'sebaran_relawan',
+          icon: 'map',
+          title: 'Sebaran Relawan',
+          subtitle: 'Sebaran Relawan',
           tone: 'info',
-          onPress: () => navigation.navigate('SimpanOffices'),
+          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
         },
         broadcastItem,
       ];
@@ -878,7 +878,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. KABAR & BERITA TERBARU (SESUAI SCREENSHOT — DI ATAS AGENDA)            */}
+      {/* 4. KABAR & BERITA TERBARU                                                 */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
@@ -891,41 +891,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           </Pressable>
         </View>
 
-        {/* Featured News Box with Thumbnail */}
-        {PORTAL_NEWS_LIST.length > 0 && (
-          <Pressable
-            onPress={() => navigation.navigate('SimpanNews')}
-            style={({ pressed }) => [
-              styles.featuredNewsBox,
-              {
-                backgroundColor: isDark ? 'rgba(0, 43, 82, 0.25)' : '#F0F7FF',
-                borderColor: isDark ? '#0A3D6B' : '#BAE6FD',
-              },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <View style={{ flex: 1, gap: 4, marginRight: 10 }}>
-              <Text style={[styles.featuredNewsCategory, { color: colors.primary }]}>
-                {PORTAL_NEWS_LIST[0].categoryLabel.toUpperCase()} • {PORTAL_NEWS_LIST[0].timeAgo}
-              </Text>
-              <Text style={[styles.featuredNewsTitle, { color: colors.text }]} numberOfLines={2}>
-                {PORTAL_NEWS_LIST[0].title}
-              </Text>
-              <Text style={[styles.featuredNewsAuthor, { color: colors.textMuted }]}>
-                {PORTAL_NEWS_LIST[0].author.name} • {PORTAL_NEWS_LIST[0].readTime}
-              </Text>
-            </View>
-
-            <Image
-              source={PORTAL_NEWS_LIST[0].localFallbackImage}
-              style={styles.featuredNewsImage}
-            />
-          </Pressable>
-        )}
-
-        {/* Secondary News Items List */}
-        <View style={{ gap: 2, marginTop: 4 }}>
-          {PORTAL_NEWS_LIST.slice(1, 3).map((news, idx) => (
+        {/* Normalized 3 News Items List with Right-Side Thumbnail */}
+        <View style={{ gap: 2 }}>
+          {PORTAL_NEWS_LIST.slice(0, 3).map((news, idx) => (
             <React.Fragment key={news.id}>
               {idx > 0 && <View style={[styles.newsDivider, { backgroundColor: colors.border }]} />}
               <Pressable
@@ -935,15 +903,23 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <View style={{ flex: 1, gap: 2, paddingRight: 8 }}>
-                  <Text style={[styles.newsItemTitle, { color: colors.text }]} numberOfLines={1}>
+                <View style={{ flex: 1, gap: 3, marginRight: 10 }}>
+                  <Text style={[styles.newsItemCategory, { color: colors.primary }]}>
+                    {news.categoryLabel.toUpperCase()} • {news.timeAgo}
+                  </Text>
+                  <Text style={[styles.newsItemTitle, { color: colors.text }]} numberOfLines={2}>
                     {news.title}
                   </Text>
-                  <Text style={[styles.newsItemSub, { color: colors.textMuted }]}>
-                    {news.categoryLabel} • {news.timeAgo}
+                  <Text style={[styles.newsItemMeta, { color: colors.textMuted }]}>
+                    {news.author.name} • {news.readTime}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={16} color={colors.textMuted} />
+
+                <Image
+                  source={news.localFallbackImage || { uri: news.imageUrl }}
+                  style={styles.newsItemThumbnail}
+                  resizeMode="cover"
+                />
               </Pressable>
             </React.Fragment>
           ))}
@@ -2100,56 +2076,36 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 17,
   },
-  newsCatBadge: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 0.4,
-  },
-  featuredNewsBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 2,
-  },
-  featuredNewsCategory: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.4,
-  },
-  featuredNewsTitle: {
-    fontSize: 12,
-    fontFamily: fonts.bold,
-    lineHeight: 16,
-  },
-  featuredNewsAuthor: {
-    fontSize: 10.5,
-    fontFamily: fonts.regular,
-  },
-  featuredNewsImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
-  },
   newsDivider: {
     height: 1,
     width: '100%',
-    marginVertical: 2,
+    marginVertical: 4,
   },
   newsItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 7,
+    paddingVertical: 6,
+  },
+  newsItemCategory: {
+    fontSize: 9.5,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.4,
   },
   newsItemTitle: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontFamily: fonts.bold,
+    lineHeight: 16,
   },
-  newsItemSub: {
+  newsItemMeta: {
     fontSize: 10.5,
     fontFamily: fonts.regular,
+  },
+  newsItemThumbnail: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
   },
   // 4-Column Quick Menu Icon Grid
   quickIconGrid: {
