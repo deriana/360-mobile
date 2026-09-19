@@ -9,28 +9,28 @@ import { fonts, iconStrokeWidth } from '../theme';
 import { buildDetailStack } from './DetailStack';
 
 import DashboardScreen from '../screens/DashboardScreen';
-import TasksScreen from '../screens/TasksScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
-import AmanatAcademyScreen from '../screens/AmanatAcademyScreen';
+import CheckInScreen from '../screens/CheckInScreen';
+import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator<any>();
 
 const DashboardStack = buildDetailStack('Dashboard', DashboardScreen, 'Beranda');
-const TasksStack = buildDetailStack('Tasks', TasksScreen, 'Bursa & Tugas Lapangan');
 const ActivitiesStack = buildDetailStack('Activities', ActivitiesScreen, 'Agenda & Kegiatan');
-const AcademyStack = buildDetailStack('Academy', AmanatAcademyScreen, 'Amanat Academy');
+const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Presensi Kehadiran GPS');
+const NewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta & Kabar PAN');
 const ProfileStack = buildDetailStack('Profile', ProfileScreen, 'Profil Saya');
 
 /**
- * 5 Standard Bottom Navigation Tabs Sesuai Blueprint DPP PAN:
- * BERANDA | TUGAS | KEGIATAN | ACADEMY | PROFIL
+ * 5 Standard Bottom Navigation Tabs Sesuai Blueprint DPP PAN & Screenshot:
+ * BERANDA | KEGIATAN | PRESENSI | KABAR | PROFIL
  */
 const STANDARD_BOTTOM_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
-  { name: 'TasksTab', component: TasksStack, label: 'Tugas', icon: 'check-square' as const },
   { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
-  { name: 'AcademyTab', component: AcademyStack, label: 'Academy', icon: 'award' as const },
+  { name: 'CheckInTab', component: CheckInStack, label: 'Presensi', icon: 'map-pin' as const },
+  { name: 'NewsTab', component: NewsStack, label: 'Kabar', icon: 'book-open' as const },
   { name: 'ProfileTab', component: ProfileStack, label: 'Profil', icon: 'user' as const },
 ];
 

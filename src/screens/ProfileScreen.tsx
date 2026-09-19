@@ -446,6 +446,42 @@ export default function ProfileScreen({ navigation }: any) {
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
 
+        {/* Pendaftaran Anggota Resmi simPAN (Dipusatkan di Menu Profil) */}
+        {!isOfficialMember && (
+          <>
+            <Pressable
+              onPress={() => {
+                navigation.navigate('RegisterMember', {
+                  source: 'profile_upgrade',
+                  prefillName: user.name,
+                  prefillPhone: user.phone,
+                  prefillEmail: user.email,
+                  prefillNik: user.nikFull || user.nikMasked,
+                });
+              }}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                <Feather name="award" size={15} color="#D97706" />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.actionTitle, { color: colors.text }]}>Pengajuan Anggota Resmi simPAN</Text>
+                  <View style={{ backgroundColor: '#D97706', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 }}>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' }}>e-KTA</Text>
+                  </View>
+                </View>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Pindai e-KTP dengan AI, verifikasi data, & terbitkan e-KTA digital resmi
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        )}
+
         {/* Status & Peran Saya (7 Dimensi Identitas) */}
         <Pressable
           onPress={() => navigation.navigate('StatusPeranSaya')}

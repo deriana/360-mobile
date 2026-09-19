@@ -41,6 +41,7 @@ import SimpanBacalegScreen from '../screens/SimpanBacalegScreen';
 import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import SimpanOfficeDetailScreen from '../screens/SimpanOfficeDetailScreen';
 import RegisterMemberScreen from '../screens/RegisterMemberScreen';
+import RegisterVolunteerScreen from '../screens/RegisterVolunteerScreen';
 import WitnessAcademyScreen from '../screens/WitnessAcademyScreen';
 import WitnessLessonScreen from '../screens/WitnessLessonScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
@@ -92,6 +93,7 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
   { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
   { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
+  { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Registrasi Relawan PAN' },
   { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
   { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
   { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
@@ -100,8 +102,6 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
   { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
   { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS' },
-  { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
-  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
 ];
 
 /**

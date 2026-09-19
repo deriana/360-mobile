@@ -17,7 +17,7 @@ import {
 } from '../data/accounts';
 import { Role } from '../types';
 import { BRAND_ASSETS } from '../data/images';
-import RegisterMemberScreen from './RegisterMemberScreen';
+import RegisterVolunteerScreen from './RegisterVolunteerScreen';
 
 const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
   { key: 'saksi', label: 'Saksi', fullLabel: 'Saksi TPS Resmi (Bilik Suara)', icon: 'eye', accounts: WITNESS_ACCOUNTS },
@@ -64,7 +64,7 @@ export default function LoginScreen() {
             <Text style={[styles.backBtnText, { color: colors.text }]}>Kembali ke Login</Text>
           </Pressable>
         </View>
-        <RegisterMemberScreen navigation={{ goBack: () => setShowRegisterScreen(false) }} />
+        <RegisterVolunteerScreen onBack={() => setShowRegisterScreen(false)} />
       </View>
     );
   }
@@ -143,25 +143,25 @@ export default function LoginScreen() {
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
-          {/* Tombol Pendaftaran Anggota AI Scan KTP */}
+          {/* Tombol Pendaftaran Relawan AI Scan KTP */}
           <Pressable
             onPress={() => setShowRegisterScreen(true)}
             style={({ pressed }) => [
               styles.registerBannerBtn,
-              { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+              { backgroundColor: isDark ? 'rgba(2,132,199,0.15)' : '#E0F2FE', borderColor: '#0284C7' },
               pressed && { opacity: 0.8 },
             ]}
           >
-            <Feather name="camera" size={18} color={colors.primary} />
+            <Feather name="heart" size={18} color="#0284C7" />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.registerBannerTitle, { color: colors.primary }]}>
-                Daftar Kader / Anggota (Scan KTP AI)
+              <Text style={[styles.registerBannerTitle, { color: '#0284C7' }]}>
+                Daftar Relawan PAN (Scan KTP AI / Cepat)
               </Text>
               <Text style={[styles.registerBannerSub, { color: colors.textMuted }]}>
-                Ekstraksi otomatis NIK & terbitkan e-KTA digital instan
+                Dapatkan Digital ID Relawan & akses bursa tugas posko pemenangan
               </Text>
             </View>
-            <Feather name="arrow-right" size={16} color={colors.primary} />
+            <Feather name="arrow-right" size={16} color="#0284C7" />
           </Pressable>
 
           {/* Persona Demo DPP PAN: 1-Tap Login Presentasi */}
