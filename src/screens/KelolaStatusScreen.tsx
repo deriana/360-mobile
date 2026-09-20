@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -16,8 +16,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
-
-type TabMode = 'membership' | 'volunteer';
 
 const RESIGN_REASONS = [
   'Fokus Karir Profesional / Bisnis Swasta',
@@ -55,17 +53,21 @@ export default function KelolaStatusScreen() {
     stopVolunteer,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<TabMode>('membership');
+  const officialMembership = currentUser.memberships?.find((m) => m.type === 'member');
+  const isMember = Boolean(
+    officialMembership && (officialMembership.status === 'verified' || officialMembership.status === 'active')
+  );
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: isMember ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan',
+    });
+  }, [navigation, isMember]);
 
   const dims = currentUser.dimensions || {
     membership: 'active',
     volunteer: 'active',
   };
-
-  const officialMembership = currentUser.memberships?.find((m) => m.type === 'member');
-  const isMember = Boolean(
-    officialMembership && (officialMembership.status === 'verified' || officialMembership.status === 'active')
-  );
 
   // Membership Resignation State
   const [selectedResignReason, setSelectedResignReason] = useState<string>(RESIGN_REASONS[0]);
@@ -165,7 +167,7 @@ export default function KelolaStatusScreen() {
       setVolunteerStatus('PAUSED');
       setDialogInfo({
         visible: true,
-        title: 'Status Kerelawanan Dijeda (PAUSED)',
+        title: 'Status Kerelawanan Dijeda',
         message:
           'Status relawan Anda saat ini dalam masa cuti rehat sementara. Penugasan darurat dinonaktifkan tanpa menghapus portofolio. Anda dapat mengaktifkannya kembali kapan saja.',
         tone: 'primary',
@@ -180,7 +182,7 @@ export default function KelolaStatusScreen() {
         visible: true,
         title: 'Berhenti dari Relawan Lapangan',
         message:
-          'Status kerelawanan lapangan telah dinonaktifkan. Seluruh rekam jejak kegiatan dan sertifikat pelatihan tetap tersimpan secara utuh di database (Zero History Loss).',
+          'Status kerelawanan lapangan telah dinonaktifkan. Seluruh rekam jejak kegiatan dan sertifikat pelatihan tetap tersimpan secara utuh di database.',
         tone: 'warning',
       });
     }
@@ -215,185 +217,113 @@ export default function KelolaStatusScreen() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={styles.headerIconCircle}>
-            <Feather name="settings" size={22} color="#FFFFFF" />
+            <Feather name={isMember ? 'shield' : 'user-check'} size={22} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.headerTitle}>Tata Kelola Status Mandiri</Text>
+            <Text style={styles.headerTitle}>
+              {isMember ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
+            </Text>
             <Text style={styles.headerSub}>
-              Prinsip Perlindungan Akun: Never Delete User Hard & Zero History Loss
+              {isMember
+                ? 'Pengaturan status keaktifan dan administrasi keanggotaan partai'
+                : 'Pengaturan masa jeda tugas dan status keaktifan relawan lapangan'}
             </Text>
           </View>
-        </View>
-
-        {/* Tab Switcher */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            onPress={() => setActiveTab('membership')}
-            style={[
-              styles.tabBtn,
-              activeTab === 'membership' && { backgroundColor: '#FFFFFF' },
-            ]}
-          >
-            <Feather
-              name="user"
-              size={13}
-              color={activeTab === 'membership' ? '#003366' : 'rgba(255,255,255,0.7)'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'membership' ? '#003366' : 'rgba(255,255,255,0.85)' },
-              ]}
-            >
-              1. Keanggotaan simPAN
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setActiveTab('volunteer')}
-            style={[
-              styles.tabBtn,
-              activeTab === 'volunteer' && { backgroundColor: '#FFFFFF' },
-            ]}
-          >
-            <Feather
-              name="users"
-              size={13}
-              color={activeTab === 'volunteer' ? '#003366' : 'rgba(255,255,255,0.7)'}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === 'volunteer' ? '#003366' : 'rgba(255,255,255,0.85)' },
-              ]}
-            >
-              2. Kerelawanan
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
       {/* ========================================================================= */}
-      {/* TAB 1: KEANGGOTAAN SIMPAN (MEMBERSHIP GOVERNANCE)                          */}
+      {/* TATA KELOLA ROLE-BASED: ANGGOTA RESMI vs RELAWAN                           */}
       {/* ========================================================================= */}
-      {activeTab === 'membership' && (
+      {isMember ? (
+        /* KELOLA KEANGGOTAAN RESMI PARTAI */
         <View style={{ gap: spacing.md }}>
-          {/* Non-member Fallback */}
-          {!isMember ? (
-            <Card style={{ gap: spacing.sm, borderColor: '#BAE6FD', backgroundColor: isDark ? 'rgba(14,165,233,0.1)' : '#F0F9FF' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Feather name="info" size={20} color="#0284C7" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: '#0369A1' }]}>Bukan Anggota Ber-eKTA</Text>
-                  <Text style={{ fontSize: 11, color: '#0284C7' }}>
-                    Akun Anda saat ini terdaftar sebagai Relawan Simpatisan (Non-KTA).
+          {/* Card Status Saat Ini */}
+          <Card style={{ gap: spacing.sm }}>
+            <View style={styles.rowBetween}>
+              <View style={{ gap: 2 }}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Status Keanggotaan Partai</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                  Nomor e-KTA: {officialMembership?.ktaNumber || '32.73.01.2024.08912'} | {officialMembership?.dpc || 'DPC Coblong'}
+                </Text>
+              </View>
+              <Pill
+                label={membershipStatus === 'ACTIVE' ? 'ANGGOTA RESMI AKTIF' : 'DALAM PROSES RESIGN'}
+                tone={membershipStatus === 'ACTIVE' ? 'success' : 'warning'}
+              />
+            </View>
+
+            <View style={[styles.statusNoticeBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
+              <Feather name="shield" size={16} color={colors.primary} />
+              <Text style={[styles.statusNoticeText, { color: colors.textMuted }]}>
+                {membershipStatus === 'ACTIVE'
+                  ? 'Keanggotaan Anda sah dan tercatat di Sistem Informasi Manajemen PAN (simPAN). Hak suara permusyawaratan aktif.'
+                  : 'Pengajuan pengunduran diri sedang ditinjau Dewan Pimpinan Daerah (DPD). e-KTA berstatus Dalam Proses Pengunduran Diri.'}
+              </Text>
+            </View>
+          </Card>
+
+          {/* Prosedur Pengunduran Diri Berjenjang */}
+          {membershipStatus === 'ACTIVE' ? (
+            <Card style={{ gap: spacing.md }}>
+              <View style={{ gap: 4 }}>
+                <SectionTitle style={{ marginBottom: 0 }}>Pengajuan Pengunduran Diri Anggota</SectionTitle>
+                <Text style={{ fontSize: 11.5, color: colors.textMuted, lineHeight: 17 }}>
+                  Sesuai AD/ART PAN Pasal 14, permohonan pengunduran diri diproses berjenjang melalui verifikasi administrasi pengurus tanpa menghapus rekam jejak kontribusi historis Anda.
+                </Text>
+              </View>
+
+              <View style={[styles.calloutWarning, { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : '#FEF3C7', borderColor: '#F59E0B' }]}>
+                <Feather name="alert-triangle" size={16} color="#D97706" />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.calloutTitle, { color: '#B45309' }]}>Konsekuensi Pengunduran Diri</Text>
+                  <Text style={[styles.calloutBody, { color: '#92400E' }]}>
+                    Hak memilih dan dipilih dalam musyawarah partai dibekukan. Penugasan struktural dan surat mandat saksi akan dicabut.
                   </Text>
                 </View>
               </View>
-              <Text style={{ fontSize: 11.5, color: colors.textMuted, lineHeight: 17 }}>
-                Opsi pengunduran diri resmi anggota berjenjang hanya berlaku bagi pemegang e-KTA simPAN resmi. Anda dapat mengajukan pendaftaran e-KTA kapan saja melalui menu Profil.
-              </Text>
+
               <PrimaryButton
-                label="Ajukan Jadi Anggota Resmi simPAN"
-                icon="award"
-                variant="primary"
-                onPress={() => navigation.navigate('RegisterMember')}
+                label="Buka Formulir Pengunduran Diri"
+                icon="file-text"
+                variant="danger"
+                onPress={() => setShowResignModal(true)}
               />
             </Card>
           ) : (
-            <>
-              {/* Card Status Saat Ini */}
-              <Card style={{ gap: spacing.sm }}>
-                <View style={styles.rowBetween}>
-                  <View style={{ gap: 2 }}>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Status Keanggotaan Partai</Text>
-                    <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                      Nomor e-KTA: {officialMembership?.ktaNumber || '32.73.01.2024.08912'} | {officialMembership?.dpc || 'DPC Coblong'}
-                    </Text>
-                  </View>
-                  <Pill
-                    label={membershipStatus === 'ACTIVE' ? 'ANGGOTA RESMI AKTIF' : 'DALAM PROSES RESIGN'}
-                    tone={membershipStatus === 'ACTIVE' ? 'success' : 'warning'}
-                  />
+            <Card style={{ gap: spacing.sm, borderColor: '#F59E0B' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="clock" size={20} color="#D97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>Pengajuan Sedang Diverifikasi</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>No. Tiket: RESIGN-2026-00412</Text>
                 </View>
-
-                <View style={[styles.statusNoticeBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
-                  <Feather name="shield" size={16} color={colors.primary} />
-                  <Text style={[styles.statusNoticeText, { color: colors.textMuted }]}>
-                    {membershipStatus === 'ACTIVE'
-                      ? 'Keanggotaan Anda sah dan tercatat di Sistem Informasi Manajemen PAN (simPAN). Hak suara permusyawaratan aktif.'
-                      : 'Pengajuan pengunduran diri sedang ditinjau Dewan Pimpinan Daerah (DPD). e-KTA berstatus Dalam Proses Pengunduran Diri.'}
-                  </Text>
-                </View>
-              </Card>
-
-              {/* Prosedur Pengunduran Diri Berjenjang */}
-              {membershipStatus === 'ACTIVE' ? (
-                <Card style={{ gap: spacing.md }}>
-                  <View style={{ gap: 4 }}>
-                    <SectionTitle style={{ marginBottom: 0 }}>Pengajuan Pengunduran Diri Anggota</SectionTitle>
-                    <Text style={{ fontSize: 11.5, color: colors.textMuted, lineHeight: 17 }}>
-                      Sesuai AD/ART PAN Pasal 14, permohonan pengunduran diri diproses berjenjang melalui verifikasi administrasi pengurus tanpa menghapus rekam jejak kontribusi historis Anda.
-                    </Text>
-                  </View>
-
-                  <View style={[styles.calloutWarning, { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : '#FEF3C7', borderColor: '#F59E0B' }]}>
-                    <Feather name="alert-triangle" size={16} color="#D97706" />
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[styles.calloutTitle, { color: '#B45309' }]}>Konsekuensi Pengunduran Diri</Text>
-                      <Text style={[styles.calloutBody, { color: '#92400E' }]}>
-                        Hak memilih dan dipilih dalam musyawarah partai dibekukan. Penugasan struktural dan surat mandat saksi akan dicabut.
-                      </Text>
-                    </View>
-                  </View>
-
-                  <PrimaryButton
-                    label="Buka Formulir Pengunduran Diri"
-                    icon="file-text"
-                    variant="danger"
-                    onPress={() => setShowResignModal(true)}
-                  />
-                </Card>
-              ) : (
-                <Card style={{ gap: spacing.sm, borderColor: '#F59E0B' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Feather name="clock" size={20} color="#D97706" />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.cardTitle, { color: colors.text }]}>Pengajuan Sedang Diverifikasi</Text>
-                      <Text style={{ fontSize: 11, color: colors.textMuted }}>No. Tiket: RESIGN-2026-00412</Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>
-                    Alasan: {currentUser.resignationRequest?.reason || selectedResignReason}. Permohonan ini sedang dievaluasi oleh Tim Bidang Organisasi & Keanggotaan DPD PAN Kota Bandung.
-                  </Text>
-                  <PrimaryButton
-                    label="Batalkan Pengajuan Resign"
-                    variant="secondary"
-                    icon="rotate-ccw"
-                    onPress={handleCancelResign}
-                  />
-                </Card>
-              )}
-
-              {/* Jaminan Hak & Regulasi UU PDP */}
-              <Card style={{ gap: spacing.xs }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Feather name="lock" size={16} color={colors.primary} />
-                  <SectionTitle style={{ marginBottom: 0 }}>Hak Privasi Data (UU PDP No. 27/2022)</SectionTitle>
-                </View>
-                <Text style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
-                  Anda memiliki hak atas pembatasan pemrosesan data pribadi. Histori audit transaksi pemilu tetap dilindungi enkripsi kriptografis negara untuk transparansi saksi pemilu.
-                </Text>
-              </Card>
-            </>
+              </View>
+              <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>
+                Alasan: {currentUser.resignationRequest?.reason || selectedResignReason}. Permohonan ini sedang dievaluasi oleh Tim Bidang Organisasi & Keanggotaan DPD PAN Kota Bandung.
+              </Text>
+              <PrimaryButton
+                label="Batalkan Pengajuan Resign"
+                variant="secondary"
+                icon="rotate-ccw"
+                onPress={handleCancelResign}
+              />
+            </Card>
           )}
-        </View>
-      )}
 
-      {/* ========================================================================= */}
-      {/* TAB 2: KERELAWANAN & PARTISIPASI LAPANGAN (VOLUNTEER GOVERNANCE)           */}
-      {/* ========================================================================= */}
-      {activeTab === 'volunteer' && (
+          {/* Jaminan Hak & Regulasi UU PDP */}
+          <Card style={{ gap: spacing.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Feather name="lock" size={16} color={colors.primary} />
+              <SectionTitle style={{ marginBottom: 0 }}>Hak Privasi Data (UU PDP No. 27/2022)</SectionTitle>
+            </View>
+            <Text style={{ fontSize: 11, color: colors.textMuted, lineHeight: 16 }}>
+              Anda memiliki hak atas pembatasan pemrosesan data pribadi. Histori audit transaksi pemilu tetap dilindungi enkripsi kriptografis untuk integritas data partai.
+            </Text>
+          </Card>
+        </View>
+      ) : (
+        /* KELOLA PARTISIPASI RELAWAN */
         <View style={{ gap: spacing.md }}>
           {/* Status Relawan Saat Ini */}
           <Card style={{ gap: spacing.sm }}>
@@ -449,16 +379,16 @@ export default function KelolaStatusScreen() {
             <Card style={{ gap: spacing.md }}>
               <SectionTitle style={{ marginBottom: 0 }}>Pilihan Pengaturan Partisipasi</SectionTitle>
 
-              {/* Opsi 1: Berhenti Sementara (Cuti Relawan) */}
+              {/* Cuti Relawan Sementara */}
               <View style={[styles.optionCard, { borderColor: colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <View style={[styles.optIconBox, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
                     <Feather name="clock" size={18} color="#D97706" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.optTitle, { color: colors.text }]}>1. Berhenti Sementara (Cuti Relawan)</Text>
+                    <Text style={[styles.optTitle, { color: colors.text }]}>Cuti Relawan Sementara</Text>
                     <Text style={[styles.optSub, { color: colors.textMuted }]}>
-                      Untuk yang sedang sibuk kerja/studi 1 s/d 6 bulan tanpa keluar permanen.
+                      Ambil jeda tugas lapangan 1 s/d 6 bulan tanpa menghapus status relawan.
                     </Text>
                   </View>
                 </View>
@@ -496,16 +426,16 @@ export default function KelolaStatusScreen() {
                 />
               </View>
 
-              {/* Opsi 2: Berhenti Menjadi Relawan */}
+              {/* Berhenti Menjadi Relawan */}
               <View style={[styles.optionCard, { borderColor: colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <View style={[styles.optIconBox, { backgroundColor: 'rgba(230,0,18,0.15)' }]}>
                     <Feather name="user-x" size={18} color="#E60012" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.optTitle, { color: colors.text }]}>2. Berhenti Menjadi Relawan</Text>
+                    <Text style={[styles.optTitle, { color: colors.text }]}>Berhenti Menjadi Relawan</Text>
                     <Text style={[styles.optSub, { color: colors.textMuted }]}>
-                      Penghentian peran relawan lapangan tanpa menghapus rekam jejak kontribusi.
+                      Penghentian peran relawan lapangan dengan arsip rekam jejak kontribusi tetap tersimpan.
                     </Text>
                   </View>
                 </View>
@@ -521,15 +451,15 @@ export default function KelolaStatusScreen() {
             </Card>
           )}
 
-          {/* Jaminan Zero History Loss */}
+          {/* Perlindungan Rekam Jejak Kontribusi */}
           <Card style={[styles.historyGuardCard, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#F0FDF4', borderColor: '#86EFAC' }]}>
             <Feather name="check-circle" size={20} color="#16A34A" />
             <View style={{ flex: 1, gap: 3 }}>
               <Text style={[styles.guardTitle, { color: '#15803D' }]}>
-                Jaminan Perlindungan Histori (Zero History Loss)
+                Perlindungan Rekam Jejak Kontribusi
               </Text>
               <Text style={[styles.guardDesc, { color: '#166534' }]}>
-                Seluruh tugas selesai, riwayat bimtek, dan sertifikat pelatihan Anda tetap tersimpan utuh selamanya di server simPAN DPP PAN. Independen dari status keanggotaan atau alumni akademi.
+                Seluruh tugas selesai, riwayat bimtek, dan sertifikat pelatihan Anda tetap tersimpan utuh di database simPAN DPP PAN. Arsip kontribusi Anda aman dan dapat ditinjau kapan saja.
               </Text>
             </View>
           </Card>
@@ -703,26 +633,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: '#BAE6FD',
     lineHeight: 15,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: radius.md,
-    padding: 3,
-    gap: 4,
-  },
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: radius.sm,
-  },
-  tabText: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
   },
 
   // Cards

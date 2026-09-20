@@ -185,7 +185,7 @@ export default function StatusPeranSayaScreen() {
               Permohonan Pengunduran Diri Dalam Proses
             </Text>
             <Text style={[styles.infoBannerDesc, { color: '#92400E' }]}>
-              Pengajuan Anda sedang menunggu verifikasi DPD PAN Kota Bandung. Seluruh histori kegiatan lapangan dan sertifikasi tetap terlindungi (Zero History Loss).
+              Pengajuan Anda sedang menunggu verifikasi DPD PAN Kota Bandung. Seluruh histori kegiatan lapangan dan sertifikasi tetap terlindungi secara permanen.
             </Text>
           </View>
         </View>
@@ -510,7 +510,7 @@ export default function StatusPeranSayaScreen() {
           <View style={styles.propRow}>
             <Text style={[styles.propLabel, { color: colors.textMuted }]}>Hak Portofolio</Text>
             <Text style={[styles.propValue, { color: colors.success, fontFamily: fonts.medium }]}>
-              Preservasi Permanen (Zero History Loss)
+              Tersimpan Permanen di Database
             </Text>
           </View>
         </View>
@@ -627,13 +627,17 @@ export default function StatusPeranSayaScreen() {
       {/* ========================================================================= */}
       <View style={[styles.bottomCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ gap: 4, flex: 1 }}>
-          <Text style={[styles.bottomCardTitle, { color: colors.text }]}>Tata Kelola Status Mandiri</Text>
+          <Text style={[styles.bottomCardTitle, { color: colors.text }]}>
+            {officialMembership ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
+          </Text>
           <Text style={[styles.bottomCardSub, { color: colors.textMuted }]}>
-            Kelola pengunduran diri berjenjang, cuti relawan (PAUSED), dan hak privasi UU PDP.
+            {officialMembership
+              ? 'Pengaturan status keanggotaan resmi partai, pengunduran diri berjenjang, dan hak privasi UU PDP.'
+              : 'Pengaturan masa jeda tugas relawan, bursa aksi lapangan, dan status keaktifan.'}
           </Text>
         </View>
         <PrimaryButton
-          label="Kelola Status Saya"
+          label={officialMembership ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
           icon="settings"
           onPress={() => navigation.navigate('KelolaStatus')}
           style={{ width: '100%', marginTop: spacing.sm }}

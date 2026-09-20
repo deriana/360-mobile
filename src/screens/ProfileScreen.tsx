@@ -625,9 +625,13 @@ export default function ProfileScreen({ navigation }: any) {
             <Feather name="user-check" size={15} color="#D97706" />
           </View>
           <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Kelola Status & Partisipasi</Text>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>
+              {isOfficialMember ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
+            </Text>
             <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
-              Pengajuan pengunduran diri resmi, jeda, & active task guard
+              {isOfficialMember
+                ? 'Pengaturan status keanggotaan dan administrasi partai'
+                : 'Pengaturan masa jeda tugas dan status relawan'}
             </Text>
           </View>
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
