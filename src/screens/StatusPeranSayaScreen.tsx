@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -82,6 +82,12 @@ export default function StatusPeranSayaScreen() {
   const officialMembership = currentUser?.memberships?.find((m) => m.type === 'member');
   const volunteerMembership = currentUser?.memberships?.find((m) => m.type === 'volunteer');
   const isOfficialMember = Boolean(officialMembership);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: isOfficialMember ? 'Status & Peran Kader' : 'Partisipasi Relawan',
+    });
+  }, [navigation, isOfficialMember]);
 
   const dims = currentUser?.dimensions || {
     membership: 'active',

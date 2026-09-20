@@ -844,41 +844,26 @@ export default function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Status & Peran Saya (7 Dimensi Identitas) */}
+        {/* Status & Peran Terpadu (Status, Portofolio & Tata Kelola) */}
         <Pressable
           onPress={() => navigation.navigate('StatusPeranSaya')}
           style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
         >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#E0F2FE' }]}>
-            <Feather name="layers" size={15} color="#0066B3" />
-          </View>
-          <View style={{ flex: 1, gap: 1 }}>
-            <Text style={[styles.actionTitle, { color: colors.text }]}>Status & Peran Saya</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
-              7 Dimensi Identitas, Perkaderan, Posisi, & SK Mandat
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={16} color={colors.textMuted} />
-        </Pressable>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        {/* Kelola Status Saya (Pengunduran Diri & Jeda) */}
-        <Pressable
-          onPress={() => navigation.navigate('KelolaStatus')}
-          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
-        >
-          <View style={[styles.actionIconWrap, { backgroundColor: '#FEF3C7' }]}>
-            <Feather name="user-check" size={15} color="#D97706" />
+          <View style={[styles.actionIconWrap, { backgroundColor: isOfficialMember ? '#E0F2FE' : '#FEF3C7' }]}>
+            <Feather
+              name={isOfficialMember ? 'layers' : 'user-check'}
+              size={15}
+              color={isOfficialMember ? '#0066B3' : '#D97706'}
+            />
           </View>
           <View style={{ flex: 1, gap: 1 }}>
             <Text style={[styles.actionTitle, { color: colors.text }]}>
-              {isOfficialMember ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
+              {isOfficialMember ? 'Status & Peran Kader' : 'Status & Partisipasi Relawan'}
             </Text>
             <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
               {isOfficialMember
-                ? 'Pengaturan status keanggotaan dan administrasi partai'
-                : 'Pengaturan masa jeda tugas dan status relawan'}
+                ? 'Portofolio 7 dimensi, keabsahan e-KTA, dan tata kelola'
+                : 'Rekam jejak penugasan lapangan dan pengaturan keaktifan'}
             </Text>
           </View>
           {isNonActiveStatus && (
