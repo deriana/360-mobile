@@ -102,14 +102,18 @@ export default function StatusPeranSayaScreen() {
   // Dynamic Subtitle Elements
   const kaderSub = isOfficialMember
     ? (dims.kader === 'kader_aktif' ? 'Kader Aktif simPAN' : dims.kader === 'calon_kader' ? 'Calon Kader (Orientasi)' : 'Anggota simPAN')
-    : 'Relawan Simpatisan';
+    : null;
   const posSub = isOfficialMember ? (dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : null)) : null;
   const elecSub = isOfficialMember ? (dims.electoral?.status === 'CALEG' ? 'Caleg 2029' : dims.electoral?.status === 'BACALEG' ? 'Bacaleg 2029' : null) : null;
+  
+  const volunteerBasePosko = currentUser?.coordinatorContact?.posko || volunteerMembership?.dpc || 'Posko Sumur Bandung';
   const heroSubtitleText = dims.membership === 'resignation_requested' && isOfficialMember
     ? 'Dalam Proses Pengunduran Diri (DPD)'
     : isOfficialMember
     ? [kaderSub, posSub, elecSub].filter(Boolean).join(' | ') || 'Anggota Resmi simPAN'
-    : 'Relawan Simpatisan simPAN';
+    : role === 'WITNESS'
+    ? 'Relawan Mandat BSN • TPS 018 Kel. Braga'
+    : `Relawan Simpatisan simPAN • ${volunteerBasePosko}`;
 
   // Personalized Audit / Lifecycle Timeline
   const userTimeline = (user?.email && ROLE_ACTIVITY_TIMELINE[user.email])
@@ -162,50 +166,77 @@ export default function StatusPeranSayaScreen() {
         {/* Quick Identity Pills */}
         <View style={styles.heroPillsRow}>
           {isOfficialMember ? (
-            dims.membership === 'resignation_requested' ? (
-              <View style={[styles.quickTag, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
-                <Feather name="clock" size={11} color="#FDE047" />
-                <Text style={styles.quickTagText}>Proses Resign</Text>
-              </View>
-            ) : (
+            <>
+              {dims.membership === 'resignation_requested' ? (
+                <View style={[styles.quickTag, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+                  <Feather name="clock" size={11} color="#FDE047" />
+                  <Text style={styles.quickTagText}>Proses Resign</Text>
+                </View>
+              ) : (
+                <View style={styles.quickTag}>
+                  <Feather name="shield" size={11} color="#67E8F9" />
+                  <Text style={styles.quickTagText}>Anggota Aktif</Text>
+                </View>
+              )}
+
+              {dims.kader === 'kader_aktif' && (
+                <View style={styles.quickTag}>
+                  <Feather name="award" size={11} color="#FDE047" />
+                  <Text style={styles.quickTagText}>LKK Madya</Text>
+                </View>
+              )}
+
+              {(dims.electoral?.status === 'CALEG' || dims.electoral?.status === 'BACALEG') && (
+                <View style={styles.quickTag}>
+                  <Feather name="briefcase" size={11} color="#F472B6" />
+                  <Text style={styles.quickTagText}>
+                    Caleg {dims.electoral.legislativeLevel?.replace('_', ' ') || '2029'}
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.quickTag}>
-                <Feather name="shield" size={11} color="#67E8F9" />
-                <Text style={styles.quickTagText}>Anggota Aktif</Text>
+                <Feather name="check-square" size={11} color="#86EFAC" />
+                <Text style={styles.quickTagText}>{ROLE_LABEL[role] || role}</Text>
               </View>
-            )
+            </>
           ) : (
-            <View style={styles.quickTag}>
-              <Feather name="user" size={11} color="#BAE6FD" />
-              <Text style={styles.quickTagText}>
-                {dims.volunteer === 'paused'
-                  ? 'Cuti Relawan'
-                  : dims.volunteer === 'inactive'
-                  ? 'Relawan Nonaktif'
-                  : 'Relawan Aktif'}
-              </Text>
-            </View>
-          )}
+            <>
+              {/* Tag 1: Peran Operasional Taktis */}
+              <View style={styles.quickTag}>
+                <Feather name={role === 'WITNESS' ? 'eye' : 'heart'} size={11} color="#38BDF8" />
+                <Text style={styles.quickTagText}>
+                  {role === 'WITNESS' ? 'Saksi TPS 018 Braga' : 'Relawan Posko & Lapangan'}
+                </Text>
+              </View>
 
-          {isOfficialMember && dims.kader === 'kader_aktif' && (
-            <View style={styles.quickTag}>
-              <Feather name="award" size={11} color="#FDE047" />
-              <Text style={styles.quickTagText}>LKK Madya</Text>
-            </View>
-          )}
+              {/* Tag 2: Status Keaktifan Preservasi */}
+              {dims.volunteer === 'paused' ? (
+                <View style={[styles.quickTag, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+                  <Feather name="pause-circle" size={11} color="#FDE047" />
+                  <Text style={[styles.quickTagText, { color: '#FDE047' }]}>Cuti Sementara</Text>
+                </View>
+              ) : dims.volunteer === 'inactive' ? (
+                <View style={[styles.quickTag, { backgroundColor: 'rgba(239, 68, 68, 0.25)' }]}>
+                  <Feather name="x-circle" size={11} color="#FCA5A5" />
+                  <Text style={[styles.quickTagText, { color: '#FCA5A5' }]}>Nonaktif</Text>
+                </View>
+              ) : (
+                <View style={[styles.quickTag, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                  <Feather name="check-circle" size={11} color="#86EFAC" />
+                  <Text style={[styles.quickTagText, { color: '#86EFAC' }]}>Status Aktif</Text>
+                </View>
+              )}
 
-          {isOfficialMember && (dims.electoral?.status === 'CALEG' || dims.electoral?.status === 'BACALEG') && (
-            <View style={styles.quickTag}>
-              <Feather name="briefcase" size={11} color="#F472B6" />
-              <Text style={styles.quickTagText}>
-                Caleg {dims.electoral.legislativeLevel?.replace('_', ' ') || '2029'}
-              </Text>
-            </View>
+              {/* Tag 3: Afiliasi Teritorial Nyata */}
+              <View style={styles.quickTag}>
+                <Feather name="map-pin" size={11} color="#BAE6FD" />
+                <Text style={styles.quickTagText}>
+                  Kec. {currentUser?.coordinatorContact?.region || 'Sumur Bandung'}
+                </Text>
+              </View>
+            </>
           )}
-
-          <View style={styles.quickTag}>
-            <Feather name="check-square" size={11} color="#86EFAC" />
-            <Text style={styles.quickTagText}>{ROLE_LABEL[role] || role}</Text>
-          </View>
         </View>
       </View>
 
@@ -535,7 +566,7 @@ export default function StatusPeranSayaScreen() {
             <View style={styles.propRow}>
               <Text style={[styles.propLabel, { color: colors.textMuted }]}>Koordinator Pendamping</Text>
               <Text style={[styles.propValue, { color: colors.text }]}>
-                {currentUser?.coordinatorContact?.name || 'Asep Ridwan'} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || 'Coblong'})
+                {currentUser?.coordinatorContact?.name || (isOfficialMember ? 'Asep Ridwan' : 'Hendra Gunawan')} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || (isOfficialMember ? 'Coblong' : 'Sumur Bandung')})
               </Text>
             </View>
             <View style={styles.propRow}>
@@ -551,15 +582,15 @@ export default function StatusPeranSayaScreen() {
       {/* DIMENSI 6: PROGRAM PEMBINAAN EKOSISTEM */}
       <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
         <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(230, 0, 18, 0.12)' }]}>
-            <Feather name="layers" size={18} color="#E60012" />
+          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(0, 102, 179, 0.12)' }]}>
+            <Feather name="layers" size={18} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#E60012' }]}>
+              <Text style={[styles.dimNumber, { color: colors.primary }]}>
                 {isOfficialMember ? 'DIMENSI 6' : 'PROGRAM DIKLAT'}
               </Text>
-              <Pill label={isOfficialMember ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="danger" />
+              <Pill label={isOfficialMember ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="primary" />
             </View>
             <Text style={[styles.dimTitle, { color: colors.text }]}>
               {isOfficialMember ? 'Ekosistem Program Pembinaan' : 'Program Pelatihan & Diklat'}
@@ -569,21 +600,29 @@ export default function StatusPeranSayaScreen() {
 
         <View style={[styles.dimBody, { borderTopColor: colors.border, gap: spacing.xs }]}>
           {/* Sub program 1: Amanat Academy */}
-          <View style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('AmanatAcademy')}
+            style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}
+          >
             <Feather name="book-open" size={16} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.subProgTitle, { color: colors.text }]}>Amanat Academy</Text>
               <Text style={[styles.subProgDesc, { color: colors.textMuted }]}>
-                8 Modul tuntas, 3 Sertifikat Kelulusan Resmi
+                {isOfficialMember
+                  ? '8 Modul tuntas, 3 Sertifikat Kelulusan Resmi'
+                  : `Modul Diklat Online (Progres ${dims.programs?.academyProgress ?? 80}%)`}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('AmanatAcademy')}>
-              <Feather name="external-link" size={14} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
+            <Feather name="chevron-right" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
 
           {/* Sub program 2: PANdawa */}
-          <View style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('PandawaProgram')}
+            style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}
+          >
             <Feather name="shield" size={16} color="#D97706" />
             <View style={{ flex: 1 }}>
               <Text style={[styles.subProgTitle, { color: colors.text }]}>PANdawa Satgas Siaga</Text>
@@ -591,24 +630,32 @@ export default function StatusPeranSayaScreen() {
                 Peserta Aktif Diklat Kesiapsiagaan & Tanggap Bencana
               </Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('PandawaProgram')}>
-              <Feather name="external-link" size={14} color="#D97706" />
-            </TouchableOpacity>
-          </View>
+            <Feather name="chevron-right" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
 
           {/* Sub program 3: Saksi BSN PAN */}
-          <View style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
-            <Feather name="check-square" size={16} color="#15803D" />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('WitnessAcademy')}
+            style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}
+          >
+            <Feather
+              name={dims.programs?.programSaksi === 'MANDATED' ? 'check-square' : 'award'}
+              size={16}
+              color={dims.programs?.programSaksi === 'MANDATED' ? '#15803D' : colors.primary}
+            />
             <View style={{ flex: 1 }}>
               <Text style={[styles.subProgTitle, { color: colors.text }]}>Badan Saksi Nasional (BSN)</Text>
               <Text style={[styles.subProgDesc, { color: colors.textMuted }]}>
-                Tersertifikasi Saksi TPS Mandat No. 042/SM-DPP/2026
+                {dims.programs?.programSaksi === 'MANDATED'
+                  ? `Tersertifikasi Saksi TPS • SK Mandat No. ${dims.programs?.skMandatNumber || '042/SM-DPP/2026'}`
+                  : dims.programs?.programSaksi === 'TRAINING'
+                  ? `Pelatihan Saksi TPS BSN (Progres ${dims.programs?.saksiProgress ?? 80}%) • Belum Ber-SK Mandat`
+                  : 'Belum Terdaftar Program Mandat Saksi BSN'}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('WitnessAcademy')}>
-              <Feather name="external-link" size={14} color="#15803D" />
-            </TouchableOpacity>
-          </View>
+            <Feather name="chevron-right" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
       </Card>
 
@@ -668,17 +715,17 @@ export default function StatusPeranSayaScreen() {
       <View style={[styles.bottomCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={{ gap: 4, flex: 1 }}>
           <Text style={[styles.bottomCardTitle, { color: colors.text }]}>
-            {officialMembership ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
+            {officialMembership ? 'Tata Kelola Administrasi Anggota' : 'Pengaturan Keaktifan & Cuti Relawan'}
           </Text>
           <Text style={[styles.bottomCardSub, { color: colors.textMuted }]}>
             {officialMembership
-              ? 'Pengaturan status keanggotaan resmi partai, pengunduran diri berjenjang, dan hak privasi UU PDP.'
-              : 'Pengaturan masa jeda tugas relawan, bursa aksi lapangan, dan status keaktifan.'}
+              ? 'Pengajuan pengunduran diri berjenjang sesuai AD/ART partai, verifikasi DPD, dan hak perlindungan data pribadi.'
+              : 'Ajukan masa jeda tugas lapangan (cuti sementara) atau penyesuaian posko tanpa menghapus rekam jejak portofolio.'}
           </Text>
         </View>
         <PrimaryButton
-          label={officialMembership ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan'}
-          icon="settings"
+          label={officialMembership ? 'Buka Tata Kelola Administrasi' : 'Buka Pengaturan Keaktifan & Cuti'}
+          icon={officialMembership ? 'shield' : 'sliders'}
           onPress={() => navigation.navigate('KelolaStatus')}
           style={{ width: '100%', marginTop: spacing.sm }}
         />

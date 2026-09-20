@@ -485,7 +485,7 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
       {
         role: 'VOLUNTEER',
         status: 'active',
-        scope: { level: 'DISTRICT', code: '327301', name: 'Posko Kel. Dago, Kec. Coblong' },
+        scope: { level: 'DISTRICT', code: '327302', name: 'Posko Kel. Braga, Kec. Sumur Bandung' },
         assignedAt: '01 Mar 2024',
       },
     ],
@@ -498,6 +498,13 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
       tasksCompleted: 9,
       trainingHours: 14,
       activitiesCount: 16,
+    },
+    coordinatorContact: {
+      name: 'Hendra Gunawan',
+      phone: '0813-2211-4455',
+      role: 'Koordinator Lapangan Kecamatan',
+      posko: 'Posko Pemenangan Braga No. 12',
+      region: 'Sumur Bandung',
     },
     dimensions: VOLUNTEER_PRESETS.state_r1.dimensions,
   },
