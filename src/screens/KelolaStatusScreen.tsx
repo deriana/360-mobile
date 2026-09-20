@@ -54,9 +54,7 @@ export default function KelolaStatusScreen() {
   } = useApp();
 
   const officialMembership = currentUser.memberships?.find((m) => m.type === 'member');
-  const isMember = Boolean(
-    officialMembership && (officialMembership.status === 'verified' || officialMembership.status === 'active')
-  );
+  const isMember = Boolean(officialMembership);
 
   useLayoutEffect(() => {
     navigation.setOptions({

@@ -17,6 +17,7 @@ import { fonts, fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
 import { ROLE_LABEL } from '../utils/scope';
+import { ROLE_ACTIVITY_TIMELINE } from '../utils/userContext';
 
 interface LifecycleEvent {
   id: string;
@@ -80,6 +81,7 @@ export default function StatusPeranSayaScreen() {
   const user = currentUser?.identity;
   const officialMembership = currentUser?.memberships?.find((m) => m.type === 'member');
   const volunteerMembership = currentUser?.memberships?.find((m) => m.type === 'volunteer');
+  const isOfficialMember = Boolean(officialMembership);
 
   const dims = currentUser?.dimensions || {
     membership: 'active',
@@ -92,12 +94,29 @@ export default function StatusPeranSayaScreen() {
   };
 
   // Dynamic Subtitle Elements
-  const kaderSub = dims.kader === 'kader_aktif' ? 'Kader Aktif simPAN' : dims.kader === 'calon_kader' ? 'Calon Kader (Orientasi)' : 'Relawan Simpatisan';
-  const posSub = dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : null);
-  const elecSub = dims.electoral?.status === 'CALEG' ? 'Caleg 2029' : dims.electoral?.status === 'BACALEG' ? 'Bacaleg 2029' : null;
-  const heroSubtitleText = dims.membership === 'resignation_requested'
+  const kaderSub = isOfficialMember
+    ? (dims.kader === 'kader_aktif' ? 'Kader Aktif simPAN' : dims.kader === 'calon_kader' ? 'Calon Kader (Orientasi)' : 'Anggota simPAN')
+    : 'Relawan Simpatisan';
+  const posSub = isOfficialMember ? (dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : null)) : null;
+  const elecSub = isOfficialMember ? (dims.electoral?.status === 'CALEG' ? 'Caleg 2029' : dims.electoral?.status === 'BACALEG' ? 'Bacaleg 2029' : null) : null;
+  const heroSubtitleText = dims.membership === 'resignation_requested' && isOfficialMember
     ? 'Dalam Proses Pengunduran Diri (DPD)'
-    : [kaderSub, posSub, elecSub].filter(Boolean).join(' | ') || 'Relawan Simpatisan simPAN';
+    : isOfficialMember
+    ? [kaderSub, posSub, elecSub].filter(Boolean).join(' | ') || 'Anggota Resmi simPAN'
+    : 'Relawan Simpatisan simPAN';
+
+  // Personalized Audit / Lifecycle Timeline
+  const userTimeline = (user?.email && ROLE_ACTIVITY_TIMELINE[user.email])
+    ? ROLE_ACTIVITY_TIMELINE[user.email].map((item) => ({
+        id: item.id,
+        date: item.date,
+        title: item.title,
+        description: item.desc,
+        authority: isOfficialMember ? 'DPD PAN Kota Bandung' : 'Koordinator Posko Lapangan',
+        skNumber: undefined,
+        icon: item.icon,
+      }))
+    : LIFECYCLE_HISTORY;
 
   return (
     <ScrollView
@@ -136,31 +155,39 @@ export default function StatusPeranSayaScreen() {
 
         {/* Quick Identity Pills */}
         <View style={styles.heroPillsRow}>
-          {dims.membership === 'resignation_requested' ? (
-            <View style={[styles.quickTag, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
-              <Feather name="clock" size={11} color="#FDE047" />
-              <Text style={styles.quickTagText}>Proses Resign</Text>
-            </View>
-          ) : officialMembership ? (
-            <View style={styles.quickTag}>
-              <Feather name="shield" size={11} color="#67E8F9" />
-              <Text style={styles.quickTagText}>Anggota Aktif</Text>
-            </View>
+          {isOfficialMember ? (
+            dims.membership === 'resignation_requested' ? (
+              <View style={[styles.quickTag, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+                <Feather name="clock" size={11} color="#FDE047" />
+                <Text style={styles.quickTagText}>Proses Resign</Text>
+              </View>
+            ) : (
+              <View style={styles.quickTag}>
+                <Feather name="shield" size={11} color="#67E8F9" />
+                <Text style={styles.quickTagText}>Anggota Aktif</Text>
+              </View>
+            )
           ) : (
             <View style={styles.quickTag}>
               <Feather name="user" size={11} color="#BAE6FD" />
-              <Text style={styles.quickTagText}>Relawan Simpatisan</Text>
+              <Text style={styles.quickTagText}>
+                {dims.volunteer === 'paused'
+                  ? 'Cuti Relawan'
+                  : dims.volunteer === 'inactive'
+                  ? 'Relawan Nonaktif'
+                  : 'Relawan Aktif'}
+              </Text>
             </View>
           )}
 
-          {dims.kader === 'kader_aktif' && (
+          {isOfficialMember && dims.kader === 'kader_aktif' && (
             <View style={styles.quickTag}>
               <Feather name="award" size={11} color="#FDE047" />
               <Text style={styles.quickTagText}>LKK Madya</Text>
             </View>
           )}
 
-          {(dims.electoral?.status === 'CALEG' || dims.electoral?.status === 'BACALEG') && (
+          {isOfficialMember && (dims.electoral?.status === 'CALEG' || dims.electoral?.status === 'BACALEG') && (
             <View style={styles.quickTag}>
               <Feather name="briefcase" size={11} color="#F472B6" />
               <Text style={styles.quickTagText}>
@@ -177,7 +204,7 @@ export default function StatusPeranSayaScreen() {
       </View>
 
       {/* Resignation Review Alert Banner */}
-      {dims.membership === 'resignation_requested' && (
+      {isOfficialMember && dims.membership === 'resignation_requested' && (
         <View style={[styles.infoBanner, { backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7', borderColor: '#F59E0B' }]}>
           <Feather name="alert-triangle" size={18} color="#D97706" style={{ marginTop: 2 }} />
           <View style={{ flex: 1, gap: 2 }}>
@@ -196,325 +223,324 @@ export default function StatusPeranSayaScreen() {
         <Feather name="info" size={18} color={colors.primary} style={{ marginTop: 2 }} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={[styles.infoBannerTitle, { color: colors.text }]}>
-            Transparansi Portofolio 7 Dimensi Kader
+            {isOfficialMember ? 'Transparansi Portofolio 7 Dimensi Kader' : 'Transparansi Status Relawan Lapangan'}
           </Text>
           <Text style={[styles.infoBannerDesc, { color: colors.textMuted }]}>
-            Setiap lapisan peran dan mandat memiliki siklus pengesahan independen yang saling melengkapi tanpa tumpang tindih hak maupun kewajiban.
+            {isOfficialMember
+              ? 'Setiap lapisan peran dan mandat memiliki siklus pengesahan independen yang saling melengkapi tanpa tumpang tindih hak maupun kewajiban.'
+              : 'Informasi keaktifan penugasan lapangan, posko binaan, dan akreditasi pelatihan pengawal suara simPAN.'}
           </Text>
         </View>
       </View>
 
       {/* ========================================================================= */}
-      {/* 7 LAYER KARTU DIMENSI STATUS                                              */}
+      {/* 4 LAYER KARTU STRUKTUR & KADERISASI (KHUSUS KADER & ANGGOTA RESMI)        */}
       {/* ========================================================================= */}
-
-      {/* DIMENSI 1: KARTU KEANGGOTAAN (MEMBERSHIP) */}
-      <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
-        <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(0, 102, 179, 0.12)' }]}>
-            <Feather name="credit-card" size={18} color="#0066B3" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: colors.primary }]}>DIMENSI 1</Text>
-              <Pill
-                label={
-                  dims.membership === 'resignation_requested'
-                    ? 'PROSES RESIGN (REVIEW DPD)'
-                    : dims.membership === 'inactive'
-                    ? 'NONAKTIF'
-                    : officialMembership
-                    ? 'ANGGOTA AKTIF RESMI'
-                    : 'BELUM BER-KTA'
-                }
-                tone={
-                  dims.membership === 'resignation_requested'
-                    ? 'warning'
-                    : dims.membership === 'inactive'
-                    ? 'danger'
-                    : officialMembership
-                    ? 'success'
-                    : 'info'
-                }
-              />
+      {isOfficialMember && (
+        <>
+          {/* DIMENSI 1: KARTU KEANGGOTAAN (MEMBERSHIP) */}
+          <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
+            <View style={styles.dimensionHeader}>
+              <View style={[styles.dimIconBox, { backgroundColor: 'rgba(0, 102, 179, 0.12)' }]}>
+                <Feather name="credit-card" size={18} color="#0066B3" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.dimNumber, { color: colors.primary }]}>DIMENSI 1</Text>
+                  <Pill
+                    label={
+                      dims.membership === 'resignation_requested'
+                        ? 'PROSES RESIGN (REVIEW DPD)'
+                        : dims.membership === 'inactive'
+                        ? 'NONAKTIF'
+                        : officialMembership
+                        ? 'ANGGOTA AKTIF RESMI'
+                        : 'BELUM BER-KTA'
+                    }
+                    tone={
+                      dims.membership === 'resignation_requested'
+                        ? 'warning'
+                        : dims.membership === 'inactive'
+                        ? 'danger'
+                        : officialMembership
+                        ? 'success'
+                        : 'info'
+                    }
+                  />
+                </View>
+                <Text style={[styles.dimTitle, { color: colors.text }]}>Status Keanggotaan simPAN</Text>
+              </View>
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Status Keanggotaan simPAN</Text>
-          </View>
-        </View>
 
-        <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor e-KTA Digital</Text>
-            <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
-              {officialMembership?.ktaNumber || (officialMembership ? '32.73.01.2024.08912' : 'Belum Terbit (Relawan)')}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tanggal Registrasi Sah</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {officialMembership?.registeredAt || '15 Januari 2024'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Asal Teritorial</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {officialMembership?.dpc || 'DPC Coblong'} | {officialMembership?.dpd || 'DPD Kota Bandung'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Otoritas Verifikasi</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>Sekretariat Jenderal DPP PAN</Text>
-          </View>
+            <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor e-KTA Digital</Text>
+                <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
+                  {officialMembership?.ktaNumber || '32.73.01.2024.08912'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tanggal Registrasi Sah</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>
+                  {officialMembership?.registeredAt || '15 Januari 2024'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Asal Teritorial</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>
+                  {officialMembership?.dpc || 'DPC Coblong'} | {officialMembership?.dpd || 'DPD Kota Bandung'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Otoritas Verifikasi</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>Sekretariat Jenderal DPP PAN</Text>
+              </View>
 
-          {officialMembership ? (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('SimpanKta')}
-              style={[styles.dimActionBtn, { backgroundColor: isDark ? 'rgba(0,102,179,0.2)' : '#EFF6FF' }]}
-              activeOpacity={0.8}
-            >
-              <Feather name="eye" size={14} color={colors.primary} />
-              <Text style={[styles.dimActionBtnText, { color: colors.primary }]}>Buka Kartu e-KTA Digital simPAN</Text>
-              <Feather name="arrow-right" size={13} color={colors.primary} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('RegisterMember')}
-              style={[styles.dimActionBtn, { backgroundColor: isDark ? 'rgba(217,119,6,0.2)' : '#FEF3C7' }]}
-              activeOpacity={0.8}
-            >
-              <Feather name="award" size={14} color="#D97706" />
-              <Text style={[styles.dimActionBtnText, { color: '#D97706' }]}>Daftar Menjadi Anggota Resmi (e-KTA)</Text>
-              <Feather name="arrow-right" size={13} color="#D97706" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </Card>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('SimpanKta')}
+                style={[styles.dimActionBtn, { backgroundColor: isDark ? 'rgba(0,102,179,0.2)' : '#EFF6FF' }]}
+                activeOpacity={0.8}
+              >
+                <Feather name="eye" size={14} color={colors.primary} />
+                <Text style={[styles.dimActionBtnText, { color: colors.primary }]}>Buka Kartu e-KTA Digital simPAN</Text>
+                <Feather name="arrow-right" size={13} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </Card>
 
-      {/* DIMENSI 2: KARTU PERKADERAN (KADER STATUS) */}
-      <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
-        <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-            <Feather name="award" size={18} color="#10B981" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#10B981' }]}>DIMENSI 2</Text>
-              <Pill
-                label={
-                  dims.kader === 'kader_aktif'
-                    ? 'KADER FORMAL MADYA'
+          {/* DIMENSI 2: KARTU PERKADERAN (KADER STATUS) */}
+          <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
+            <View style={styles.dimensionHeader}>
+              <View style={[styles.dimIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                <Feather name="award" size={18} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.dimNumber, { color: '#10B981' }]}>DIMENSI 2</Text>
+                  <Pill
+                    label={
+                      dims.kader === 'kader_aktif'
+                        ? 'KADER FORMAL MADYA'
+                        : dims.kader === 'calon_kader'
+                        ? 'CALON KADER (ORIENTASI)'
+                        : 'SIMPATISAN / NON-KADER'
+                    }
+                    tone={dims.kader === 'kader_aktif' ? 'success' : dims.kader === 'calon_kader' ? 'warning' : 'info'}
+                  />
+                </View>
+                <Text style={[styles.dimTitle, { color: colors.text }]}>Status Perkaderan Formal (LKK PAN)</Text>
+              </View>
+            </View>
+
+            <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jenjang Perkaderan</Text>
+                <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
+                  {dims.kader === 'kader_aktif'
+                    ? 'LKK Madya (Latihan Kepemimpinan Tingkat Menengah)'
                     : dims.kader === 'calon_kader'
-                    ? 'CALON KADER (ORIENTASI)'
-                    : 'SIMPATISAN / NON-KADER'
-                }
-                tone={dims.kader === 'kader_aktif' ? 'success' : dims.kader === 'calon_kader' ? 'warning' : 'info'}
-              />
+                    ? 'Orientasi Kader Dasar (LKK Pertama)'
+                    : 'Belum Mengikuti Diklat Formal'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jalur Kaderisasi</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>Kader Murni LKKPAN Jawa Barat</Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>No. Sertifikat Kelulusan</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>LKK-PAN-JB-2024-441</Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kepatuhan Iuran Kader</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="check-circle" size={12} color={colors.success} />
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>Taat & Terverifikasi</Text>
+                </View>
+              </View>
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Status Perkaderan Formal (LKK PAN)</Text>
-          </View>
-        </View>
+          </Card>
 
-        <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jenjang Perkaderan</Text>
-            <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
-              {dims.kader === 'kader_aktif'
-                ? 'LKK Madya (Latihan Kepemimpinan Tingkat Menengah)'
-                : dims.kader === 'calon_kader'
-                ? 'Orientasi Kader Dasar (LKK Pertama)'
-                : 'Belum Mengikuti Diklat Formal'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jalur Kaderisasi</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>Kader Murni LKKPAN Jawa Barat</Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>No. Sertifikat Kelulusan</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>LKK-PAN-JB-2024-441</Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kepatuhan Iuran Kader</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Feather name="check-circle" size={12} color={colors.success} />
-              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>Taat & Terverifikasi</Text>
+          {/* DIMENSI 3: KARTU ORGANISASI (KEPENGURUSAN) */}
+          <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
+            <View style={styles.dimensionHeader}>
+              <View style={[styles.dimIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
+                <Feather name="briefcase" size={18} color="#3B82F6" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.dimNumber, { color: '#3B82F6' }]}>DIMENSI 3</Text>
+                  <Pill
+                    label={
+                      dims.position?.position === 'PENGURUS'
+                        ? `PENGURUS ${dims.position.level || 'DPD'}`
+                        : dims.position?.position === 'KOORDINATOR'
+                        ? 'KOORDINATOR WILAYAH'
+                        : dims.position?.position === 'FUNGSIONAR'
+                        ? 'FUNGSIONARIS'
+                        : 'ANGGOTA BIASA'
+                    }
+                    tone="info"
+                  />
+                </View>
+                <Text style={[styles.dimTitle, { color: colors.text }]}>Struktur Organisasi & Fungsionaris</Text>
+              </View>
             </View>
-          </View>
-        </View>
-      </Card>
 
-      {/* DIMENSI 3: KARTU ORGANISASI (KEPENGURUSAN) */}
-      <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
-        <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-            <Feather name="briefcase" size={18} color="#3B82F6" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#3B82F6' }]}>DIMENSI 3</Text>
-              <Pill
-                label={
-                  dims.position?.position === 'PENGURUS'
-                    ? `PENGURUS ${dims.position.level || 'DPD'}`
-                    : dims.position?.position === 'KOORDINATOR'
-                    ? 'KOORDINATOR WILAYAH'
-                    : dims.position?.position === 'FUNGSIONAR'
-                    ? 'FUNGSIONARIS'
-                    : 'ANGGOTA BIASA'
-                }
-                tone="info"
-              />
+            <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jabatan Struktural</Text>
+                <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
+                  {dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : 'Anggota Biasa (Non-Pengurus)')}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Masa Khidmat</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>Periode 2020 – 2025</Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>SK Keputusan DPP</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>
+                  {dims.position?.skNumber || 'PAN/A/Kpts/KU-SJ/082/2020'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kluster Penugasan</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>
+                  {dims.position?.region || 'Dapil Jabar I (Bandung & Cimahi)'}
+                </Text>
+              </View>
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Struktur Organisasi & Fungsionaris</Text>
-          </View>
-        </View>
+          </Card>
 
-        <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jabatan Struktural</Text>
-            <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
-              {dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : 'Anggota Biasa (Non-Pengurus)')}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Masa Khidmat</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>Periode 2020 – 2025</Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>SK Keputusan DPP</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {dims.position?.skNumber || 'PAN/A/Kpts/KU-SJ/082/2020'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kluster Penugasan</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {dims.position?.region || 'Dapil Jabar I (Bandung & Cimahi)'}
-            </Text>
-          </View>
-        </View>
-      </Card>
-
-      {/* DIMENSI 4: KARTU ELEKTORAL & PENCALEGAN 2029 */}
-      <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
-        <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.12)' }]}>
-            <Feather name="flag" size={18} color="#A855F7" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#A855F7' }]}>DIMENSI 4</Text>
-              <Pill
-                label={
-                  dims.electoral?.status === 'CALEG'
-                    ? 'CALEG RESMI 2029'
-                    : dims.electoral?.status === 'BACALEG'
-                    ? 'BACALEG 2029 LOLOS'
-                    : 'NON-KONTENSTAN'
-                }
-                tone={dims.electoral?.status !== 'NONE' ? 'primary' : 'info'}
-              />
+          {/* DIMENSI 4: KARTU ELEKTORAL & PENCALEGAN 2029 */}
+          <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
+            <View style={styles.dimensionHeader}>
+              <View style={[styles.dimIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.12)' }]}>
+                <Feather name="flag" size={18} color="#A855F7" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={[styles.dimNumber, { color: '#A855F7' }]}>DIMENSI 4</Text>
+                  <Pill
+                    label={
+                      dims.electoral?.status === 'CALEG'
+                        ? 'CALEG RESMI 2029'
+                        : dims.electoral?.status === 'BACALEG'
+                        ? 'BACALEG 2029 LOLOS'
+                        : 'NON-KONTENSTAN'
+                    }
+                    tone={dims.electoral?.status !== 'NONE' ? 'primary' : 'info'}
+                  />
+                </View>
+                <Text style={[styles.dimTitle, { color: colors.text }]}>Status Elektoral & Pencalonan</Text>
+              </View>
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Status Elektoral & Pencalonan</Text>
-          </View>
-        </View>
 
-        <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tingkat Pencalonan</Text>
-            <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
-              {dims.electoral?.legislativeLevel?.replace('_', ' ') || (dims.electoral?.status !== 'NONE' ? 'DPRD Provinsi Jawa Barat' : 'Non-Calon Legislatif')}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Daerah Pemilihan (Dapil)</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {dims.electoral?.dapil || 'Dapil Jabar I (Kota Bandung - Kota Cimahi)'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor Rekomendasi Urut</Text>
-            <Text style={[styles.propValue, { color: '#E60012', fontFamily: fonts.bold }]}>
-              {dims.electoral?.ballotNumber ? `#${dims.electoral.ballotNumber} (Prioritas Pemenangan)` : 'Dalam Proses DCS'}
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Audit Berkas KPPN</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Feather name="check-circle" size={12} color={colors.success} />
-              <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>7/7 Dokumen Lengkap</Text>
+            <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tingkat Pencalonan</Text>
+                <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
+                  {dims.electoral?.legislativeLevel?.replace('_', ' ') || (dims.electoral?.status !== 'NONE' ? 'DPRD Provinsi Jawa Barat' : 'Non-Calon Legislatif')}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Daerah Pemilihan (Dapil)</Text>
+                <Text style={[styles.propValue, { color: colors.text }]}>
+                  {dims.electoral?.dapil || 'Dapil Jabar I (Kota Bandung - Kota Cimahi)'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor Rekomendasi Urut</Text>
+                <Text style={[styles.propValue, { color: '#E60012', fontFamily: fonts.bold }]}>
+                  {dims.electoral?.ballotNumber ? `#${dims.electoral.ballotNumber} (Prioritas Pemenangan)` : 'Dalam Proses DCS'}
+                </Text>
+              </View>
+              <View style={styles.propRow}>
+                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Audit Berkas KPPN</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="check-circle" size={12} color={colors.success} />
+                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>7/7 Dokumen Lengkap</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('SimpanBacaleg')}
+                style={[styles.dimActionBtn, { backgroundColor: isDark ? 'rgba(168,85,247,0.15)' : '#FAF5FF' }]}
+                activeOpacity={0.8}
+              >
+                <Feather name="file-text" size={14} color="#A855F7" />
+                <Text style={[styles.dimActionBtnText, { color: '#A855F7' }]}>Tinjau Berkas Pencalegan KPPN</Text>
+                <Feather name="arrow-right" size={13} color="#A855F7" />
+              </TouchableOpacity>
             </View>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('SimpanBacaleg')}
-            style={[styles.dimActionBtn, { backgroundColor: isDark ? 'rgba(168,85,247,0.15)' : '#FAF5FF' }]}
-            activeOpacity={0.8}
-          >
-            <Feather name="file-text" size={14} color="#A855F7" />
-            <Text style={[styles.dimActionBtnText, { color: '#A855F7' }]}>Tinjau Berkas Pencalegan KPPN</Text>
-            <Feather name="arrow-right" size={13} color="#A855F7" />
-          </TouchableOpacity>
-        </View>
-      </Card>
+          </Card>
+        </>
+      )}
 
       {/* DIMENSI 5: KARTU KERELAWANAN (VOLUNTEER) */}
-      <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
-        <View style={styles.dimensionHeader}>
-          <View style={[styles.dimIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
-            <Feather name="users" size={18} color="#F59E0B" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#F59E0B' }]}>DIMENSI 5</Text>
-              <Pill
-                label={
-                  dims.volunteer === 'paused'
-                    ? 'BERHENTI SEMENTARA'
-                    : dims.volunteer === 'inactive'
-                    ? 'NONAKTIF'
-                    : 'RELAWAN AKTIF'
-                }
-                tone={
-                  dims.volunteer === 'paused'
-                    ? 'warning'
-                    : dims.volunteer === 'inactive'
-                    ? 'danger'
-                    : 'success'
-                }
-              />
+      {(!isOfficialMember || (dims.volunteer !== 'none' && dims.volunteer !== 'inactive')) && (
+        <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
+          <View style={styles.dimensionHeader}>
+            <View style={[styles.dimIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
+              <Feather name="users" size={18} color="#F59E0B" />
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Status Kerelawanan & Aksi Lapangan</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.dimNumber, { color: '#F59E0B' }]}>
+                  {isOfficialMember ? 'DIMENSI 5' : 'STATUS UTAMA'}
+                </Text>
+                <Pill
+                  label={
+                    dims.volunteer === 'paused'
+                      ? 'BERHENTI SEMENTARA'
+                      : dims.volunteer === 'inactive'
+                      ? 'NONAKTIF'
+                      : 'RELAWAN AKTIF'
+                  }
+                  tone={
+                    dims.volunteer === 'paused'
+                      ? 'warning'
+                      : dims.volunteer === 'inactive'
+                      ? 'danger'
+                      : 'success'
+                  }
+                />
+              </View>
+              <Text style={[styles.dimTitle, { color: colors.text }]}>
+                {isOfficialMember ? 'Status Kerelawanan & Aksi Lapangan' : 'Status Partisipasi Relawan Lapangan'}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Total Aksi Lapangan</Text>
-            <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
-              {currentUser?.volunteerStats?.tasksCompleted || 15} Kegiatan Selesai
-            </Text>
+          <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+            <View style={styles.propRow}>
+              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Total Aksi Lapangan</Text>
+              <Text style={[styles.propValue, { color: colors.text, fontFamily: fonts.bold }]}>
+                {currentUser?.volunteerStats?.tasksCompleted || 15} Kegiatan Selesai
+              </Text>
+            </View>
+            <View style={styles.propRow}>
+              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jam Pelatihan / Bimtek</Text>
+              <Text style={[styles.propValue, { color: colors.text }]}>
+                {currentUser?.volunteerStats?.trainingHours || 12} Jam Terverifikasi
+              </Text>
+            </View>
+            <View style={styles.propRow}>
+              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Koordinator Pendamping</Text>
+              <Text style={[styles.propValue, { color: colors.text }]}>
+                {currentUser?.coordinatorContact?.name || 'Asep Ridwan'} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || 'Coblong'})
+              </Text>
+            </View>
+            <View style={styles.propRow}>
+              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Hak Portofolio</Text>
+              <Text style={[styles.propValue, { color: colors.success, fontFamily: fonts.medium }]}>
+                Tersimpan Permanen di Database
+              </Text>
+            </View>
           </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jam Pelatihan / Bimtek</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {currentUser?.volunteerStats?.trainingHours || 12} Jam Terverifikasi
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Koordinator Pendamping</Text>
-            <Text style={[styles.propValue, { color: colors.text }]}>
-              {currentUser?.coordinatorContact?.name || 'Asep Ridwan'} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || 'Coblong'})
-            </Text>
-          </View>
-          <View style={styles.propRow}>
-            <Text style={[styles.propLabel, { color: colors.textMuted }]}>Hak Portofolio</Text>
-            <Text style={[styles.propValue, { color: colors.success, fontFamily: fonts.medium }]}>
-              Tersimpan Permanen di Database
-            </Text>
-          </View>
-        </View>
-      </Card>
+        </Card>
+      )}
 
       {/* DIMENSI 6: PROGRAM PEMBINAAN EKOSISTEM */}
       <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
@@ -524,10 +550,14 @@ export default function StatusPeranSayaScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#E60012' }]}>DIMENSI 6</Text>
-              <Pill label="3 PROGRAM AKTIF" tone="danger" />
+              <Text style={[styles.dimNumber, { color: '#E60012' }]}>
+                {isOfficialMember ? 'DIMENSI 6' : 'PROGRAM DIKLAT'}
+              </Text>
+              <Pill label={isOfficialMember ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="danger" />
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Ekosistem Program Pembinaan</Text>
+            <Text style={[styles.dimTitle, { color: colors.text }]}>
+              {isOfficialMember ? 'Ekosistem Program Pembinaan' : 'Program Pelatihan & Diklat'}
+            </Text>
           </View>
         </View>
 
@@ -584,21 +614,25 @@ export default function StatusPeranSayaScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.dimNumber, { color: '#6366F1' }]}>DIMENSI 7</Text>
-              <Pill label="LOG AUDIT" tone="info" />
+              <Text style={[styles.dimNumber, { color: '#6366F1' }]}>
+                {isOfficialMember ? 'DIMENSI 7' : 'RIWAYAT'}
+              </Text>
+              <Pill label="TERVERIFIKASI" tone="info" />
             </View>
-            <Text style={[styles.dimTitle, { color: colors.text }]}>Jejak Audit Siklus Hidup Peran</Text>
+            <Text style={[styles.dimTitle, { color: colors.text }]}>
+              {isOfficialMember ? 'Jejak Audit Siklus Hidup Peran' : 'Riwayat Penugasan & Pelatihan'}
+            </Text>
           </View>
         </View>
 
         <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          {LIFECYCLE_HISTORY.map((item, idx) => (
+          {userTimeline.map((item, idx) => (
             <View key={item.id} style={styles.timelineItem}>
               <View style={styles.timelineLeftCol}>
                 <View style={[styles.timelineDot, { backgroundColor: colors.primary }]}>
                   <Feather name={item.icon} size={11} color="#FFFFFF" />
                 </View>
-                {idx < LIFECYCLE_HISTORY.length - 1 && (
+                {idx < userTimeline.length - 1 && (
                   <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
                 )}
               </View>

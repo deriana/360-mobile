@@ -50,7 +50,8 @@ export default function ProfileScreen({ navigation }: any) {
 
   const user = currentUser.identity;
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
-  const isOfficialMember = Boolean(officialMembership && (officialMembership.status === 'verified' || officialMembership.status === 'active'));
+  const hasOfficialMembership = Boolean(officialMembership);
+  const isOfficialMember = hasOfficialMembership;
   const currentMembership = officialMembership || currentUser.memberships[0];
 
   const dims = currentUser.dimensions || {
@@ -58,118 +59,128 @@ export default function ProfileScreen({ navigation }: any) {
     volunteer: 'active',
   };
 
-  const isVolunteerPaused = dims.volunteer === 'paused' || Boolean(currentUser.volunteerPauseInfo?.isPaused);
-  const isVolunteerInactive = dims.volunteer === 'inactive';
-  const isResignationRequested = dims.membership === 'resignation_requested';
+  // Cadre / Official Member dimension statuses
+  const isResignationRequested = dims.membership === 'resignation_requested' || Boolean(currentUser.resignationRequest);
   const isMembershipInactive = dims.membership === 'inactive';
 
-  const isNonActiveStatus = isVolunteerPaused || isVolunteerInactive || isResignationRequested || isMembershipInactive;
+  // Volunteer dimension statuses
+  const isVolunteerPaused = dims.volunteer === 'paused' || Boolean(currentUser.volunteerPauseInfo?.isPaused);
+  const isVolunteerInactive = dims.volunteer === 'inactive';
 
-  const statusDotColor = isVolunteerPaused || isResignationRequested
-    ? '#F59E0B'
-    : isVolunteerInactive || isMembershipInactive
-    ? colors.danger
-    : colors.success;
+  // Scoped non-active status by track:
+  // If Official Member: only evaluate membership dimension (resignation or inactive).
+  // If Pure Volunteer: only evaluate volunteer dimension (paused or inactive).
+  const isNonActiveStatus = hasOfficialMembership
+    ? (isResignationRequested || isMembershipInactive)
+    : (isVolunteerPaused || isVolunteerInactive);
+
+  const statusDotColor = hasOfficialMembership
+    ? (isResignationRequested ? '#F59E0B' : isMembershipInactive ? colors.danger : colors.success)
+    : (isVolunteerPaused ? '#F59E0B' : isVolunteerInactive ? colors.danger : colors.success);
 
   const getAlertConfig = () => {
-    if (isVolunteerPaused) {
-      const pauseInfo = currentUser.volunteerPauseInfo;
-      const durationLabel = pauseInfo?.durationMonths ? `${pauseInfo.durationMonths} Bulan` : '3 Bulan';
-      const reasonLabel = pauseInfo?.reason || 'Cuti terencana';
-      return {
-        cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
-        borderColor: isDark ? '#B45309' : '#FDE68A',
-        iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
-        icon: 'pause-circle' as const,
-        iconColor: '#D97706',
-        title: 'Masa Cuti Relawan Aktif',
-        titleColor: isDark ? '#FDE047' : '#92400E',
-        badge: 'CUTI SEMENTARA',
-        pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
-        pillText: '#B45309',
-        description: `Partisipasi tugas lapangan Anda sedang dijeda (${durationLabel} • ${reasonLabel}). Penugasan baru dinonaktifkan tanpa menghapus portofolio Anda.`,
-        descColor: isDark ? '#FDE047' : '#78350F',
-        btnText: 'Aktifkan Kembali',
-        btnIcon: 'play' as const,
-        btnBg: '#D97706',
-        onPrimaryAction: () => {
-          setVolunteerPause({ isPaused: false });
-          setRoleSwitchNotice('Status kerelawanan aktif kembali! Penugasan lapangan dan bursa aksi siap diterima.');
-        },
-        secondaryText: 'Atur Masa Jeda',
-      };
-    }
+    if (hasOfficialMembership) {
+      // CADRE / OFFICIAL MEMBER ALERTS
+      if (isResignationRequested) {
+        return {
+          cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+          borderColor: isDark ? '#B45309' : '#FDE68A',
+          iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
+          icon: 'clock' as const,
+          iconColor: '#D97706',
+          title: 'Pengunduran Diri Diproses',
+          titleColor: isDark ? '#FDE047' : '#92400E',
+          badge: 'REVIEW DPD',
+          pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
+          pillText: '#B45309',
+          description: 'Pengajuan pengunduran diri keanggotaan Anda sedang ditinjau administrasi DPD PAN. Hak suara permusyawaratan dibekukan sementara.',
+          descColor: isDark ? '#FDE047' : '#78350F',
+          btnText: 'Batalkan Resign',
+          btnIcon: 'rotate-ccw' as const,
+          btnBg: '#0284C7',
+          onPrimaryAction: () => {
+            cancelMembershipResignation();
+            setRoleSwitchNotice('Pengajuan pengunduran diri dibatalkan. Status keanggotaan tetap Aktif Penuh.');
+          },
+          secondaryText: 'Detail Status',
+        };
+      }
 
-    if (isVolunteerInactive) {
-      return {
-        cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-        borderColor: isDark ? '#991B1B' : '#FECACA',
-        iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
-        icon: 'user-x' as const,
-        iconColor: '#DC2626',
-        title: 'Status Kerelawanan Nonaktif',
-        titleColor: isDark ? '#FCA5A5' : '#991B1B',
-        badge: 'NONAKTIF',
-        pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
-        pillText: '#991B1B',
-        description: 'Anda sedang tidak aktif dalam kegiatan relawan lapangan. Rekam jejak tugas dan sertifikat bimtek tetap tersimpan utuh di simPAN.',
-        descColor: isDark ? '#FECACA' : '#7F1D1D',
-        btnText: 'Aktifkan Relawan',
-        btnIcon: 'rotate-ccw' as const,
-        btnBg: '#DC2626',
-        onPrimaryAction: () => {
-          setVolunteerPause({ isPaused: false });
-          setRoleSwitchNotice('Status kerelawanan berhasil diaktifkan kembali!');
-        },
-        secondaryText: 'Detail Partisipasi',
-      };
-    }
+      if (isMembershipInactive) {
+        return {
+          cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+          borderColor: isDark ? '#991B1B' : '#FECACA',
+          iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
+          icon: 'shield-off' as const,
+          iconColor: '#DC2626',
+          title: 'Keanggotaan Nonaktif',
+          titleColor: isDark ? '#FCA5A5' : '#991B1B',
+          badge: 'NONAKTIF',
+          pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
+          pillText: '#991B1B',
+          description: 'Status keanggotaan resmi partai Anda saat ini tidak aktif. Silakan hubungi Sekretariat DPD PAN untuk pembaruan data.',
+          descColor: isDark ? '#FECACA' : '#7F1D1D',
+          btnText: undefined,
+          btnIcon: undefined,
+          btnBg: undefined,
+          onPrimaryAction: undefined,
+          secondaryText: 'Detail Keanggotaan',
+        };
+      }
+    } else {
+      // PURE VOLUNTEER TRACK ALERTS
+      if (isVolunteerPaused) {
+        const pauseInfo = currentUser.volunteerPauseInfo;
+        const durationLabel = pauseInfo?.durationMonths ? `${pauseInfo.durationMonths} Bulan` : '3 Bulan';
+        const reasonLabel = pauseInfo?.reason || 'Cuti terencana';
+        return {
+          cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+          borderColor: isDark ? '#B45309' : '#FDE68A',
+          iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
+          icon: 'pause-circle' as const,
+          iconColor: '#D97706',
+          title: 'Masa Cuti Relawan Aktif',
+          titleColor: isDark ? '#FDE047' : '#92400E',
+          badge: 'CUTI SEMENTARA',
+          pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
+          pillText: '#B45309',
+          description: `Partisipasi tugas lapangan Anda sedang dijeda (${durationLabel} • ${reasonLabel}). Penugasan baru dinonaktifkan tanpa menghapus portofolio Anda.`,
+          descColor: isDark ? '#FDE047' : '#78350F',
+          btnText: 'Aktifkan Kembali',
+          btnIcon: 'play' as const,
+          btnBg: '#D97706',
+          onPrimaryAction: () => {
+            setVolunteerPause({ isPaused: false });
+            setRoleSwitchNotice('Status kerelawanan aktif kembali! Penugasan lapangan dan bursa aksi siap diterima.');
+          },
+          secondaryText: 'Atur Masa Jeda',
+        };
+      }
 
-    if (isResignationRequested) {
-      return {
-        cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
-        borderColor: isDark ? '#B45309' : '#FDE68A',
-        iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
-        icon: 'clock' as const,
-        iconColor: '#D97706',
-        title: 'Pengunduran Diri Diproses',
-        titleColor: isDark ? '#FDE047' : '#92400E',
-        badge: 'REVIEW DPD',
-        pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
-        pillText: '#B45309',
-        description: 'Pengajuan pengunduran diri keanggotaan Anda sedang ditinjau administrasi DPD PAN. Hak suara permusyawaratan dibekukan sementara.',
-        descColor: isDark ? '#FDE047' : '#78350F',
-        btnText: 'Batalkan Resign',
-        btnIcon: 'rotate-ccw' as const,
-        btnBg: '#0284C7',
-        onPrimaryAction: () => {
-          cancelMembershipResignation();
-          setRoleSwitchNotice('Pengajuan pengunduran diri dibatalkan. Status keanggotaan tetap Aktif Penuh.');
-        },
-        secondaryText: 'Detail Status',
-      };
-    }
-
-    if (isMembershipInactive) {
-      return {
-        cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-        borderColor: isDark ? '#991B1B' : '#FECACA',
-        iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
-        icon: 'shield-off' as const,
-        iconColor: '#DC2626',
-        title: 'Keanggotaan Nonaktif',
-        titleColor: isDark ? '#FCA5A5' : '#991B1B',
-        badge: 'NONAKTIF',
-        pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
-        pillText: '#991B1B',
-        description: 'Status keanggotaan resmi partai Anda saat ini tidak aktif. Silakan hubungi Sekretariat DPD PAN untuk pembaruan data.',
-        descColor: isDark ? '#FECACA' : '#7F1D1D',
-        btnText: undefined,
-        btnIcon: undefined,
-        btnBg: undefined,
-        onPrimaryAction: undefined,
-        secondaryText: 'Detail Keanggotaan',
-      };
+      if (isVolunteerInactive) {
+        return {
+          cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+          borderColor: isDark ? '#991B1B' : '#FECACA',
+          iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
+          icon: 'user-x' as const,
+          iconColor: '#DC2626',
+          title: 'Status Kerelawanan Nonaktif',
+          titleColor: isDark ? '#FCA5A5' : '#991B1B',
+          badge: 'NONAKTIF',
+          pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
+          pillText: '#991B1B',
+          description: 'Anda sedang tidak aktif dalam kegiatan relawan lapangan. Rekam jejak tugas dan sertifikat bimtek tetap tersimpan utuh di simPAN.',
+          descColor: isDark ? '#FECACA' : '#7F1D1D',
+          btnText: 'Aktifkan Relawan',
+          btnIcon: 'rotate-ccw' as const,
+          btnBg: '#DC2626',
+          onPrimaryAction: () => {
+            setVolunteerPause({ isPaused: false });
+            setRoleSwitchNotice('Status kerelawanan berhasil diaktifkan kembali!');
+          },
+          secondaryText: 'Detail Partisipasi',
+        };
+      }
     }
 
     return null;
@@ -346,11 +357,11 @@ export default function ProfileScreen({ navigation }: any) {
                       styles.passStatusTag,
                       {
                         backgroundColor:
-                          isVolunteerPaused || isResignationRequested
+                          (hasOfficialMembership ? isResignationRequested : isVolunteerPaused)
                             ? isDark ? 'rgba(245,158,11,0.25)' : '#FEF3C7'
                             : isDark ? 'rgba(239,68,68,0.25)' : '#FEE2E2',
                         borderColor:
-                          isVolunteerPaused || isResignationRequested ? '#F59E0B' : '#EF4444',
+                          (hasOfficialMembership ? isResignationRequested : isVolunteerPaused) ? '#F59E0B' : '#EF4444',
                       },
                     ]}
                   >
@@ -359,17 +370,19 @@ export default function ProfileScreen({ navigation }: any) {
                         styles.passStatusTagText,
                         {
                           color:
-                            isVolunteerPaused || isResignationRequested
+                            (hasOfficialMembership ? isResignationRequested : isVolunteerPaused)
                               ? isDark ? '#FDE047' : '#B45309'
                               : isDark ? '#FCA5A5' : '#DC2626',
                         },
                       ]}
                     >
-                      {isVolunteerPaused
+                      {hasOfficialMembership
+                        ? isResignationRequested
+                          ? 'PROSES RESIGN'
+                          : 'NONAKTIF'
+                        : isVolunteerPaused
                         ? 'CUTI SEMENTARA'
-                        : isVolunteerInactive || isMembershipInactive
-                        ? 'NONAKTIF'
-                        : 'PROSES RESIGN'}
+                        : 'NONAKTIF'}
                     </Text>
                   </View>
                 )}
@@ -874,11 +887,11 @@ export default function ProfileScreen({ navigation }: any) {
                 styles.actionRowStatusPill,
                 {
                   backgroundColor:
-                    isVolunteerPaused || isResignationRequested
+                    (hasOfficialMembership ? isResignationRequested : isVolunteerPaused)
                       ? isDark ? 'rgba(245,158,11,0.2)' : '#FEF3C7'
                       : isDark ? 'rgba(239,68,68,0.2)' : '#FEE2E2',
                   borderColor:
-                    isVolunteerPaused || isResignationRequested ? '#F59E0B' : '#EF4444',
+                    (hasOfficialMembership ? isResignationRequested : isVolunteerPaused) ? '#F59E0B' : '#EF4444',
                 },
               ]}
             >
@@ -887,17 +900,19 @@ export default function ProfileScreen({ navigation }: any) {
                   styles.actionRowStatusPillText,
                   {
                     color:
-                      isVolunteerPaused || isResignationRequested
+                      (hasOfficialMembership ? isResignationRequested : isVolunteerPaused)
                         ? isDark ? '#FDE047' : '#B45309'
                         : isDark ? '#FCA5A5' : '#DC2626',
                   },
                 ]}
               >
-                {isVolunteerPaused
+                {hasOfficialMembership
+                  ? isResignationRequested
+                    ? 'Proses Resign'
+                    : 'Nonaktif'
+                  : isVolunteerPaused
                   ? 'Cuti'
-                  : isVolunteerInactive || isMembershipInactive
-                  ? 'Nonaktif'
-                  : 'Proses Resign'}
+                  : 'Nonaktif'}
               </Text>
             </View>
           )}
