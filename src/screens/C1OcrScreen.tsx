@@ -8,16 +8,18 @@ import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { pickImage } from '../utils/pickImage';
 import { scanC1PlanoWithVisionAi, C1OcrBoxDetection } from '../utils/ocrApi';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { UploadRow } from './ReportFormScreen';
 
 type ScanStage = 'before' | 'scanning' | 'review' | 'attachment' | 'done';
 
 export default function C1OcrScreen({ route, navigation }: any) {
-  const { tpsId } = route.params || { tpsId: 'TPS-001' };
-  const { tps, submitTpsReport, addDocumentationPhoto } = useApp();
+  const { tps, submitTpsReport, addDocumentationPhoto, currentUser, witnesses } = useApp();
   const { colors } = useTheme();
 
-  const record = tps.find((t) => t.id === tpsId);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const targetTpsId = route?.params?.tpsId || activeScope.assignedTpsId || 'TPS-001';
+  const record = tps.find((t) => t.id === targetTpsId) || (targetTpsId === activeScope.assignedTpsId ? activeScope.tps : tps[0]);
   const [stage, setStage] = useState<ScanStage>('before');
   const [invalidVotes, setInvalidVotes] = useState('0');
   const [partyValues, setPartyValues] = useState<Record<string, string>>({});

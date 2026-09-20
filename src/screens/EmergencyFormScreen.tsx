@@ -17,6 +17,7 @@ import { Card, ConfirmDialog, Modal } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { EmergencyCategory, EmergencySeverity } from '../types';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { pickImage } from '../utils/pickImage';
 
 interface CategoryOption {
@@ -131,7 +132,7 @@ const QUICK_TEMPLATES: Record<EmergencyCategory, string[]> = {
 };
 
 export default function EmergencyFormScreen({ navigation }: any) {
-  const { addEmergencyReport, tps, witnesses } = useApp();
+  const { addEmergencyReport, tps, witnesses, currentUser } = useApp();
   const { colors, isDark } = useTheme();
 
   const [category, setCategory] = useState<EmergencyCategory>('violation');
@@ -149,11 +150,12 @@ export default function EmergencyFormScreen({ navigation }: any) {
     onConfirm?: () => void;
   }>({ visible: false, title: '', message: '' });
 
-  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
-  const currentTps = tps.find((t) => t.id === currentWitness?.assignedTpsId) || tps[0];
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const currentWitness = activeScope.witness;
+  const currentTps = activeScope.tps;
   const tpsName = currentTps
-    ? `TPS ${String(currentTps.tpsNumber).padStart(3, '0')} ${currentTps.village || currentTps.district}`
-    : 'TPS 001 Kel. Gambir';
+    ? `TPS ${String(currentTps.tpsNumber).padStart(3, '0')} Kel. ${currentTps.village || currentTps.district}`
+    : 'TPS 001 Kel. Braga';
 
   const handlePickImage = async (source: 'camera' | 'library') => {
     if (attachments.length >= 4) {

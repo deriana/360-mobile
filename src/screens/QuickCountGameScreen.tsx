@@ -17,6 +17,7 @@ import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../compo
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { PASLON_AVATARS } from '../data/images';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { addToOfflineQueue } from '../utils/offlineQueue';
 
 const PASLON_KEYS = [
@@ -77,8 +78,9 @@ function Billboard({ votes, colors }: { votes: Record<string, number>; colors: a
 
 export default function QuickCountGameScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const { witnesses } = useApp();
-  const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
+  const { witnesses, tps, currentUser } = useApp();
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const witness = activeScope.witness;
   const [votes, setVotes] = useState<Record<string, number>>(
     Object.fromEntries(PASLON_KEYS.map((k) => [k, 0])),
   );
@@ -115,7 +117,7 @@ export default function QuickCountGameScreen({ navigation }: any) {
   const sendToC1Report = () => {
     // Simpan telemetry sinkronisasi POST /api/v1/tps/quick-tally
     const tallyPayload = {
-      tpsId: witness?.assignedTpsId || 'TPS-001',
+      tpsId: activeScope.assignedTpsId || 'TPS-001',
       paslonVotes: votes,
       invalidVotes,
       totalCounted: totalVotes,
@@ -125,7 +127,7 @@ export default function QuickCountGameScreen({ navigation }: any) {
     addToOfflineQueue('quick_tally', tallyPayload);
 
     navigation.navigate('ReportForm', {
-      tpsId: witness?.assignedTpsId || 'TPS-001',
+      tpsId: activeScope.assignedTpsId || 'TPS-001',
       prefillCandidateVotes: votes,
       prefillInvalidVotes: invalidVotes,
       source: 'quick_count',
@@ -137,16 +139,18 @@ export default function QuickCountGameScreen({ navigation }: any) {
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <Card style={{ gap: spacing.xs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={[styles.title, { color: colors.text }]}>Hitung Cepat Suara Pilpres</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Tally Counter Suara Bilik</Text>
           <Pressable onPress={resetCount} hitSlop={8}>
             <Feather name="refresh-cw" size={18} color={colors.textMuted} strokeWidth={iconStrokeWidth} />
           </Pressable>
         </View>
         <Text style={{ color: colors.textMuted, fontSize: fontSize.sm }}>
-          Ketuk +1 setiap surat suara sah dibacakan petugas KPPS. Hasil tally ini bisa langsung dipakai mengisi
-          Laporan C1 supaya angkanya cocok dan akurat.
+          Pencatatan tally surat suara sah saat penghitungan KPPS di {activeScope.assignedTpsLabel}. Hasil tally ini otomatis dapat diekspor ke Formulir C1 Plano.
         </Text>
-        <Pill label={`${totalVotes} suara dihitung`} tone="info" />
+        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          <Pill label={`${totalVotes} Suara Dihitung`} tone="primary" />
+          <Pill label={activeScope.assignedTpsLabel} tone="info" />
+        </View>
       </Card>
 
       {!locked ? (

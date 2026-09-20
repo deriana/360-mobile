@@ -7,13 +7,16 @@ import { PersonnelIdCard } from '../components/PersonnelIdCard';
 import { spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 type PersonType = 'witness' | 'coordinator';
 
 export default function KartuPetugasScreen({ route }: any) {
-  const { personType = 'witness', personId = 'SAKSI-001' }: { personType?: PersonType; personId?: string } = route?.params || {};
-  const { witnesses, coordinators, tps } = useApp();
+  const { witnesses, coordinators, tps, currentUser } = useApp();
   const { colors } = useTheme();
+
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const { personType = 'witness', personId = activeScope.witnessId }: { personType?: PersonType; personId?: string } = route?.params || {};
 
   if (personType === 'coordinator') {
     const coordinator = coordinators.find((c) => c.id === personId);
@@ -40,12 +43,12 @@ export default function KartuPetugasScreen({ route }: any) {
     );
   }
 
-  const witness = witnesses.find((w) => w.id === personId);
+  const witness = witnesses.find((w) => w.id === personId) || (personId === activeScope.witnessId ? activeScope.witness : null);
   if (!witness) {
     return <EmptyState title="Saksi Tidak Ditemukan" body="Data kartu petugas ini tidak tersedia." icon="user-x" />;
   }
   const witnessIndex = witnesses.findIndex((w) => w.id === personId);
-  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
+  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId) || (personId === activeScope.witnessId ? activeScope.tps : null);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -53,7 +56,7 @@ export default function KartuPetugasScreen({ route }: any) {
         name={witness.name}
         roleLabel="Saksi Resmi TPS"
         badgeId={`SAKSI-PAN-${witness.id}`}
-        avatarSource={getWitnessAvatar(witnessIndex)}
+        avatarSource={getWitnessAvatar(witnessIndex >= 0 ? witnessIndex : 1)}
         rows={[
           { icon: 'credit-card', label: 'NIK', value: maskNik(witness.nik) },
           { icon: 'phone', label: 'No. WhatsApp / HP', value: maskPhone(witness.phone) },
@@ -61,7 +64,7 @@ export default function KartuPetugasScreen({ route }: any) {
           {
             icon: 'grid',
             label: 'TPS Penugasan',
-            value: assignedTps ? `${witness.assignedTpsId} — Kec. ${assignedTps.district}, ${assignedTps.regency}` : witness.assignedTpsId,
+            value: assignedTps ? `${witness.assignedTpsId} — Kel. ${assignedTps.village || assignedTps.district}, Kec. ${assignedTps.district}` : witness.assignedTpsId,
           },
           { icon: 'shield', label: 'Status Autentikasi', value: 'TERVERIFIKASI SAKSI PAN', isSuccess: true },
         ]}

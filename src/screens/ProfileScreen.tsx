@@ -26,6 +26,7 @@ import {
   VOLUNTEER_PRESETS,
 } from '../utils/userContext';
 import { checkRoleEligibility } from '../utils/roleUnlockRules';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function ProfileScreen({ navigation }: any) {
   const {
@@ -35,6 +36,8 @@ export default function ProfileScreen({ navigation }: any) {
     applyCareerStatePreset,
     applyVolunteerStatePreset,
     currentUser,
+    witnesses,
+    tps,
     setVolunteerPause,
     cancelMembershipResignation,
     logout,
@@ -187,9 +190,10 @@ export default function ProfileScreen({ navigation }: any) {
 
   const alertConfig = getAlertConfig();
 
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
   const activeAssignment = currentUser.roles.find((r) => r.role === role) ?? currentUser.roles[0];
   const activityTimeline = ROLE_ACTIVITY_TIMELINE[user.email] || ROLE_ACTIVITY_TIMELINE['saksi@pan.go.id'] || [];
-  const hasWitnessRole = currentUser.roles.some((r) => r.role === 'WITNESS');
+  const hasWitnessRole = currentUser.roles.some((r) => r.role === 'WITNESS') || currentUser.dimensions?.programs?.programSaksi === 'MANDATED';
 
   // Guard: Opsi role yang boleh diakses hanya yang memang legal
   // Role 'MEMBER' HANYA boleh jika isOfficialMember === true
@@ -860,7 +864,7 @@ export default function ProfileScreen({ navigation }: any) {
         {hasWitnessRole && (
           <>
             <Pressable
-              onPress={() => navigation.navigate('AssignmentLetter', { witnessId: 'SAKSI-001' })}
+              onPress={() => navigation.navigate('AssignmentLetter', { witnessId: activeScope.witnessId, tpsId: activeScope.assignedTpsId })}
               style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>

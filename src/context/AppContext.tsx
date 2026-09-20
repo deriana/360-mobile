@@ -678,25 +678,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const checkInWitness: AppContextValue['checkInWitness'] = (witnessId, override) => {
-    setWitnesses((prev) =>
-      prev.map((w) => {
-        if (w.id !== witnessId) return w;
-        const tpsRecord = tps.find((t) => t.id === w.assignedTpsId);
-        return {
-          ...w,
-          status: 'checked_in',
-          checkInTime: new Date().toTimeString().slice(0, 5),
-          checkInLocation:
-            override?.locationLabel ??
-            (tpsRecord ? `Dekat ${tpsRecord.district}, ${tpsRecord.regency}` : 'Lokasi tidak diketahui'),
-          checkInLat: override?.lat ?? tpsRecord?.lat ?? null,
-          checkInLng: override?.lng ?? tpsRecord?.lng ?? null,
-          distanceMeters: override?.distanceMeters ?? null,
-          overrideNote: override?.overrideNote ?? null,
-          insideGeofence: override?.insideGeofence ?? true,
-        };
-      }),
-    );
+    setWitnesses((prev) => {
+      const exists = prev.some((w) => w.id === witnessId);
+      if (exists) {
+        return prev.map((w) => {
+          if (w.id !== witnessId) return w;
+          const tpsRecord = tps.find((t) => t.id === w.assignedTpsId);
+          return {
+            ...w,
+            status: 'checked_in',
+            checkInTime: new Date().toTimeString().slice(0, 5),
+            checkInLocation:
+              override?.locationLabel ??
+              (tpsRecord ? `Dekat ${tpsRecord.district}, ${tpsRecord.regency}` : 'Lokasi tidak diketahui'),
+            checkInLat: override?.lat ?? tpsRecord?.lat ?? null,
+            checkInLng: override?.lng ?? tpsRecord?.lng ?? null,
+            distanceMeters: override?.distanceMeters ?? null,
+            overrideNote: override?.overrideNote ?? null,
+            insideGeofence: override?.insideGeofence ?? true,
+          };
+        });
+      }
+
+      // Jika saksi dinamis belum terdaftar dalam array witnesses (misal SAKSI-SITI-018)
+      const tpsRecord = tps.find((t) => t.id === 'TPS-018');
+      const newWitness: Witness = {
+        id: witnessId,
+        name: currentUser.identity.name,
+        nik: currentUser.identity.nikFull || '3273015506990042',
+        phone: currentUser.identity.phone,
+        address: 'Jl. Braga No. 12, Kel. Braga, Kec. Sumur Bandung',
+        assignedTpsId: 'TPS-018',
+        status: 'checked_in',
+        checkInTime: new Date().toTimeString().slice(0, 5),
+        checkInLocation: override?.locationLabel ?? 'TPS 018 Kel. Braga, Kec. Sumur Bandung',
+        checkInLat: override?.lat ?? tpsRecord?.lat ?? -6.9175,
+        checkInLng: override?.lng ?? tpsRecord?.lng ?? 107.6098,
+        distanceMeters: override?.distanceMeters ?? null,
+        overrideNote: override?.overrideNote ?? null,
+        insideGeofence: override?.insideGeofence ?? true,
+      };
+      return [newWitness, ...prev];
+    });
+
+    // Update status peran WITNESS pada currentUser roles
+    setCurrentUser((prev) => ({
+      ...prev,
+      roles: prev.roles.map((r) => (r.role === 'WITNESS' ? { ...r, status: 'active' as const } : r)),
+    }));
 
     // Update corresponding task if applicable
     setTasks((prev) =>

@@ -6,14 +6,16 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Modal, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function PaymentScreen() {
-  const { payments } = useApp();
+  const { payments, currentUser, witnesses } = useApp();
   const { colors } = useTheme();
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
-  const myPayment = payments.find((p) => p.witnessId === CURRENT_WITNESS_ID) || {
-    witnessId: CURRENT_WITNESS_ID,
+  const activeScope = getActiveWitnessScope(currentUser, witnesses);
+  const myPayment = payments.find((p) => p.witnessId === activeScope.witnessId) || {
+    witnessId: activeScope.witnessId,
     amount: 350000,
     status: 'paid' as const,
     proofRef: 'TRX-82910482',

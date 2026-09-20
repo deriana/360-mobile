@@ -7,10 +7,10 @@ import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton, SectionTitle } fr
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { maskNik, maskPhone } from '../utils/masking';
 import { getStableAvatar } from '../data/images';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function WitnessDetailScreen({ route, navigation }: any) {
-  const witnessId = route?.params?.witnessId || 'SAKSI-001';
-  const { witnesses, tps, checkInWitness } = useApp();
+  const { witnesses, tps, checkInWitness, currentUser } = useApp();
   const { colors, isDark } = useTheme();
   const [showFullNik, setShowFullNik] = useState(false);
   const [dialogInfo, setDialogInfo] = useState<{ visible: boolean; title: string; message: string }>({
@@ -19,13 +19,15 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
     message: '',
   });
 
-  const witness = witnesses.find((w) => w.id === witnessId);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const witnessId = route?.params?.witnessId || activeScope.witnessId;
+  const witness = witnesses.find((w) => w.id === witnessId) || (witnessId === activeScope.witnessId ? activeScope.witness : null);
 
   if (!witness) {
     return <EmptyState title="Saksi Tidak Ditemukan" body="Data saksi ini tidak tersedia atau telah dihapus." icon="user-x" />;
   }
 
-  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
+  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId) || (witnessId === activeScope.witnessId ? activeScope.tps : null);
   const avatarUrl = getStableAvatar(witness.id);
   const isCheckedIn = witness.status === 'checked_in';
 

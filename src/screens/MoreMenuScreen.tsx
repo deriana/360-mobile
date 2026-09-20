@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_PERMISSIONS, RolePermission, getUserProfile } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { getWitnessAvatar } from '../data/images';
 import { CandidateExplorerModal } from '../components/CandidateExplorerModal';
 import { ConfirmDialog } from '../components/ui';
@@ -464,7 +465,7 @@ function getRoleMenuConfig(
 }
 
 export default function MoreMenuScreen({ navigation }: any) {
-  const { role, logout, witnesses } = useApp();
+  const { role, logout, witnesses, currentUser } = useApp();
   const { colors, isDark, toggleTheme } = useTheme();
   const [showCandidateExplorer, setShowCandidateExplorer] = useState(false);
 
@@ -473,7 +474,8 @@ export default function MoreMenuScreen({ navigation }: any) {
   const permissions = ROLE_PERMISSIONS[role];
   const userProfile = getUserProfile(role);
   const avatarUrl = getWitnessAvatar(userProfile.avatarIndex);
-  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses);
+  const currentWitness = activeScope.witness;
 
   const menuConfig = getRoleMenuConfig(role, permissions, currentWitness);
 

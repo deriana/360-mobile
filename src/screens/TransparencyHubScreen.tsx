@@ -726,11 +726,6 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                       <View style={{ flex: 1, gap: 2 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Text style={[styles.breakdownTitle, { color: colors.text }]}>{item.title}</Text>
-                          {item.isMandatoryPublicAid && (
-                            <View style={[styles.miniTag, { backgroundColor: colors.primaryLight }]}>
-                              <Text style={[styles.miniTagText, { color: colors.primary }]}>Banpar APBN</Text>
-                            </View>
-                          )}
                         </View>
                         <Text style={[styles.breakdownDesc, { color: colors.textMuted }]}>{item.description}</Text>
                         {/* Bar Proporsi */}

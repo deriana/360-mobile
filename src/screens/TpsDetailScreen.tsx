@@ -8,6 +8,7 @@ import { fonts, fontSize, radius, shadow, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { CandidateDetailModal } from '../components/CandidateDetailModal';
 import { PartyBadge } from '../components/PartyBadge';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { CATEGORY_LABEL } from './EmergencyListScreen';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai';
@@ -19,16 +20,18 @@ const CATEGORY_TABS: Array<{ key: CategoryTab; label: string; icon: keyof typeof
 ];
 
 export default function TpsDetailScreen({ route, navigation }: any) {
-  const tpsId = route?.params?.tpsId || 'TPS-001';
-  const { tps, witnesses, emergencyReports, getDocumentation } = useApp();
+  const { tps, witnesses, emergencyReports, getDocumentation, currentUser } = useApp();
   const { colors, isDark } = useTheme();
+
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const tpsId = route?.params?.tpsId || activeScope.assignedTpsId || 'TPS-001';
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
 
-  const record = tps.find((t) => t.id === tpsId);
-  const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId);
+  const record = tps.find((t) => t.id === tpsId) || (tpsId === activeScope.assignedTpsId ? activeScope.tps : tps[0]);
+  const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId || (tpsId === activeScope.assignedTpsId && w.id === activeScope.witnessId));
   const checkedInWitnessCount = assignedWitnesses.filter((w) => w.status === 'checked_in').length;
 
   if (!record) {

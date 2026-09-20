@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, getUserProfile, ROLE_ICON, ROLE_LABEL, scopeTps, scopeWitnesses } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { PORTAL_NEWS_LIST } from '../data/portalNews';
 import { maskNik } from '../utils/masking';
@@ -218,9 +219,15 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   const scopedTps = scopeTps(role, tps, witnesses);
   const scopedWitnesses = scopeWitnesses(role, witnesses, scopedTps);
 
-  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID) || witnesses[0];
-  const currentTps = scopedTps[0] || tps[0];
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const currentWitness = activeScope.witness;
+  const currentTps = activeScope.tps;
   const currentPayment = payments?.find((p) => p.witnessId === currentWitness?.id);
+
+  const targetDpt = activeScope.tps?.dpt || 268;
+  const presentCount = activeScope.tps?.votersPresent || 184;
+  const participationPct = Math.min(100, Math.round((presentCount / targetDpt) * 100));
+  const isWitnessCheckedIn = activeScope.witness?.status === 'checked_in' || Boolean(activeScope.witness?.checkInTime);
 
   const checkedInCount = scopedWitnesses.filter((w) => w.status === 'checked_in').length;
   const totalWitnessInScope = scopedWitnesses.length;
@@ -259,42 +266,38 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   const isWitnessRole = role === 'WITNESS' || role === 'TPS_WITNESS';
   const isVolunteer = role === 'VOLUNTEER' || role === 'RELAWAN';
   const isCoordinator = role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR';
-  const isCaleg = role === 'CALEG' || (currentUser as any)?.electoralStatus?.status === 'CALEG' || (currentUser as any)?.electoralStatus === 'CALEG' || (currentUser as any)?.roles?.some((r: any) => r.role === 'CALEG');
+  const isCaleg =
+    role === 'CALEG' ||
+    role === 'CALEG_OPS' ||
+    (currentUser as any)?.electoralStatus?.status === 'CALEG' ||
+    (currentUser as any)?.electoralStatus === 'CALEG' ||
+    currentUser.dimensions?.electoral?.status === 'CALEG' ||
+    (currentUser as any)?.roles?.some((r: any) => r.role === 'CALEG' || r.role === 'CALEG_OPS');
   const hasOfficialWitnessAssignment =
     isWitnessRole || (isVolunteer && currentUser.dimensions?.programs?.programSaksi === 'MANDATED');
 
-  // Quick Action items: 4 menu esensial 1 baris per role dengan menu "Broadcast" selalu di posisi paling kanan
-  const getQuickMenuItems = (): QuickActionItem[] => {
-    const broadcastItem: QuickActionItem = {
-      id: 'broadcast',
-      icon: 'volume-2',
-      title: 'Broadcast',
-      subtitle: hasOfficialWitnessAssignment ? 'Grup Saksi' : isCoordinator ? 'Siaran Wilayah' : isCaleg ? 'Timses Dapil' : 'Saluran Resmi',
-      // badge: isWitnessRole ? 'Instruksi' : isCoordinator ? 'Siaran' : 'Saluran',
-      tone: 'primary',
-      onPress: () => navigation.navigate('Broadcast'),
-    };
-
-    // 1. Relawan: State R2 (Relawan Mandat Saksi TPS)
+  // 1. Menu Operasional Lapangan (Spesifik Peran — 100% Nol Duplikasi Navigasi)
+  const getOperationalMenuItems = (): QuickActionItem[] => {
+    // 1. Relawan: State R2 (Relawan Mandat Saksi TPS) — 4 Aksi Taktis Bilik Bebas Duplikasi
     if (isVolunteer && hasOfficialWitnessAssignment) {
       return [
         {
-          id: 'presensi_gps',
-          icon: 'map-pin',
-          title: 'Presensi Bilik',
-          subtitle: 'GPS Bilik TPS',
-          badge: 'Wajib',
-          tone: 'primary',
-          onPress: () => navigation.navigate('CheckIn'),
-        },
-        {
           id: 'entri_c1',
           icon: 'camera',
-          title: 'Entri C1 TPS',
-          subtitle: 'Scan AI OCR',
-          badge: 'AI OCR',
+          title: 'Scan C1 AI',
+          subtitle: 'Vision Plano C1',
+          badge: 'AI Vision',
           tone: 'success',
-          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+          onPress: () => navigation.navigate('C1Ocr', { tpsId: activeScope.assignedTpsId }),
+        },
+        {
+          id: 'tally_suara',
+          icon: 'check-square',
+          title: 'Tally Bilik',
+          subtitle: 'Hitung Suara TPS',
+          badge: 'Bilik',
+          tone: 'primary',
+          onPress: () => navigation.navigate('QuickCountGame'),
         },
         {
           id: 'lapor_sos',
@@ -305,11 +308,20 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           tone: 'danger',
           onPress: () => navigation.navigate('EmergencyForm'),
         },
-        broadcastItem,
+        {
+          id: 'dokumentasi_tps',
+          icon: 'image',
+          title: 'Bukti Foto',
+          subtitle: 'Suasana Bilik TPS',
+          badge: 'Dokumentasi',
+          tone: 'info',
+          onPress: () => navigation.navigate('Documentation', { tpsId: activeScope.assignedTpsId }),
+        },
       ];
     }
 
     // 2. Relawan Biasa (Murni) / Simpatisan - State R1
+    // Menghasilkan tepat 4 menu tunggal esensial: Bursa Tugas, PAN Academy, Sebaran Relawan, Broadcast
     if (isVolunteer) {
       return [
         {
@@ -317,16 +329,14 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           icon: 'briefcase',
           title: 'Bursa Tugas',
           subtitle: 'Aksi Lapangan',
-          // badge: 'Giat',
           tone: 'primary',
           onPress: () => navigation.navigate('Tasks'),
         },
         {
           id: 'pan_academy',
           icon: 'book-open',
-          title: 'PAN Academy',
-          subtitle: 'Modul Pelatihan',
-          // badge: 'Modul',
+          title: 'Amanat Academy',
+          subtitle: 'Bimtek Relawan',
           tone: 'primary',
           onPress: () => navigation.navigate('AmanatAcademy'),
         },
@@ -334,79 +344,102 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           id: 'sebaran_relawan',
           icon: 'map',
           title: 'Sebaran Relawan',
-          subtitle: 'Peta GIS Posko',
+          subtitle: 'Peta Posko & Relawan',
           tone: 'info',
-          onPress: () => navigation.navigate('MapSebaranRelawanAnggota'),
+          onPress: navigateToMap,
         },
-        broadcastItem,
+        {
+          id: 'broadcast',
+          icon: 'volume-2',
+          title: 'Broadcast',
+          subtitle: 'Saluran Relawan',
+          tone: 'primary',
+          onPress: () => navigation.navigate('Broadcast'),
+        },
       ];
     }
 
-    // 3. Saksi TPS Resmi Hari-H (WITNESS)
+    // 3. Saksi TPS Resmi Hari-H (WITNESS) — 4 Aksi Taktis Bilik Bebas Duplikasi
     if (isWitnessRole) {
       return [
-        {
-          id: 'presensi_gps',
-          icon: 'map-pin',
-          title: 'Presensi Bilik',
-          subtitle: '07:00 WIB',
-          badge: 'Wajib',
-          tone: 'primary',
-          onPress: () => navigation.navigate('CheckIn'),
-        },
         {
           id: 'scan_ocr',
           icon: 'camera',
           title: 'Scan C1 AI',
           subtitle: 'Vision Plano C1',
-          badge: 'Plano',
+          badge: 'AI Vision',
           tone: 'success',
-          onPress: () => navigation.navigate('C1Ocr', { tpsId: currentTps?.id || 'TPS-001' }),
+          onPress: () => navigation.navigate('C1Ocr', { tpsId: activeScope.assignedTpsId }),
+        },
+        {
+          id: 'tally_suara',
+          icon: 'check-square',
+          title: 'Tally Bilik',
+          subtitle: 'Hitung Suara TPS',
+          badge: 'Bilik',
+          tone: 'primary',
+          onPress: () => navigation.navigate('QuickCountGame'),
         },
         {
           id: 'darurat',
           icon: 'alert-triangle',
-          title: 'Lapor Insiden',
-          subtitle: 'Eskalasi Darurat',
-          badge: 'SOS',
+          title: 'Lapor SOS',
+          subtitle: 'Darurat TPS',
+          badge: 'Darurat',
           tone: 'danger',
           onPress: () => navigation.navigate('EmergencyForm'),
         },
-        broadcastItem,
+        {
+          id: 'dokumentasi_tps',
+          icon: 'image',
+          title: 'Bukti Foto',
+          subtitle: 'Suasana Bilik TPS',
+          badge: 'Dokumentasi',
+          tone: 'info',
+          onPress: () => navigation.navigate('Documentation', { tpsId: activeScope.assignedTpsId }),
+        },
       ];
     }
 
-    // 4. Koordinator TPS / Lapangan
+    // 4. Koordinator TPS / Lapangan — 4 Aksi Taktis Bebas Duplikasi dengan Kartu Supervisi
     if (isCoordinator) {
       return [
         {
-          id: 'supervisi',
-          icon: 'eye',
-          title: 'Supervisi TPS',
-          subtitle: 'Kluster Wilayah',
-          badge: `${scopedTps.length}`,
+          id: 'verifikasi_mandat',
+          icon: 'check-circle',
+          title: 'Validasi Mandat',
+          subtitle: 'Scan Barcode Mandat',
+          badge: 'Scan QR',
           tone: 'primary',
-          onPress: () => navigation.navigate('Supervision'),
-        },
-        {
-          id: 'peta_sebaran',
-          icon: 'map',
-          title: 'Peta Sebaran',
-          subtitle: 'GIS Wilayah',
-          badge: 'GIS',
-          tone: 'info',
-          onPress: navigateToMap,
+          onPress: () => navigation.navigate('VerifyLetter'),
         },
         {
           id: 'darurat',
           icon: 'alert-triangle',
           title: 'Lapor Insiden',
-          subtitle: 'Eskalasi Darurat',
+          subtitle: 'Eskalasi Kejadian',
           badge: 'Eskalasi',
           tone: 'danger',
           onPress: () => navigation.navigate('EmergencyForm'),
         },
-        broadcastItem,
+        {
+          id: 'radar_darurat',
+          icon: 'shield',
+          title: 'Radar Insiden',
+          subtitle: 'Log Tiket Darurat',
+          badge: 'Tiket SOS',
+          tone: 'warning',
+          onPress: () => navigation.navigate('EmergencyList'),
+        },
+        {
+          id: 'kartu_petugas',
+          icon: 'award',
+          title: 'Kartu Petugas',
+          subtitle: 'ID Korlap Wilayah',
+          badge: 'ID Korlap',
+          tone: 'info',
+          onPress: () => navigation.navigate('KartuPetugas', { personType: 'coordinator', personId: currentUser.identity?.id }),
+        },
       ];
     }
 
@@ -414,52 +447,110 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     if (isCaleg) {
       return [
         {
-          id: 'peta_basis_dapil',
-          icon: 'map',
-          title: 'Peta Basis Dapil',
-          subtitle: 'GIS Suara Masuk',
-          badge: 'Dapil Jabar I',
-          tone: 'primary',
-          onPress: navigateToMap,
-        },
-        {
           id: 'audit_suara_kppn',
-          icon: 'check-circle',
-          title: 'Audit KPPN',
-          subtitle: 'Real Count Kursi',
-          badge: 'Real Count',
+          icon: 'trending-up',
+          title: 'Real Count',
+          subtitle: 'Tabulasi Kursi',
+          badge: 'KPPN',
           tone: 'success',
-          onPress: () => navigation.navigate('QuickCountGame'),
+          onPress: () => navigation.navigate('PartyLeaderboard'),
         },
         {
-          id: 'suara_warga',
-          icon: 'message-circle',
-          title: 'Suara Warga',
-          subtitle: 'Aspirasi Dapil',
-          badge: `${aspirasiItems.length}`,
-          tone: 'info',
-          onPress: () => setShowAspirasiModal(true),
+          id: 'audit_berkas_kppn',
+          icon: 'check-circle',
+          title: 'Audit Berkas',
+          subtitle: 'SILON KPU 2029',
+          badge: 'MS',
+          tone: 'primary',
+          onPress: () => setShowAuditBerkasModal(true),
         },
-        broadcastItem,
+        {
+          id: 'fraksi_dewan',
+          icon: 'users',
+          title: 'Fraksi DPR RI',
+          subtitle: 'Kader Parlemen',
+          badge: 'Parlemen',
+          tone: 'info',
+          onPress: () => navigation.navigate('PartyRoster'),
+        },
+        {
+          id: 'struktur_dpd',
+          icon: 'git-branch',
+          title: 'Struktur DPD',
+          subtitle: 'Pengurus Wilayah',
+          badge: 'Partai',
+          tone: 'primary',
+          onPress: () => navigation.navigate('SimpanStructure'),
+        },
       ];
     }
 
     // 6. Anggota / Pengurus Umum (MEMBER default)
     return [
       {
-        id: 'peta_kader',
-        icon: 'map',
-        title: 'Peta Kader',
-        subtitle: 'GIS Kekuatan',
-        badge: 'GIS',
+        id: 'daftar_bacaleg',
+        icon: 'user-plus',
+        title: 'Daftar Bacaleg',
+        subtitle: 'Pencalegan 2029',
+        badge: 'KPPN',
         tone: 'primary',
+        onPress: () => navigation.navigate('SimpanBacaleg'),
+      },
+      {
+        id: 'struktur_pengurus',
+        icon: 'git-branch',
+        title: 'Struktur Partai',
+        subtitle: 'Pengurus Wilayah',
+        badge: 'Partai',
+        tone: 'primary',
+        onPress: () => navigation.navigate('SimpanStructure'),
+      },
+      {
+        id: 'fraksi_dewan',
+        icon: 'users',
+        title: 'Fraksi DPR RI',
+        subtitle: 'Kader Parlemen',
+        badge: 'Parlemen',
+        tone: 'info',
+        onPress: () => navigation.navigate('PartyRoster'),
+      },
+      {
+        id: 'portofolio_kader',
+        icon: 'layers',
+        title: 'Portofolio',
+        subtitle: 'Status 7 Dimensi',
+        badge: 'Kader',
+        tone: 'success',
+        onPress: () => navigation.navigate('StatusPeranSaya'),
+      },
+    ];
+  };
+
+  // 2. Layanan Utama Partai (100% Permanen Lintas Semua Role — Tepat 4 Kolom)
+  const getUniversalMenuItems = (): QuickActionItem[] => {
+    return [
+      {
+        id: 'peta_sebaran',
+        icon: 'map',
+        title: 'Peta Sebaran',
+        subtitle: isWitnessRole
+          ? 'Radar Wilayah TPS'
+          : isCoordinator
+          ? 'GIS 15 TPS Kluster'
+          : isCaleg
+          ? 'GIS Suara Dapil'
+          : isVolunteer
+          ? 'Peta Posko & Relawan'
+          : 'Peta Basis Kader',
+        badge: 'GIS',
+        tone: 'info',
         onPress: navigateToMap,
       },
       {
         id: 'aspirasi_warga',
         icon: 'message-square',
-        title: 'Serap Aspirasi',
-        subtitle: 'Suara Warga',
+        title: 'Aspirasi Warga',
+        subtitle: 'Serap Suara Rakyat',
         badge: `${aspirasiItems.length}`,
         tone: 'info',
         onPress: () => setShowAspirasiModal(true),
@@ -468,16 +559,108 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         id: 'pan_academy',
         icon: 'award',
         title: 'Amanat Academy',
-        subtitle: 'Perkaderan LKK',
-        badge: 'LKK',
+        subtitle: 'Diklat & Bimtek',
+        badge: 'Diklat',
         tone: 'primary',
         onPress: () => navigation.navigate('AmanatAcademy'),
       },
-      broadcastItem,
+      {
+        id: 'broadcast',
+        icon: 'volume-2',
+        title: 'Broadcast',
+        subtitle: hasOfficialWitnessAssignment
+          ? 'Grup Saksi'
+          : isCoordinator
+          ? 'Siaran Wilayah'
+          : isCaleg
+          ? 'Timses Dapil'
+          : 'Saluran Resmi',
+        tone: 'primary',
+        onPress: () => navigation.navigate('Broadcast'),
+      },
     ];
   };
 
-  const bcaMenuItems = getQuickMenuItems();
+  const operationalMenuItems = getOperationalMenuItems();
+  const universalMenuItems = getUniversalMenuItems();
+
+  const operationalRoleLabel = hasOfficialWitnessAssignment
+    ? 'Saksi TPS Resmi'
+    : isVolunteer
+    ? 'Relawan Simpatisan'
+    : isCoordinator
+    ? 'Koordinator Lapangan'
+    : isCaleg
+    ? 'Caleg DPR RI'
+    : 'Kader & Anggota';
+
+  const renderQuickItem = (item: QuickActionItem) => {
+    const isDanger = item.tone === 'danger';
+    const isSuccess = item.tone === 'success';
+    const isWarning = item.tone === 'warning';
+    const isInfo = item.tone === 'info';
+
+    const iconBg = isDanger
+      ? colors.dangerBg
+      : isSuccess
+      ? colors.successBg
+      : isWarning
+      ? colors.warningBg
+      : isInfo
+      ? isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE'
+      : colors.primaryLight;
+
+    const iconColor = isDanger
+      ? colors.danger
+      : isSuccess
+      ? colors.success
+      : isWarning
+      ? colors.warning
+      : isInfo
+      ? '#0284C7'
+      : colors.primary;
+
+    return (
+      <Pressable
+        key={item.id}
+        onPress={item.onPress}
+        style={({ pressed }) => [
+          styles.quickGridItem,
+          pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+        ]}
+      >
+        <View style={styles.quickIconWrapper}>
+          <View
+            style={[
+              styles.quickIconBox,
+              {
+                backgroundColor: iconBg,
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+              },
+            ]}
+          >
+            <Feather name={item.icon as any} size={20} color={iconColor} strokeWidth={2} />
+          </View>
+          {item.badge && (
+            <View
+              style={[
+                styles.quickMicroBadge,
+                {
+                  backgroundColor: isDanger ? colors.danger : colors.primary,
+                },
+              ]}
+            >
+              <Text style={styles.quickMicroBadgeText}>{item.badge}</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.quickItemLabel, { color: colors.text }]} numberOfLines={2}>
+          {item.title}
+        </Text>
+      </Pressable>
+    );
+  };
 
   return (
     <ScrollView
@@ -584,11 +767,19 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={[styles.roleBadgeDot, { backgroundColor: colors.primary }]} />
               <Text style={[styles.swRoleName, { color: colors.primary }]}>
-                {isVolunteer ? 'Relawan Simpatisan — PAN 360' : (ROLE_LABEL[role] || profile.roleLabel)}
+                {hasOfficialWitnessAssignment || isWitnessRole
+                  ? 'Saksi Resmi TPS — PAN 360'
+                  : isVolunteer
+                  ? 'Relawan Simpatisan — PAN 360'
+                  : (ROLE_LABEL[role] || profile.roleLabel)}
               </Text>
             </View>
             <Text style={[styles.swScopeText, { color: colors.textMuted }]} numberOfLines={1}>
-              {isVolunteer ? 'Kel. Dago, Kec. Coblong, Kota Bandung' : profile.scopeLocation}
+              {hasOfficialWitnessAssignment || isWitnessRole
+                ? activeScope.scopeLocation
+                : isVolunteer
+                ? 'Kel. Dago, Kec. Coblong, Kota Bandung'
+                : profile.scopeLocation}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
               <Text style={[styles.swIdText, { color: colors.text }]}>
@@ -615,7 +806,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         </View>
 
         {/* E. Quick Menu Section */}
-        <View style={{ gap: spacing.xs, paddingTop: 2 }}>
+        <View style={{ gap: spacing.sm, paddingTop: 2 }}>
           <View style={styles.sectionHeaderBetween}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Feather name="grid" size={14} color={colors.primary} />
@@ -623,133 +814,243 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             </View>
           </View>
 
-          <View style={styles.quickIconGrid}>
-            {bcaMenuItems.map((item) => {
-              const isDanger = item.tone === 'danger';
-              const isSuccess = item.tone === 'success';
-              const isWarning = item.tone === 'warning';
-              const isInfo = item.tone === 'info';
-
-              const iconBg = isDanger
-                ? colors.dangerBg
-                : isSuccess
-                ? colors.successBg
-                : isWarning
-                ? colors.warningBg
-                : isInfo
-                ? isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE'
-                : colors.primaryLight;
-
-              const iconColor = isDanger
-                ? colors.danger
-                : isSuccess
-                ? colors.success
-                : isWarning
-                ? colors.warning
-                : isInfo
-                ? '#0284C7'
-                : colors.primary;
-
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={item.onPress}
-                  style={({ pressed }) => [
-                    styles.quickGridItem,
-                    pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
-                  ]}
-                >
-                  <View style={styles.quickIconWrapper}>
-                    <View style={[styles.quickIconBox, { backgroundColor: iconBg, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                      <Feather name={item.icon} size={20} color={iconColor} strokeWidth={2} />
-                    </View>
-                    {item.badge && (
-                      <View
-                        style={[
-                          styles.quickMicroBadge,
-                          {
-                            backgroundColor: isDanger ? colors.danger : colors.primary,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.quickMicroBadgeText}>{item.badge}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <Text style={[styles.quickItemLabel, { color: colors.text }]} numberOfLines={2}>
-                    {item.title}
+          {/* E. Quick Menu Section */}
+          {isVolunteer && !hasOfficialWitnessAssignment ? (
+            /* Khusus Siti Rahmawati (State R-1): Tepat 1 Baris Tunggal (4 Menu Esensial Langsung) */
+            <View style={styles.quickIconGrid}>
+              {operationalMenuItems.map(renderQuickItem)}
+            </View>
+          ) : (
+            /* Role Lainnya (Saksi TPS, Korlap, Caleg, Kader): 2 Seksi Berimbang */
+            <>
+              {/* E1. Menu Operasional Lapangan (Spesifik Role / Mendukung Multi-Baris) */}
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+                  <Text style={[styles.quickMenuCategoryLabel, { color: colors.textMuted }]}>
+                    {`MENU OPERASIONAL (${operationalRoleLabel.toUpperCase()})`}
                   </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                  <Text style={[styles.quickMenuCategoryCount, { color: colors.textMuted }]}>
+                    {`${operationalMenuItems.length} Aksi`}
+                  </Text>
+                </View>
+                <View style={styles.quickIconGrid}>
+                  {operationalMenuItems.map(renderQuickItem)}
+                </View>
+              </View>
+
+              {/* Pembatas Antar Seksi */}
+              <View style={[styles.quickMenuDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border }]} />
+
+              {/* E2. Layanan Utama Partai (100% Permanen Universal) */}
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+                  <Text style={[styles.quickMenuCategoryLabel, { color: colors.textMuted }]}>
+                    LAYANAN UTAMA PARTAI
+                  </Text>
+                </View>
+                <View style={styles.quickIconGrid}>
+                  {universalMenuItems.map(renderQuickItem)}
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </View>
 
       {/* ========================================================================= */}
       {/* 3. KARTU PERAN UTAMA (CONTEXTUAL ROLE CARD) - BAB 10 & 31                 */}
       {/* ========================================================================= */}
-      {(role === 'WITNESS' || role === 'TPS_WITNESS') && (
-        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <View style={styles.sectionHeaderBetween}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Feather name="eye" size={16} color={colors.primary} />
-              <Text style={[styles.sectionHeadingTitle, { color: colors.text }]}>Penugasan Saksi TPS</Text>
+      {(role === 'WITNESS' || role === 'TPS_WITNESS' || (isVolunteer && hasOfficialWitnessAssignment)) && (
+        <Card style={[styles.witnessMasterCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* A. Header Row: Title with Icon Badge + Live Status Pill */}
+          <View style={styles.witnessCardHeader}>
+            <View style={styles.witnessTitleGroup}>
+              <View style={[styles.witnessIconBadge, { backgroundColor: isDark ? 'rgba(0,102,179,0.25)' : '#EBF4FF' }]}>
+                <Feather name="shield" size={17} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.witnessCardTitle, { color: colors.text }]} numberOfLines={1}>
+                  Penugasan Saksi TPS
+                </Text>
+                <Text style={[styles.witnessCardSubtitle, { color: colors.textMuted }]} numberOfLines={1}>
+                  Mandat BSN Resmi Terverifikasi
+                </Text>
+              </View>
             </View>
-            <Pill label="Mandat Aktif" tone="success" />
+
+            <View
+              style={[
+                styles.liveStatusPill,
+                {
+                  backgroundColor: isWitnessCheckedIn
+                    ? (isDark ? 'rgba(16,185,129,0.18)' : '#ECFDF5')
+                    : (isDark ? 'rgba(0,102,179,0.2)' : '#EFF6FF'),
+                  borderColor: isWitnessCheckedIn ? colors.success : colors.primary,
+                },
+              ]}
+            >
+              <View style={[styles.liveStatusDot, { backgroundColor: isWitnessCheckedIn ? colors.success : colors.primary }]} />
+              <Text style={[styles.liveStatusText, { color: isWitnessCheckedIn ? colors.success : colors.primary }]}>
+                {isWitnessCheckedIn ? 'TERVERIFIKASI HADIR' : 'SIAGA HARI-H'}
+              </Text>
+            </View>
           </View>
 
-          <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
-            <View style={styles.witnessStatusTop}>
-              <View style={{ gap: 2, flex: 1 }}>
-                <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
-                  TPS 001 — Kel. Dago, Kec. Coblong
-                </Text>
-                <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
-                  Kota Bandung • DPT: 284 Pemilih • Mandat: 042/SM-DPP/2026
-                </Text>
-              </View>
-              <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-                <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>SIAGA HARI-H</Text>
-              </View>
-            </View>
+          {/* B. Focal Area: Hero TPS Identification Box */}
+          <View
+            style={[
+              styles.tpsHeroBox,
+              {
+                backgroundColor: isDark ? 'rgba(0,43,82,0.45)' : '#F8FAFC',
+                borderColor: isDark ? '#0A3D6B' : '#E2E8F0',
+              },
+            ]}
+          >
+            <View style={styles.tpsHeroTopRow}>
+              <View style={{ flex: 1, gap: 3 }}>
+                <View style={styles.tpsNumberBadgeRow}>
+                  <View style={[styles.tpsNumBadge, { backgroundColor: colors.primary }]}>
+                    <Text style={styles.tpsNumBadgeText}>
+                      TPS {String(activeScope.tps?.tpsNumber || 1).padStart(3, '0')}
+                    </Text>
+                  </View>
+                  <Text style={[styles.tpsVillageTitle, { color: colors.text }]} numberOfLines={1}>
+                    Kel. {activeScope.tps?.village || activeScope.tps?.district || 'Dago'}
+                  </Text>
+                </View>
 
-            {/* Progress Monitoring Suara & Status TPS (Zero Redundancy: Entri C1 di Quick Menu) */}
-            <View style={{ gap: 6, marginTop: spacing.xs }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-                  Partisipasi TPS: 184 / 284 DPT Terdata Hadir
-                </Text>
-                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-                  64.8% Hadir
-                </Text>
+                <View style={styles.tpsGeoRow}>
+                  <Feather name="map-pin" size={12} color={colors.textMuted} />
+                  <Text style={[styles.tpsGeoText, { color: colors.textMuted }]} numberOfLines={1}>
+                    Kec. {activeScope.tps?.district || 'Coblong'}, {activeScope.tps?.regency || 'Kota Bandung'}
+                  </Text>
+                </View>
               </View>
-              <View style={{ height: 6, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' }}>
-                <View style={{ width: '64.8%', height: '100%', borderRadius: 999, backgroundColor: colors.primary }} />
-              </View>
-            </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Feather name="shield" size={12} color={colors.success} />
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-                  Mandat BSN Resmi Terverifikasi KPU
-                </Text>
-              </View>
               <Pressable
-                onPress={() => navigation.navigate('QuickCountGame')}
+                onPress={() =>
+                  navigation.navigate('AssignmentLetter', {
+                    witnessId: activeScope.witnessId,
+                    tpsId: activeScope.assignedTpsId,
+                  })
+                }
                 style={({ pressed }) => [
-                  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-                  pressed && { opacity: 0.7 },
+                  styles.mandatChipBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#CBD5E1',
+                  },
+                  pressed && { opacity: 0.75 },
                 ]}
               >
-                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
-                  Detail Log Suara TPS
-                </Text>
-                <Feather name="arrow-right" size={13} color={colors.primary} />
+                <Feather name="file-text" size={12} color={colors.primary} />
+                <Text style={[styles.mandatChipText, { color: colors.primary }]}>E-Mandat</Text>
               </Pressable>
             </View>
+
+            {/* SK Mandat Tag */}
+            <View style={[styles.skTagRow, { borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
+              <Text style={[styles.skTagLabel, { color: colors.textMuted }]}>SK BSN:</Text>
+              <Text style={[styles.skTagValue, { color: colors.text }]} numberOfLines={1}>
+                {activeScope.skMandatNumber}
+              </Text>
+            </View>
+          </View>
+
+          {/* C. Metrics Strip: Clean 3-Column Statistical Summary */}
+          <View style={styles.metricsGrid}>
+            <View
+              style={[
+                styles.metricCardItem,
+                {
+                  backgroundColor: isDark ? 'rgba(0,43,82,0.3)' : '#F0F7FF',
+                  borderColor: isDark ? '#0A3D6B' : '#BAE6FD',
+                },
+              ]}
+            >
+              <Text style={[styles.metricValText, { color: colors.primary }]}>{targetDpt}</Text>
+              <Text style={[styles.metricLblText, { color: colors.textMuted }]}>Total DPT</Text>
+            </View>
+
+            <View
+              style={[
+                styles.metricCardItem,
+                {
+                  backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5',
+                  borderColor: isDark ? 'rgba(16,185,129,0.25)' : '#A7F3D0',
+                },
+              ]}
+            >
+              <Text style={[styles.metricValText, { color: colors.success }]}>{presentCount}</Text>
+              <Text style={[styles.metricLblText, { color: colors.textMuted }]}>Suara Hadir</Text>
+            </View>
+
+            <View
+              style={[
+                styles.metricCardItem,
+                {
+                  backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : '#FFFBEB',
+                  borderColor: isDark ? 'rgba(245,158,11,0.25)' : '#FDE68A',
+                },
+              ]}
+            >
+              <Text style={[styles.metricValText, { color: colors.warning }]}>{participationPct}%</Text>
+              <Text style={[styles.metricLblText, { color: colors.textMuted }]}>Partisipasi</Text>
+            </View>
+          </View>
+
+          {/* D. Progress Bar (Suara Masuk) */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressLabelRow}>
+              <Text style={[styles.progressTitle, { color: colors.textMuted }]}>
+                Progres Partisipasi TPS
+              </Text>
+              <Text style={[styles.progressPct, { color: colors.primary }]}>
+                {presentCount} / {targetDpt} Pemilih ({participationPct}%)
+              </Text>
+            </View>
+            <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${participationPct}%`,
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* E. Action Row (Responsive & Touch Target >= 44pt, Zero Collision) */}
+          <View style={[styles.cardActionRow, { borderTopColor: colors.border }]}>
+            <Pressable
+              onPress={() => navigation.navigate('TpsDetail', { tpsId: activeScope.assignedTpsId })}
+              style={({ pressed }) => [
+                styles.actionBtnOutline,
+                {
+                  borderColor: isDark ? '#1A5490' : colors.border,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+                },
+                pressed && { opacity: 0.75 },
+              ]}
+            >
+              <Feather name="info" size={14} color={colors.text} />
+              <Text style={[styles.actionBtnOutlineText, { color: colors.text }]}>Detail TPS</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('ReportForm', { tpsId: activeScope.assignedTpsId })}
+              style={({ pressed }) => [
+                styles.actionBtnSolid,
+                { backgroundColor: colors.primary },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Feather name="file-text" size={14} color="#FFFFFF" />
+              <Text style={styles.actionBtnSolidText}>Form C1 Plano</Text>
+              <Feather name="arrow-right" size={14} color="#FFFFFF" />
+            </Pressable>
           </View>
         </Card>
       )}
@@ -809,74 +1110,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               >
                 <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
                   Supervisi Wilayah
-                </Text>
-                <Feather name="arrow-right" size={13} color={colors.primary} />
-              </Pressable>
-            </View>
-          </View>
-        </Card>
-      )}
-
-      {/* Kartu Penugasan jika Relawan memegang Mandat Saksi TPS Resmi */}
-      {hasOfficialWitnessAssignment && isVolunteer && (
-        <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-          <View style={styles.sectionHeaderBetween}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, marginRight: 8 }}>
-              <Feather name="eye" size={16} color={colors.primary} />
-              <Text style={[styles.sectionHeadingTitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
-                Penugasan Relawan Saksi TPS
-              </Text>
-            </View>
-            <View style={{ flexShrink: 0 }}>
-              <Pill label="Mandat TPS Aktif" tone="primary" />
-            </View>
-          </View>
-
-          <View style={[styles.witnessStatusBox, { backgroundColor: isDark ? 'rgba(0,43,82,0.4)' : '#F0F9FF', borderColor: colors.border }]}>
-            <View style={styles.witnessStatusTop}>
-              <View style={{ gap: 2, flex: 1 }}>
-                <Text style={[styles.wsTpsTitle, { color: colors.text }]}>
-                  TPS 001 — Kel. Dago, Kec. Coblong
-                </Text>
-                <Text style={[styles.wsTpsSub, { color: colors.textMuted }]}>
-                  Kota Bandung | Mandat: 042/SM-DPP/2026
-                </Text>
-              </View>
-              <View style={[styles.wsStatusBadge, { backgroundColor: colors.successBg, borderColor: colors.success }]}>
-                <Text style={[styles.wsStatusBadgeText, { color: colors.success }]}>SIAGA HARI-H</Text>
-              </View>
-            </View>
-
-            <View style={{ gap: 6, marginTop: spacing.xs }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-                  Progress Pemilih Hadir: 184 / 284 DPT (64.8%)
-                </Text>
-                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-                  C1 Standby
-                </Text>
-              </View>
-              <View style={{ height: 6, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' }}>
-                <View style={{ width: '64.8%', height: '100%', borderRadius: 999, backgroundColor: colors.primary }} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Feather name="check" size={12} color={colors.success} />
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-                  Relawan Terakreditasi BSN
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => navigation.navigate('TpsDetail', { tpsId: currentTps?.id || 'TPS-001' })}
-                style={({ pressed }) => [
-                  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={{ fontSize: 11.5, fontFamily: fonts.bold, color: colors.primary }}>
-                  Detail TPS
                 </Text>
                 <Feather name="arrow-right" size={13} color={colors.primary} />
               </Pressable>
@@ -2032,34 +2265,218 @@ const styles = StyleSheet.create({
   },
   sectionHeaderBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionHeadingTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
-  witnessStatusBox: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm },
-  witnessStatusTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  wsTpsTitle: { fontFamily: fonts.bold, fontSize: fontSize.xs },
-  wsTpsSub: { fontFamily: fonts.regular, fontSize: 10.5, marginTop: 1 },
-  wsStatusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1 },
-  wsStatusBadgeText: { fontFamily: fonts.bold, fontSize: 10 },
-  wsActionButtonsRow: { flexDirection: 'row', gap: spacing.xs },
-  wsBtnSolid: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: radius.md,
+  witnessMasterCard: {
+    gap: spacing.sm + 4,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
   },
-  wsBtnSolidText: { fontFamily: fonts.bold, fontSize: 11, color: '#FFFFFF' },
-  wsBtnOutline: {
+  witnessCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  witnessTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  witnessIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  witnessCardTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14.5,
+  },
+  witnessCardSubtitle: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  liveStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  liveStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  liveStatusText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 0.2,
+  },
+  tpsHeroBox: {
+    padding: spacing.sm + 2,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 7,
+  },
+  tpsHeroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  tpsNumberBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    flexWrap: 'wrap',
+  },
+  tpsNumBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: radius.xs,
+  },
+  tpsNumBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  tpsVillageTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14.5,
+    flexShrink: 1,
+  },
+  tpsGeoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  tpsGeoText: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+  },
+  mandatChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  mandatChipText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
+  skTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingTop: 6,
+    borderTopWidth: 1,
+  },
+  skTagLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 10.5,
+  },
+  skTagValue: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
+    flex: 1,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  metricCardItem: {
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  metricValText: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+  },
+  metricLblText: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+  },
+  progressSection: {
+    gap: 5,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressTitle: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+  },
+  progressPct: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+  },
+  cardActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+  },
+  actionBtnOutline: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
+    gap: 6,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderRadius: radius.md,
     borderWidth: 1,
   },
-  wsBtnOutlineText: { fontFamily: fonts.bold, fontSize: 11 },
+  actionBtnOutlineText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+  },
+  actionBtnSolid: {
+    flex: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: radius.md,
+  },
+  actionBtnSolidText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
   coordSummaryBox: { padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm },
   coordStatRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   coordStatCol: { alignItems: 'center' },
@@ -2129,6 +2546,21 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 8,
     backgroundColor: '#E2E8F0',
+  },
+  // Quick Menu Category Indicators
+  quickMenuCategoryLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+  },
+  quickMenuCategoryCount: {
+    fontFamily: fonts.medium,
+    fontSize: 9.5,
+  },
+  quickMenuDivider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 4,
   },
   // 4-Column Quick Menu Icon Grid
   quickIconGrid: {

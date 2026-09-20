@@ -15,13 +15,20 @@ import {
   getCachedAssignmentLetter,
   saveAssignmentLetterToCache,
 } from '../utils/letterCache';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function AssignmentLetterScreen({ route, navigation }: any) {
-  const witnessId = route?.params?.witnessId || 'SAKSI-001';
-  const { witnesses, tps } = useApp();
+  const { witnesses, tps, currentUser } = useApp();
   const { colors } = useTheme();
 
-  const witness = witnesses.find((w) => w.id === witnessId);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const targetWitnessId = route?.params?.witnessId || activeScope.witnessId;
+  const witness = witnesses.find((w) => w.id === targetWitnessId) || (targetWitnessId === activeScope.witnessId ? activeScope.witness : null);
+  const assignedTps = tps.find((t) => t.id === witness?.assignedTpsId) || (targetWitnessId === activeScope.witnessId ? activeScope.tps : null);
+  const letterNo = activeScope.isSitiR2 && targetWitnessId === activeScope.witnessId
+    ? activeScope.skMandatNumber
+    : `ST/${witness?.id || 'SAKSI-001'}/PAN/2026`;
+
   const [downloading, setDownloading] = useState(false);
   const [cachedData, setCachedData] = useState<CachedAssignmentLetter | null>(null);
   const [isCached, setIsCached] = useState(false);
@@ -37,9 +44,6 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
     return <EmptyState title="Surat Tidak Ditemukan" body="Data penugasan ini tidak tersedia." icon="file-text" />;
   }
 
-  const assignedTps = tps.find((t) => t.id === witness.assignedTpsId);
-  const letterNo = `ST/${witness.id}/PAN/2026`;
-
   const handleConfirmSignature = async (res: SignatureResult) => {
     setShowSignModal(false);
     if (!witness) return;
@@ -50,9 +54,11 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
       witnessName: witness.name,
       nik: witness.nik,
       assignedTpsId: witness.assignedTpsId,
-      tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : '-',
+      tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, Kel. ${assignedTps.village || assignedTps.district}, Kec. ${assignedTps.district}, ${assignedTps.regency}` : '-',
       province: assignedTps?.province ?? 'Jawa Barat',
-      verificationToken: `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`,
+      verificationToken: activeScope.isSitiR2 && targetWitnessId === activeScope.witnessId
+        ? 'MNDT-BSN-SITI-018-2024'
+        : `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`,
       verifyUrl: `https://saksi360.pan.or.id/verify/${witness.id}`,
       digitalSealHash: `SHA256:${witness.id}:${witness.nik.slice(-4)}:DPP-PAN`,
       cachedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
@@ -108,7 +114,7 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             <table style="width:100%; border-collapse: collapse; font-size: 14px;">
               <tr><td style="padding:6px 0; color:#64748B; width:180px;">Nama Saksi TPS</td><td style="padding:6px 0; font-weight:700;">${witness.name}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">NIK Terdaftar</td><td style="padding:6px 0; font-weight:700;">${witness.nik}</td></tr>
-              <tr><td style="padding:6px 0; color:#64748B;">Lokasi Penugasan TPS</td><td style="padding:6px 0; font-weight:700;">${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : ''}</td></tr>
+              <tr><td style="padding:6px 0; color:#64748B;">Lokasi Penugasan TPS</td><td style="padding:6px 0; font-weight:700;">${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, Kel. ${assignedTps.village || assignedTps.district}, Kec. ${assignedTps.district}, ${assignedTps.regency}` : ''}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">Wilayah Provinsi</td><td style="padding:6px 0; font-weight:700;">${assignedTps?.province ?? '-'}</td></tr>
               <tr><td style="padding:6px 0; color:#64748B;">Partai</td><td style="padding:6px 0; font-weight:700; color:#0066B3;">Partai Amanat Nasional (PAN)</td></tr>
             </table>
@@ -198,9 +204,9 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
         <Field label="NIK Terdaftar" value={witness.nik} />
         <Field
           label="Lokasi Penugasan TPS"
-          value={`${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : ''}`}
+          value={`${witness.assignedTpsId}${assignedTps ? ` — TPS ${assignedTps.tpsNumber}, Kel. ${assignedTps.village || assignedTps.district}, Kec. ${assignedTps.district}` : ''}`}
         />
-        <Field label="Wilayah Provinsi" value={assignedTps?.province ?? '-'} />
+        <Field label="Wilayah" value={assignedTps ? `${assignedTps.regency}, ${assignedTps.province}` : 'Jawa Barat'} />
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 

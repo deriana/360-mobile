@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, DropdownPicker, EmptyState, IconButton, Modal, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
@@ -26,15 +27,16 @@ const ENTRY_TABS: Array<{ key: EntryTab; label: string; icon: keyof typeof Feath
 ];
 
 export default function ReportFormScreen({ route, navigation }: any) {
-  const { witnesses, tps, submitTpsReport, addDocumentationPhoto, role } = useApp();
+  const { witnesses, tps, submitTpsReport, addDocumentationPhoto, role, currentUser } = useApp();
   const { colors, isDark } = useTheme();
 
-  const currentWitness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const currentWitness = activeScope.witness;
   const scopedTps = scopeTps(role, tps, witnesses);
 
   // Initial TPS from route params or the witness's own assignment — otherwise
   // leave unselected so ambiguous "new report" entry forces an explicit pick.
-  const initialTpsId: string | null = route?.params?.tpsId ?? currentWitness?.assignedTpsId ?? null;
+  const initialTpsId: string | null = route?.params?.tpsId ?? activeScope.assignedTpsId ?? null;
 
   const [viewMode, setViewMode] = useState<MainViewMode>(route?.params?.tpsId ? 'form' : 'history');
   const [selectedTpsId, setSelectedTpsId] = useState<string | null>(initialTpsId);

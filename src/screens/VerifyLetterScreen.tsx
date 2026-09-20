@@ -5,19 +5,21 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, spacing, iconStrokeWidth } from '../theme';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function VerifyLetterScreen({ route }: any) {
-  const witnessId = route?.params?.witnessId || 'SAKSI-001';
+  const { witnesses, currentUser } = useApp();
+  const { colors } = useTheme();
+
+  const activeScope = getActiveWitnessScope(currentUser, witnesses);
+  const witnessId = route?.params?.witnessId || activeScope.witnessId;
   const token = route?.params?.token || `MNDT-PAN-${witnessId}-DEMO`;
   const isSigned = route?.params?.isSigned ?? true;
   const signedBy = route?.params?.signedBy ?? 'Ketua DPP / BSN PAN';
   const signatureHash = route?.params?.signatureHash ?? `SHA256:${witnessId}:DPP-PAN`;
   const signedAt = route?.params?.signedAt ?? null;
 
-  const { witnesses } = useApp();
-  const { colors } = useTheme();
-
-  const witness = witnesses.find((w) => w.id === witnessId);
+  const witness = witnesses.find((w) => w.id === witnessId) || (witnessId === activeScope.witnessId ? activeScope.witness : null);
   const [checking, setChecking] = useState(false);
   const [verified, setVerified] = useState(false);
 
