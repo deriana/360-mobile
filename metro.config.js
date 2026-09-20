@@ -72,6 +72,7 @@ config.resolver.unstable_enableSymlinks = true;
 const pnpmStore = path.join(__dirname, 'node_modules', '.pnpm');
 config.watchFolders = [...(config.watchFolders || []), pnpmStore];
 
+
 // Exclude build artifacts and temporary export directories from Metro's resolution
 const additionalBlockList = [
   /^(?:dist|temp_export)[\\\/].*$/,

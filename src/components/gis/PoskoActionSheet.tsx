@@ -128,6 +128,7 @@ export default function PoskoActionSheet({
             <TouchableOpacity
               onPress={onClose}
               style={[styles.closeBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Feather name="x" size={16} color={colors.text} />
             </TouchableOpacity>
@@ -160,10 +161,10 @@ export default function PoskoActionSheet({
               <>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 <View style={styles.infoRow}>
-                  <Feather name="users" size={14} color="#D97706" />
+                  <Feather name="users" size={14} color={isDark ? '#FBBF24' : '#B45309'} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Kekuatan Siaga</Text>
-                    <Text style={[styles.infoVal, { color: '#D97706', fontFamily: fonts.bold }]}>
+                    <Text style={[styles.infoVal, { color: isDark ? '#FBBF24' : '#B45309', fontFamily: fonts.bold }]}>
                       {posko!.activeVolunteers} Relawan Siaga Lapangan
                     </Text>
                   </View>

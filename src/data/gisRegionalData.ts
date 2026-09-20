@@ -5,7 +5,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const GIS_CACHE_STORAGE_KEY = '@pan_gis_regional_cache_v1';
+export const GIS_CACHE_STORAGE_KEY = '@pan_gis_regional_cache_v2';
 
 export type AchievementStatus = 'SURPLUS' | 'TARGET_MET' | 'DEFICIT' | 'ZERO_VOLUNTEER';
 
@@ -523,7 +523,22 @@ export async function loadGisDataFromCache(): Promise<{
   try {
     const raw = await AsyncStorage.getItem(GIS_CACHE_STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.clusters)) {
+      parsed.clusters = parsed.clusters.map((c: any) => ({
+        ...c,
+        totalCadres: typeof c.totalCadres === 'number' ? c.totalCadres : 0,
+        totalVolunteers: typeof c.totalVolunteers === 'number' ? c.totalVolunteers : 0,
+        targetVolunteers: typeof c.targetVolunteers === 'number' ? c.targetVolunteers : 0,
+        volunteerGap: typeof c.volunteerGap === 'number' ? c.volunteerGap : 0,
+        totalTps: typeof c.totalTps === 'number' ? c.totalTps : 0,
+        coveredTps: typeof c.coveredTps === 'number' ? c.coveredTps : 0,
+        tpsCoveragePct: typeof c.tpsCoveragePct === 'number' ? c.tpsCoveragePct : 0,
+        witnessCount: typeof c.witnessCount === 'number' ? c.witnessCount : 0,
+        poskoCount: typeof c.poskoCount === 'number' ? c.poskoCount : 0,
+      }));
+    }
+    return parsed;
   } catch (err) {
     console.warn('[GisCache] Failed to load offline cache:', err);
     return null;

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { fonts, radius, spacing } from '../../theme';
 import { Pill } from '../ui';
@@ -42,10 +43,43 @@ export default function GisScorecardInspector({
   onSelectPoskoDesa,
 }: GisScorecardInspectorProps) {
   const { colors, isDark } = useTheme();
+  const { role } = useApp();
+  const isGrassroots = role === 'VOLUNTEER' || role === 'MEMBER' || role === 'WITNESS';
 
-  if (!cluster || !metrics) return null;
+  if (!visible || !cluster || !metrics) return null;
 
   const isMembersLayer = layerMode === 'MEMBERS';
+  const unit = isMembersLayer ? 'Kader' : 'Relawan';
+  const formatNum = (val?: number | null) => (val != null && !isNaN(val) ? val : 0).toLocaleString('id-ID');
+
+  const formatRegionLevel = (level?: string) => {
+    switch (level) {
+      case 'PROVINSI': return 'Tingkat Provinsi (DPW)';
+      case 'KAB_KOTA': return 'Tingkat Kabupaten/Kota (DPC)';
+      case 'KECAMATAN': return 'Tingkat Kecamatan (PAC)';
+      case 'DESA': return 'Tingkat Kelurahan / Desa';
+      default: return 'Wilayah Teritorial';
+    }
+  };
+
+  const getSubRegionType = (level?: string) => {
+    switch (level) {
+      case 'PROVINSI': return 'Kabupaten / Kota';
+      case 'KAB_KOTA': return 'Kecamatan';
+      case 'KECAMATAN': return 'Kelurahan / Desa';
+      default: return 'Wilayah Binaan';
+    }
+  };
+
+  const getRegionBadge = (level?: string) => {
+    switch (level) {
+      case 'PROVINSI': return 'DPW PAN';
+      case 'KAB_KOTA': return 'DPC PAN';
+      case 'KECAMATAN': return 'PAC PAN';
+      case 'DESA': return 'DPRt PAN';
+      default: return 'Wilayah Binaan';
+    }
+  };
 
   const handleOpenDirections = (lat: number, lng: number, title: string) => {
     const scheme = Platform.select({
@@ -88,12 +122,12 @@ export default function GisScorecardInspector({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={[styles.regionName, { color: colors.text }]}>{cluster.name}</Text>
                 <Pill
-                  label={metrics.statusLabel}
-                  tone={metrics.statusTone}
+                  label={isGrassroots ? getRegionBadge(cluster.level) : metrics.statusLabel}
+                  tone={isGrassroots ? 'primary' : metrics.statusTone}
                 />
               </View>
               <Text style={[styles.regionSub, { color: colors.textMuted }]}>
-                Tingkat {cluster.level} &bull; {cluster.coveredTps.toLocaleString('id-ID')} dari {cluster.totalTps.toLocaleString('id-ID')} TPS Terkover
+                {formatRegionLevel(cluster.level)} &bull; {subClusters.length > 0 ? `${subClusters.length} ${getSubRegionType(cluster.level)}` : `${formatNum(metrics.activeCount)} ${unit} Siaga`}
               </Text>
             </View>
 
@@ -101,6 +135,7 @@ export default function GisScorecardInspector({
               onPress={onClose}
               style={[styles.closeButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9' }]}
               activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Feather name="x" size={18} color={colors.text} />
             </TouchableOpacity>
@@ -135,113 +170,154 @@ export default function GisScorecardInspector({
               </View>
             )}
 
-            {/* 4 Pilar Metrik (Grid 2x2) */}
-            <View style={styles.metricsGrid}>
-              {/* 1. Capaian Kuota */}
-              <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(0,102,179,0.1)' : '#F0F9FF', borderColor: '#BAE6FD' }]}>
-                <View style={styles.metricCardHeader}>
-                  <Feather name="target" size={13} color="#0066B3" />
-                  <Text style={styles.metricCardLabel}>
-                    {isMembersLayer ? 'Target Kader' : 'Capaian Kuota'}
-                  </Text>
+            {/* Tampilan Metrik: Adaptif Sesuai Persona */}
+            {isGrassroots ? (
+              /* KEKUATAN PERSONEL REAL UNTUK RELAWAN & KADER (NOL METRIK AUDIT BAPPILU) */
+              <View
+                style={[
+                  styles.grassrootsStrengthCard,
+                  {
+                    backgroundColor: isDark ? 'rgba(0,102,179,0.12)' : '#F0F9FF',
+                    borderColor: isDark ? 'rgba(56,189,248,0.3)' : '#BAE6FD',
+                  },
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ gap: 2 }}>
+                    <Text style={[styles.grassrootsLabel, { color: isDark ? '#7DD3FC' : '#005299' }]}>
+                      {isMembersLayer ? 'TOTAL KADER BER-KTA' : 'RELAWAN SIAGA WILAYAH'}
+                    </Text>
+                    <Text style={[styles.grassrootsValue, { color: colors.text }]}>
+                      {formatNum(metrics.activeCount)}{' '}
+                      <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.textMuted }}>
+                        {isMembersLayer ? 'Kader' : 'Relawan'}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                    <Text style={[styles.grassrootsLabel, { color: isDark ? '#7DD3FC' : '#005299' }]}>
+                      {subClusters.length > 0 ? 'CAKUPAN WILAYAH' : 'TITIK POSKO'}
+                    </Text>
+                    <Text style={[styles.grassrootsValue, { color: '#059669' }]}>
+                      {subClusters.length > 0 ? formatNum(subClusters.length) : formatNum(cluster.poskoCount || 1)}{' '}
+                      <Text style={{ fontSize: 13, fontFamily: fonts.medium, color: colors.textMuted }}>
+                        {subClusters.length > 0 ? getSubRegionType(cluster.level) : 'Posko'}
+                      </Text>
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.metricValue, { color: '#0066B3' }]}>
-                  {metrics.achievementPercent}%
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>
-                  Target: {metrics.targetAmount.toLocaleString('id-ID')}
-                </Text>
               </View>
+            ) : (
+              /* 4 PILAR METRIK UNTUK PENGURUS/BAPPILU/CALEG */
+              <>
+                <View style={styles.metricsGrid}>
+                  {/* 1. Capaian Kuota */}
+                  <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(0,102,179,0.1)' : '#F0F9FF', borderColor: '#BAE6FD' }]}>
+                    <View style={styles.metricCardHeader}>
+                      <Feather name="target" size={13} color="#0066B3" />
+                      <Text style={styles.metricCardLabel}>
+                        {isMembersLayer ? 'Target Kader' : 'Capaian Kuota'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.metricValue, { color: '#0066B3' }]}>
+                      {metrics.achievementPercent ?? 0}%
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>
+                      Target: {formatNum(metrics.targetAmount)}
+                    </Text>
+                  </View>
 
-              {/* 2. Volume Aktif */}
-              <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', borderColor: '#A7F3D0' }]}>
-                <View style={styles.metricCardHeader}>
-                  <Feather name="users" size={13} color="#10B981" />
-                  <Text style={[styles.metricCardLabel, { color: '#047857' }]}>
-                    {isMembersLayer ? 'Kader Ber-KTA' : 'Relawan Aktif'}
-                  </Text>
+                  {/* 2. Volume Aktif */}
+                  <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', borderColor: '#A7F3D0' }]}>
+                    <View style={styles.metricCardHeader}>
+                      <Feather name="users" size={13} color="#10B981" />
+                      <Text style={[styles.metricCardLabel, { color: '#047857' }]}>
+                        {isMembersLayer ? 'Kader Ber-KTA' : 'Relawan Aktif'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.metricValue, { color: '#10B981' }]}>
+                      {formatNum(metrics.activeCount)}
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>
+                      Belum: {formatNum(metrics.unregisteredCount)}
+                    </Text>
+                  </View>
+
+                  {/* 3. Verifikasi KTA / KTP */}
+                  <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(2,132,199,0.1)' : '#F0FDF4', borderColor: '#BBF7D0' }]}>
+                    <View style={styles.metricCardHeader}>
+                      <Feather name="shield" size={13} color="#0284C7" />
+                      <Text style={[styles.metricCardLabel, { color: '#0369A1' }]}>
+                        {isMembersLayer ? 'Validasi e-KTA' : 'Verifikasi KTP'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.metricValue, { color: '#0284C7' }]}>
+                      {metrics.verificationRatePercent ?? 0}%
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>
+                      {formatNum(metrics.verifiedCount)} Terverifikasi
+                    </Text>
+                  </View>
+
+                  {/* 4. Defisit / Surplus */}
+                  <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : '#FFFBEB', borderColor: '#FDE68A' }]}>
+                    <View style={styles.metricCardHeader}>
+                      <Feather name="trending-up" size={13} color="#D97706" />
+                      <Text style={[styles.metricCardLabel, { color: '#B45309' }]}>
+                        Defisit / Surplus
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.metricValue,
+                        { color: metrics.isSurplus ? '#10B981' : '#D97706' },
+                      ]}
+                    >
+                      {metrics.isSurplus ? '+' : ''}
+                      {formatNum(metrics.gap)}
+                    </Text>
+                    <Text style={[styles.metricSub, { color: colors.textMuted }]}>
+                      {metrics.isSurplus ? 'Surplus Wilayah' : 'Perlu Akselerasi'}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.metricValue, { color: '#10B981' }]}>
-                  {metrics.activeCount.toLocaleString('id-ID')}
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>
-                  Belum: {metrics.unregisteredCount.toLocaleString('id-ID')}
-                </Text>
-              </View>
 
-              {/* 3. Verifikasi KTA / KTP */}
-              <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(2,132,199,0.1)' : '#F0FDF4', borderColor: '#BBF7D0' }]}>
-                <View style={styles.metricCardHeader}>
-                  <Feather name="shield" size={13} color="#0284C7" />
-                  <Text style={[styles.metricCardLabel, { color: '#0369A1' }]}>
-                    {isMembersLayer ? 'Validasi e-KTA' : 'Verifikasi KTP'}
-                  </Text>
+                {/* Dual Segment Progress Bar */}
+                <View style={[styles.progressBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderColor: colors.border }]}>
+                  <View style={styles.progressHeader}>
+                    <Text style={[styles.progressTitle, { color: colors.text }]}>
+                      Rasio Ketercapaian Terdaftar
+                    </Text>
+                    <Text style={[styles.progressPercent, { color: '#0066B3' }]}>
+                      {metrics.achievementPercent}%
+                    </Text>
+                  </View>
+
+                  <View style={[styles.trackBg, { backgroundColor: colors.border }]}>
+                    <View
+                      style={[
+                        styles.trackFill,
+                        {
+                          width: `${Math.min(metrics.achievementPercent, 100)}%`,
+                          backgroundColor: metrics.isSurplus ? '#0066B3' : '#F59E0B',
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.progressLegendRow}>
+                    <Text style={[styles.progressLegendText, { color: '#10B981' }]}>
+                      ● {formatNum(metrics.activeCount)} Terdaftar
+                    </Text>
+                    <Text style={[styles.progressLegendText, { color: isDark ? '#FBBF24' : '#B45309' }]}>
+                      ● {formatNum(metrics.unregisteredCount)} Belum Terdaftar
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.metricValue, { color: '#0284C7' }]}>
-                  {metrics.verificationRatePercent}%
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>
-                  {metrics.verifiedCount.toLocaleString('id-ID')} Terverifikasi
-                </Text>
-              </View>
+              </>
+            )}
 
-              {/* 4. Defisit / Surplus */}
-              <View style={[styles.metricCard, { backgroundColor: isDark ? 'rgba(245,158,11,0.1)' : '#FFFBEB', borderColor: '#FDE68A' }]}>
-                <View style={styles.metricCardHeader}>
-                  <Feather name="trending-up" size={13} color="#D97706" />
-                  <Text style={[styles.metricCardLabel, { color: '#B45309' }]}>
-                    Defisit / Surplus
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.metricValue,
-                    { color: metrics.isSurplus ? '#10B981' : '#D97706' },
-                  ]}
-                >
-                  {metrics.isSurplus ? '+' : ''}
-                  {metrics.gap.toLocaleString('id-ID')}
-                </Text>
-                <Text style={[styles.metricSub, { color: colors.textMuted }]}>
-                  {metrics.isSurplus ? 'Surplus Wilayah' : 'Perlu Akselerasi'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Dual Segment Progress Bar */}
-            <View style={[styles.progressBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderColor: colors.border }]}>
-              <View style={styles.progressHeader}>
-                <Text style={[styles.progressTitle, { color: colors.text }]}>
-                  Rasio Ketercapaian Terdaftar
-                </Text>
-                <Text style={[styles.progressPercent, { color: '#0066B3' }]}>
-                  {metrics.achievementPercent}%
-                </Text>
-              </View>
-
-              <View style={[styles.trackBg, { backgroundColor: colors.border }]}>
-                <View
-                  style={[
-                    styles.trackFill,
-                    {
-                      width: `${Math.min(metrics.achievementPercent, 100)}%`,
-                      backgroundColor: metrics.isSurplus ? '#0066B3' : '#F59E0B',
-                    },
-                  ]}
-                />
-              </View>
-
-              <View style={styles.progressLegendRow}>
-                <Text style={[styles.progressLegendText, { color: '#10B981' }]}>
-                  ● {metrics.activeCount.toLocaleString('id-ID')} Terdaftar
-                </Text>
-                <Text style={[styles.progressLegendText, { color: '#D97706' }]}>
-                  ● {metrics.unregisteredCount.toLocaleString('id-ID')} Belum Terdaftar
-                </Text>
-              </View>
-            </View>
-
-            {/* Rincian Posko Desa (Level 4 - Sesuai Screenshot 4) */}
+            {/* Rincian Posko Desa (Level 4 - Bebas % Bappilu untuk Relawan) */}
             {poskoDesas.length > 0 && (
               <View style={styles.subListSection}>
                 <Text style={[styles.subListTitle, { color: colors.text }]}>
@@ -260,28 +336,19 @@ export default function GisScorecardInspector({
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Text style={[styles.desaTitle, { color: colors.text }]}>{desa.villageName}</Text>
                           <View style={styles.poskoBadge}>
-                            <Text style={styles.poskoBadgeText}>POSKO DESA</Text>
+                            <Text style={styles.poskoBadgeText}>POSKO SIAGA</Text>
                           </View>
                         </View>
                         <Text style={[styles.desaCoordinator, { color: colors.textMuted }]}>
                           Koordinator: <Text style={{ color: colors.primary, fontFamily: fonts.bold }}>{desa.coordinatorName}</Text>
                         </Text>
                       </View>
-                      <Text style={[styles.desaPercent, { color: desa.achievementPct >= 100 ? '#10B981' : '#D97706' }]}>
-                        {desa.achievementPct}%
-                      </Text>
-                    </View>
-
-                    <View style={styles.desaStatsRow}>
-                      <Text style={[styles.desaStatText, { color: colors.textMuted }]}>
-                        Terdaftar: <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{desa.registeredVolunteers}</Text>
-                      </Text>
-                      <Text style={[styles.desaStatText, { color: colors.textMuted }]}>
-                        Target: <Text style={{ color: colors.text, fontFamily: fonts.bold }}>{desa.targetVolunteers}</Text>
-                      </Text>
-                      <Text style={[styles.desaStatText, { color: desa.surplus >= 0 ? '#10B981' : '#EF4444' }]}>
-                        Surplus: {desa.surplus >= 0 ? `+${desa.surplus}` : desa.surplus}
-                      </Text>
+                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                        <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: '#059669' }}>
+                          {desa.registeredVolunteers} Relawan
+                        </Text>
+                        <Text style={{ fontSize: 10, color: colors.textMuted }}>Siaga Lapangan</Text>
+                      </View>
                     </View>
 
                     <View style={styles.desaActionsRow}>
@@ -310,15 +377,14 @@ export default function GisScorecardInspector({
               </View>
             )}
 
-            {/* Rincian Sub-Wilayah (DPC / PAC - Sesuai Screenshot 2 & 3) */}
+            {/* Rincian Sub-Wilayah (DPC / PAC) */}
             {subClusters.length > 0 && (
               <View style={styles.subListSection}>
                 <Text style={[styles.subListTitle, { color: colors.text }]}>
-                  Daftar Wilayah Binaan ({subClusters.length})
+                  Daftar {getSubRegionType(cluster.level)} ({subClusters.length})
                 </Text>
                 {subClusters.map((sub) => {
-                  const pct = sub.targetVolunteers > 0 ? (sub.totalVolunteers / sub.targetVolunteers) * 100 : 100;
-                  const surplus = sub.totalVolunteers - sub.targetVolunteers;
+                  const count = isMembersLayer ? sub.totalCadres : sub.totalVolunteers;
                   return (
                     <TouchableOpacity
                       key={sub.id}
@@ -329,38 +395,20 @@ export default function GisScorecardInspector({
                       ]}
                       activeOpacity={0.7}
                     >
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={[styles.subName, { color: colors.text }]}>{sub.name}</Text>
-                          <View style={[styles.levelPill, { backgroundColor: 'rgba(0,102,179,0.12)' }]}>
-                            <Text style={styles.levelPillText}>{sub.level}</Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.subStats, { color: colors.textMuted }]}>
-                          Terdaftar: {sub.totalVolunteers.toLocaleString('id-ID')} | Target: {sub.targetVolunteers.toLocaleString('id-ID')}
-                        </Text>
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <Text style={[styles.subName, { color: colors.text }]}>{sub.name}</Text>
                       </View>
-                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                        <Text style={[styles.subPercent, { color: pct >= 100 ? '#10B981' : '#D97706' }]}>
-                          ● {pct.toFixed(1)}%
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 13.5, fontFamily: fonts.bold, color: '#0066B3' }}>
+                          {formatNum(count)} {unit}
                         </Text>
-                        <Text style={[styles.subSurplus, { color: surplus >= 0 ? '#10B981' : '#EF4444' }]}>
-                          {surplus >= 0 ? `+${surplus}` : surplus}
-                        </Text>
+                        <Feather name="chevron-right" size={16} color={colors.textMuted} />
                       </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             )}
-
-            {/* Info Perlindungan Data Pribadi */}
-            <View style={[styles.pdpNotice, { backgroundColor: isDark ? 'rgba(5, 150, 105, 0.1)' : '#ECFDF5', borderColor: '#A7F3D0' }]}>
-              <Feather name="lock" size={13} color="#059669" />
-              <Text style={[styles.pdpNoticeText, { color: isDark ? '#6EE7B7' : '#047857' }]}>
-                Standar UU PDP No. 27/2022: Menampilkan agregat kuantitas resmi tanpa mengekspos identitas perorangan.
-              </Text>
-            </View>
           </ScrollView>
         </View>
       </View>
@@ -613,41 +661,22 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontFamily: fonts.bold,
   },
-  levelPill: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 3,
-  },
-  levelPillText: {
-    fontSize: 8.5,
-    color: '#0066B3',
-    fontFamily: fonts.bold,
-  },
-  subStats: {
-    fontSize: 10,
-    marginTop: 2,
-  },
-  subPercent: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-  },
-  subSurplus: {
-    fontSize: 9.5,
-    fontFamily: fonts.bold,
-  },
-  pdpNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    padding: spacing.xs,
-    borderRadius: radius.md,
+  grassrootsStrengthCard: {
+    padding: spacing.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    marginTop: 2,
+    marginBottom: spacing.xs,
   },
-  pdpNoticeText: {
-    flex: 1,
-    fontSize: 9.5,
-    lineHeight: 13,
-    fontFamily: fonts.regular,
+  grassrootsLabel: {
+    fontSize: 10,
+    fontFamily: fonts.bold,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  grassrootsValue: {
+    fontSize: 18,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.3,
+    marginTop: 2,
   },
 });

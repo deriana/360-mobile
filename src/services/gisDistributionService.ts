@@ -184,8 +184,8 @@ class GisDistributionService {
       const memberCluster = PAN_MEMBER_CLUSTERS.find(
         (m) => m.name.toLowerCase() === cluster.name.toLowerCase()
       );
-      const target = memberCluster?.targetMembers || cluster.totalCadres;
-      const active = memberCluster?.totalMembers || cluster.totalCadres;
+      const target = memberCluster?.targetMembers || cluster.totalCadres || 1000;
+      const active = memberCluster?.totalMembers || cluster.totalCadres || 0;
       const verified = memberCluster?.verifiedKta || Math.round(active * 0.95);
       const gap = active - target;
       const pct = target > 0 ? (active / target) * 100 : 100;
@@ -205,10 +205,10 @@ class GisDistributionService {
     }
 
     // Default: Relawan & Kekuatan Gabungan
-    const target = cluster.targetVolunteers || Math.round(cluster.totalVolunteers * 1.05);
-    const active = cluster.totalVolunteers;
+    const active = cluster.totalVolunteers || 0;
+    const target = cluster.targetVolunteers || Math.round(active * 1.05) || 100;
     const unregistered = Math.max(0, target - active);
-    const gap = cluster.volunteerGap;
+    const gap = typeof cluster.volunteerGap === 'number' ? cluster.volunteerGap : (active - target);
     const pct = target > 0 ? (active / target) * 100 : 100;
     const verified = Math.round(active * 0.96);
 
