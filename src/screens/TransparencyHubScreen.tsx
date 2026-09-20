@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -18,17 +16,14 @@ import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton, SectionTitle } fr
 import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import {
   FINANCIAL_REPORT_2024,
-  FinancialReportItem,
   POLICY_DOCUMENTS,
   PolicyDocumentItem,
   PUBLIC_AID_REPORT_2024,
-  PublicAidItem,
   STRATEGIC_PROGRAMS,
-  StrategicProgramItem,
 } from '../data/transparency';
 import { STRUKTUR_PENGURUS } from '../data/simpan';
 
-type TransparencyTab = 'struktur' | 'program' | 'keuangan' | 'bantuan' | 'kebijakan';
+type TransparencyTab = 'keuangan' | 'bantuan' | 'program' | 'kebijakan' | 'struktur';
 
 interface TabItem {
   key: TransparencyTab;
@@ -38,11 +33,11 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'struktur', label: 'Struktur Organisasi', icon: 'layers' },
-  { key: 'program', label: 'Program & Kegiatan', icon: 'check-square', badge: `${STRATEGIC_PROGRAMS.length}` },
   { key: 'keuangan', label: 'Laporan Keuangan', icon: 'pie-chart', badge: 'WTP' },
   { key: 'bantuan', label: 'Bantuan Publik', icon: 'shield', badge: 'BPK' },
-  { key: 'kebijakan', label: 'Kebijakan & Dokumen', icon: 'file-text', badge: `${POLICY_DOCUMENTS.length}` },
+  { key: 'program', label: 'Program Strategis', icon: 'check-square', badge: `${STRATEGIC_PROGRAMS.length}` },
+  { key: 'kebijakan', label: 'Kebijakan & PO', icon: 'file-text', badge: `${POLICY_DOCUMENTS.length}` },
+  { key: 'struktur', label: 'Struktur Organisasi', icon: 'layers' },
 ];
 
 function formatRupiah(amount: number): string {
@@ -195,7 +190,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
         setDialogConfig({
           visible: true,
           title: 'Laporan PDF Berhasil Dibuat',
-          message: `File tersimpan sementara di perangkat: ${uri}`,
+          message: 'Berkas PDF laporan transparansi keuangan berhasil disusun dan disimpan pada memori perangkat Anda.',
           tone: 'success',
         });
       }
@@ -232,9 +227,17 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
               <View style={[styles.headerTag, { backgroundColor: colors.primaryLight }]}>
                 <Text style={[styles.headerTagText, { color: colors.primary }]}>Keterbukaan Informasi Publik</Text>
               </View>
-              <View style={styles.auditPill}>
-                <Feather name="check-circle" size={12} color="#059669" />
-                <Text style={styles.auditPillText}>Audit KAP: WTP</Text>
+              <View
+                style={[
+                  styles.auditPill,
+                  {
+                    backgroundColor: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ECFDF5',
+                    borderColor: isDark ? '#065F46' : '#A7F3D0',
+                  },
+                ]}
+              >
+                <Feather name="check-circle" size={12} color={isDark ? '#34D399' : '#059669'} />
+                <Text style={[styles.auditPillText, { color: isDark ? '#34D399' : '#059669' }]}>Audit KAP: WTP</Text>
               </View>
             </View>
             <Text style={[styles.heroTitle, { color: colors.text }]}>Transparansi simPAN</Text>
@@ -348,11 +351,11 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
               {/* 5 Jenjang Strip */}
               <View style={styles.levelsGrid}>
                 {[
-                  { code: 'DPP', name: 'Nasional', desc: 'Dewan Pimpinan Pusat' },
-                  { code: 'DPW', name: 'Jawa Barat', desc: 'Provinsi' },
-                  { code: 'DPD', name: 'Kota Bandung', desc: 'Kota / Kabupaten' },
-                  { code: 'DPC', name: 'Coblong', desc: 'Kecamatan' },
-                  { code: 'DPRt', name: 'Dago', desc: 'Kelurahan / Ranting' },
+                  { code: 'DPP', name: 'Tingkat Nasional', desc: 'Dewan Pimpinan Pusat (Jakarta)' },
+                  { code: 'DPW', name: 'Tingkat Provinsi', desc: '38 Wilayah se-Indonesia' },
+                  { code: 'DPD', name: 'Kota / Kabupaten', desc: '514 Daerah se-Indonesia' },
+                  { code: 'DPC', name: 'Tingkat Kecamatan', desc: 'Pengurus Cabang' },
+                  { code: 'DPRt', name: 'Kelurahan / Desa', desc: 'Basis Ranting & TPS' },
                 ].map((lvl, idx) => (
                   <View
                     key={lvl.code}
@@ -377,7 +380,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                 ))}
               </View>
 
-              <View style={styles.actionRowDivider} />
+              <View style={[styles.actionRowDivider, { backgroundColor: colors.border }]} />
 
               <View style={{ gap: 8 }}>
                 <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, lineHeight: 17 }}>
@@ -395,7 +398,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
 
             {/* Pimpinan Utama DPP PAN Preview */}
             <Card style={[styles.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <SectionTitle>Pimpinan Utama Pemenangan & Saksi</SectionTitle>
+              <SectionTitle>Pimpinan Utama DPP PAN</SectionTitle>
               <View style={{ gap: 10, marginTop: 4 }}>
                 {STRUKTUR_PENGURUS.slice(0, 3).map((p) => (
                   <View
@@ -497,20 +500,24 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                       style={[
                         styles.statusBadge,
                         {
-                          backgroundColor: isCompleted ? '#ECFDF5' : '#EFF6FF',
-                          borderColor: isCompleted ? '#A7F3D0' : '#BFDBFE',
+                          backgroundColor: isCompleted
+                            ? isDark ? 'rgba(5, 150, 105, 0.2)' : '#ECFDF5'
+                            : isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
+                          borderColor: isCompleted
+                            ? isDark ? '#065F46' : '#A7F3D0'
+                            : isDark ? '#1E40AF' : '#BFDBFE',
                         },
                       ]}
                     >
                       <Feather
                         name={isCompleted ? 'check-circle' : 'clock'}
                         size={11}
-                        color={isCompleted ? '#059669' : '#2563EB'}
+                        color={isCompleted ? (isDark ? '#34D399' : '#059669') : (isDark ? '#60A5FA' : '#2563EB')}
                       />
                       <Text
                         style={[
                           styles.statusBadgeText,
-                          { color: isCompleted ? '#059669' : '#2563EB' },
+                          { color: isCompleted ? (isDark ? '#34D399' : '#059669') : (isDark ? '#60A5FA' : '#2563EB') },
                         ]}
                       >
                         {isCompleted ? 'Terealisasi 100%' : `${prog.progressPercentage}% Progres`}
@@ -564,7 +571,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                   </View>
 
                   {/* Footer Info */}
-                  <View style={styles.programFooterRow}>
+                  <View style={[styles.programFooterRow, { borderTopColor: colors.border }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <Feather name="user-check" size={12} color={colors.textMuted} />
                       <Text style={[styles.programPicText, { color: colors.textMuted }]} numberOfLines={1}>
@@ -591,8 +598,8 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
               style={[
                 styles.featureCard,
                 {
-                  backgroundColor: isDark ? 'rgba(5, 150, 105, 0.12)' : '#ECFDF5',
-                  borderColor: isDark ? '#065F46' : '#A7F3D0',
+                  backgroundColor: isDark ? 'rgba(5, 150, 105, 0.15)' : '#ECFDF5',
+                  borderColor: isDark ? '#059669' : '#A7F3D0',
                 },
               ]}
             >
@@ -610,16 +617,44 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                   <Feather name="award" size={24} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: '#047857', letterSpacing: 0.5 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 11,
+                      color: isDark ? '#34D399' : '#047857',
+                      letterSpacing: 0.5,
+                    }}
+                  >
                     OPINI AUDIT INDEPENDEN RESMI
                   </Text>
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 16, color: '#065F46', marginTop: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 16,
+                      color: isDark ? '#6EE7B7' : '#065F46',
+                      marginTop: 1,
+                    }}
+                  >
                     {FINANCIAL_REPORT_2024.auditOpinionLabel}
                   </Text>
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: '#047857', marginTop: 4 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.regular,
+                      fontSize: 11,
+                      color: isDark ? '#A7F3D0' : '#047857',
+                      marginTop: 4,
+                    }}
+                  >
                     Diaudit oleh: {FINANCIAL_REPORT_2024.auditorFirm}
                   </Text>
-                  <Text style={{ fontFamily: fonts.regular, fontSize: 10, color: '#059669', marginTop: 2 }}>
+                  <Text
+                    style={{
+                      fontFamily: fonts.regular,
+                      fontSize: 10,
+                      color: isDark ? '#34D399' : '#059669',
+                      marginTop: 2,
+                    }}
+                  >
                     No. LHP: {FINANCIAL_REPORT_2024.auditNumber} • {FINANCIAL_REPORT_2024.auditDate}
                   </Text>
                 </View>
@@ -877,8 +912,22 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                     {formatRupiah(PUBLIC_AID_REPORT_2024.totalRealized)} dari {formatRupiah(PUBLIC_AID_REPORT_2024.totalReceived)}
                   </Text>
                 </View>
-                <View style={[styles.rateBadge, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-                  <Text style={{ fontFamily: fonts.bold, fontSize: 13, color: '#059669' }}>
+                <View
+                  style={[
+                    styles.rateBadge,
+                    {
+                      backgroundColor: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ECFDF5',
+                      borderColor: isDark ? '#065F46' : '#A7F3D0',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.bold,
+                      fontSize: 13,
+                      color: isDark ? '#34D399' : '#059669',
+                    }}
+                  >
                     {PUBLIC_AID_REPORT_2024.absorptionRate}%
                   </Text>
                 </View>
@@ -903,8 +952,25 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                       ]}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <View style={[styles.miniCatTag, { backgroundColor: isDiklat ? '#ECFDF5' : '#EFF6FF' }]}>
-                          <Text style={{ fontFamily: fonts.bold, fontSize: 9, color: isDiklat ? '#059669' : '#2563EB' }}>
+                        <View
+                          style={[
+                            styles.miniCatTag,
+                            {
+                              backgroundColor: isDiklat
+                                ? isDark ? 'rgba(5, 150, 105, 0.2)' : '#ECFDF5'
+                                : isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: fonts.bold,
+                              fontSize: 9,
+                              color: isDiklat
+                                ? isDark ? '#34D399' : '#059669'
+                                : isDark ? '#60A5FA' : '#2563EB',
+                            }}
+                          >
                             {isDiklat ? 'PENDIDIKAN POLITIK' : 'OPERASIONAL KANTOR'}
                           </Text>
                         </View>
@@ -955,9 +1021,24 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                             SPJ Terverifikasi: {act.evidenceDocumentName}
                           </Text>
                         </View>
-                        <View style={styles.verifiedBpkTag}>
-                          <Feather name="check" size={10} color="#059669" />
-                          <Text style={styles.verifiedBpkTagText}>BPK RI</Text>
+                        <View
+                          style={[
+                            styles.verifiedBpkTag,
+                            {
+                              backgroundColor: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ECFDF5',
+                              borderColor: isDark ? '#065F46' : '#A7F3D0',
+                            },
+                          ]}
+                        >
+                          <Feather name="check" size={10} color={isDark ? '#34D399' : '#059669'} />
+                          <Text
+                            style={[
+                              styles.verifiedBpkTagText,
+                              { color: isDark ? '#34D399' : '#059669' },
+                            ]}
+                          >
+                            BPK RI
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -1007,7 +1088,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
               {[
                 { key: 'SEMUA', label: 'Semua Dokumen' },
                 { key: 'AD_ART', label: 'AD / ART' },
-                { key: 'PERATURAN_ORGANISASI', label: 'Peraturan BSN' },
+                { key: 'PERATURAN_ORGANISASI', label: 'Peraturan Partai (PO)' },
                 { key: 'PAKTA_INTEGRITAS', label: 'Pakta Integritas' },
                 { key: 'PEDOMAN_AKUNTANSI', label: 'Pedoman Akuntansi' },
                 { key: 'KEBIJAKAN_PUBLIK', label: 'Keterbukaan KIP' },
@@ -1136,7 +1217,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={{ flex: 1, gap: 2 }}>
                 <View style={[styles.docTag, { backgroundColor: colors.primaryLight, alignSelf: 'flex-start' }]}>
                   <Text style={[styles.docTagText, { color: colors.primary }]}>{selectedDoc?.categoryLabel}</Text>
@@ -1146,8 +1227,16 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                   {selectedDoc?.codeNumber}
                 </Text>
               </View>
-              <Pressable onPress={() => setSelectedDoc(null)} style={styles.modalCloseBtn} hitSlop={8}>
-                <Feather name="x" size={20} color={colors.textMuted} />
+              <Pressable
+                onPress={() => setSelectedDoc(null)}
+                style={({ pressed }) => [
+                  styles.modalCloseBtn,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9' },
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={8}
+              >
+                <Feather name="x" size={18} color={colors.textMuted} />
               </Pressable>
             </View>
 
@@ -1218,7 +1307,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <PrimaryButton
                 label="Tutup Ringkasan"
                 onPress={() => setSelectedDoc(null)}
@@ -1321,8 +1410,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: radius.pill,
     borderWidth: 1,
   },
@@ -1411,7 +1501,6 @@ const styles = StyleSheet.create({
   },
   actionRowDivider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
     marginVertical: 4,
   },
   officerRow: {
@@ -1427,10 +1516,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   subFilterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    minHeight: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   subFilterChipText: {
     fontSize: 11,
@@ -1515,7 +1607,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
   },
   programPicText: {
     fontFamily: fonts.medium,
@@ -1651,13 +1742,16 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   catChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: radius.pill,
     borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   catChipText: {
-    fontSize: 10,
+    fontSize: 11,
   },
   docTag: {
     paddingHorizontal: 6,
@@ -1686,13 +1780,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    minHeight: 34,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: radius.pill,
   },
   readDocBtnText: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: 11,
   },
   modalOverlay: {
     flex: 1,
@@ -1712,7 +1807,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   modalDocTitle: {
     fontFamily: fonts.bold,
@@ -1720,7 +1814,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   modalCloseBtn: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   docSummaryBox: {
     padding: 10,
@@ -1751,6 +1849,5 @@ const styles = StyleSheet.create({
   modalFooter: {
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
   },
 });
