@@ -267,13 +267,22 @@ export default function ProfileScreen({ navigation }: any) {
               </View>
               <Text style={[styles.heroInfoLabel, { color: colors.textMuted }]}>Struktur Wilayah</Text>
             </View>
-            <Text
-              style={[styles.heroInfoValue, { color: colors.text }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {currentMembership?.dpd || 'DPD PAN Kota Bandung'} • {currentMembership?.dpc || 'DPC Coblong'}
-            </Text>
+            <View style={styles.heroInfoValueCol}>
+              <Text
+                style={[styles.heroInfoValueMain, { color: colors.text }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {currentMembership?.dpd || 'DPD PAN Kota Bandung'}
+              </Text>
+              <Text
+                style={[styles.heroInfoValueSub, { color: colors.textMuted }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {currentMembership?.dpc || 'DPC Coblong'}
+              </Text>
+            </View>
           </View>
 
           <View style={[styles.heroInfoDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0' }]} />
@@ -1465,6 +1474,25 @@ const styles = StyleSheet.create({
   heroInfoLabel: {
     fontFamily: fonts.medium,
     fontSize: 11,
+  },
+  heroInfoValueCol: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  heroInfoValueMain: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'right',
+  },
+  heroInfoValueSub: {
+    fontFamily: fonts.medium,
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: 'right',
+    marginTop: 1,
   },
   heroInfoValue: {
     fontFamily: fonts.semiBold,
