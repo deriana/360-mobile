@@ -22,6 +22,7 @@ import { Card, KpiCard, Modal, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_LABEL } from '../utils/scope';
+import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { getWitnessAvatar } from '../data/images';
 import { addToOfflineQueue } from '../utils/offlineQueue';
 import { CheckInPayload } from '../types';
@@ -148,10 +149,11 @@ function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | n
 export default function CheckInScreen({ route, navigation }: any) {
   const { role, currentUser, witnesses, tps, events, checkInWitness, checkInEvent, poskoCheckIn, checkInPosko } = useApp();
   const { colors, isDark } = useTheme();
-  const witness = witnesses.find((w) => w.id === CURRENT_WITNESS_ID) || witnesses[0];
-  const assignedTps = tps.find((t) => t.id === witness?.assignedTpsId);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const witness = activeScope.witness;
+  const assignedTps = activeScope.tps;
 
-  const isWitnessUser = role === 'WITNESS' || role === 'TPS_WITNESS' || currentUser.roles.some((r) => r.role === 'WITNESS');
+  const isWitnessUser = role === 'WITNESS' || role === 'TPS_WITNESS' || currentUser.roles.some((r) => r.role === 'WITNESS') || currentUser.dimensions?.programs?.programSaksi === 'MANDATED';
   const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !isWitnessUser;
 
   // Filter agenda yang didaftarkan relawan (sesuai state di ActivitiesScreen)
@@ -209,10 +211,14 @@ export default function CheckInScreen({ route, navigation }: any) {
 
   const currentTargetLocationLabel =
     targetType === 'tps'
-      ? (assignedTps ? `TPS ${assignedTps.tpsNumber} ${assignedTps.district}, ${assignedTps.regency}` : 'Lokasi TPS')
+      ? (assignedTps
+          ? `TPS ${assignedTps.tpsNumber} Kel. ${assignedTps.village || 'Braga'}, Kec. ${assignedTps.district || 'Sumur Bandung'}, ${assignedTps.regency || 'Kota Bandung'}`
+          : 'TPS 018 Kel. Braga, Kec. Sumur Bandung')
       : targetType === 'event'
       ? `${selectedEvent?.title || 'Kegiatan'} — ${selectedEvent?.location || 'Bandung'}`
-      : poskoCheckIn.poskoName;
+      : (currentUser.coordinatorContact?.posko
+          ? `${currentUser.coordinatorContact.posko}, Kec. ${currentUser.coordinatorContact.region}`
+          : poskoCheckIn.poskoName);
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -350,23 +356,23 @@ export default function CheckInScreen({ route, navigation }: any) {
   };
 
   const useSimulatedLocation = () => {
-    let lat = -6.8833;
-    let lng = 107.6167;
+    let lat = -6.9175;
+    let lng = 107.6098;
     if (targetType === 'tps' && assignedTps) {
-      lat = assignedTps.lat;
-      lng = assignedTps.lng;
+      lat = assignedTps.lat || -6.9175;
+      lng = assignedTps.lng || 107.6098;
     } else if (targetType === 'event') {
-      lat = -6.8850;
-      lng = 107.6150;
+      lat = -6.9180;
+      lng = 107.6105;
     } else {
-      lat = -6.8810;
-      lng = 107.6180;
+      lat = -6.9170;
+      lng = 107.6090;
     }
     tpsAnchorRef.current = { lat, lng };
     setLocation({
-      lat: lat + 0.0002,
+      lat: lat + 0.0001,
       lng: lng + 0.0001,
-      accuracy: 15,
+      accuracy: 12,
     });
     setLocationFetchedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
     setLocationError(null);
@@ -426,8 +432,8 @@ export default function CheckInScreen({ route, navigation }: any) {
           insideGeofence: !isOutside,
           overrideNote: isOutside ? overrideNote.trim() : undefined,
           locationLabel: assignedTps
-            ? `Dekat TPS ${assignedTps.tpsNumber} ${assignedTps.district}${isOutside ? ' (Pengecualian Luar Radius)' : ' (Sesuai Geofence)'}`
-            : 'Lokasi GPS Aktual',
+            ? `Dekat TPS ${assignedTps.tpsNumber} Kel. ${assignedTps.village || 'Braga'}, Kec. ${assignedTps.district || 'Sumur Bandung'}${isOutside ? ' (Pengecualian Luar Radius)' : ' (Sesuai Geofence)'}`
+            : 'Lokasi GPS TPS 018 Braga',
         });
         setSubmitting(false);
         setJustConfirmed(true);
@@ -449,30 +455,73 @@ export default function CheckInScreen({ route, navigation }: any) {
     }
   };
 
+  const checkInDisplayTime = currentCheckInTime || '07:12';
   const timelineItems =
     targetType === 'tps'
       ? [
-          { key: 'selfie', label: 'Foto Selfie Saksi Diambil', icon: 'camera' as const, done: !!photoUri, time: photoTakenAt },
-          { key: 'gps', label: 'Lokasi GPS TPS Terkunci', icon: 'map-pin' as const, done: !!location, time: locationFetchedAt },
+          {
+            key: 'selfie',
+            label: 'Foto Selfie Saksi Diambil',
+            icon: 'camera' as const,
+            done: !!photoUri || isTargetCheckedIn,
+            time: photoTakenAt
+              ? `${photoTakenAt} WIB`
+              : isTargetCheckedIn
+              ? '07:10 WIB'
+              : 'Menunggu foto selfie',
+          },
+          {
+            key: 'gps',
+            label: 'Lokasi GPS TPS Terkunci',
+            icon: 'map-pin' as const,
+            done: !!location || isTargetCheckedIn,
+            time: isTargetCheckedIn
+              ? '07:11 WIB'
+              : locationFetchedAt
+              ? `${locationFetchedAt} WIB`
+              : 'Menunggu sinyal GPS',
+          },
           {
             key: 'confirm',
             label: 'Presensi Saksi Dikonfirmasi',
             icon: 'check-square' as const,
             done: isTargetCheckedIn,
-            time: currentCheckInTime,
+            time: isTargetCheckedIn
+              ? `${checkInDisplayTime} WIB`
+              : 'Menunggu konfirmasi',
           },
         ]
       : [
-          { key: 'gps', label: 'Titik Lokasi GPS Terkunci', icon: 'map-pin' as const, done: !!location, time: locationFetchedAt },
+          {
+            key: 'gps',
+            label: 'Titik Lokasi GPS Terkunci',
+            icon: 'map-pin' as const,
+            done: !!location || isTargetCheckedIn,
+            time: isTargetCheckedIn
+              ? (currentCheckInTime ? `${currentCheckInTime} WIB` : '08:14 WIB')
+              : locationFetchedAt
+              ? `${locationFetchedAt} WIB`
+              : 'Menunggu sinyal GPS',
+          },
           ...(photoUri
-            ? [{ key: 'photo', label: 'Dokumentasi Lapangan Dilampirkan', icon: 'camera' as const, done: true, time: photoTakenAt }]
+            ? [
+                {
+                  key: 'photo',
+                  label: 'Dokumentasi Lapangan Dilampirkan',
+                  icon: 'camera' as const,
+                  done: true,
+                  time: photoTakenAt ? `${photoTakenAt} WIB` : 'Tercatat',
+                },
+              ]
             : []),
           {
             key: 'confirm',
             label: `Presensi ${targetType === 'event' ? 'Kegiatan' : 'Posko'} Dikonfirmasi`,
             icon: 'check-square' as const,
             done: isTargetCheckedIn,
-            time: currentCheckInTime,
+            time: isTargetCheckedIn
+              ? (currentCheckInTime ? `${currentCheckInTime} WIB` : '08:15 WIB')
+              : 'Menunggu konfirmasi',
           },
         ];
 
@@ -482,12 +531,12 @@ export default function CheckInScreen({ route, navigation }: any) {
       <View style={styles.headerTopRow}>
         <View style={styles.headerLeftRow}>
           <Image source={getWitnessAvatar(currentUser.identity.avatarIndex ?? 0)} style={styles.avatarImg} />
-          <View style={{ gap: 2 }}>
-            <Text style={[styles.greetingText, { color: colors.text }]}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.greetingText, { color: colors.text }]} numberOfLines={1}>
               Halo, {(currentUser.identity.name || witness.name).split(' ')[0]}
             </Text>
             <View style={[styles.rolePill, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.rolePillText, { color: colors.primary }]}>
+              <Text style={[styles.rolePillText, { color: colors.primary }]} numberOfLines={1}>
                 {ROLE_LABEL[role] || 'Relawan Lapangan'}
               </Text>
             </View>
@@ -496,7 +545,7 @@ export default function CheckInScreen({ route, navigation }: any) {
 
         <View style={[styles.modernClockBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9', borderColor: colors.border }]}>
           <Text style={[styles.modernClockTime, { color: colors.text }]}>{clockTime}</Text>
-          <Text style={[styles.modernClockDate, { color: colors.textMuted }]}>{clockDate}</Text>
+          <Text style={[styles.modernClockDate, { color: colors.textMuted }]} numberOfLines={1}>{clockDate}</Text>
         </View>
       </View>
 
@@ -517,15 +566,16 @@ export default function CheckInScreen({ route, navigation }: any) {
           {isWitnessUser && (
             <Pressable
               onPress={() => setTargetType('tps')}
-              style={[
+              style={({ pressed }) => [
                 styles.targetPill,
                 targetType === 'tps'
                   ? { backgroundColor: colors.primary, borderColor: colors.primary }
                   : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+                pressed && { opacity: 0.8 },
               ]}
             >
-              <Feather name="home" size={13} color={targetType === 'tps' ? '#FFFFFF' : colors.textMuted} />
-              <Text style={[styles.targetText, { color: targetType === 'tps' ? '#FFFFFF' : colors.textMuted }]}>
+              <Feather name="home" size={14} color={targetType === 'tps' ? '#FFFFFF' : colors.textMuted} />
+              <Text style={[styles.targetText, { color: targetType === 'tps' ? '#FFFFFF' : colors.textMuted }]} numberOfLines={1}>
                 Saksi TPS
               </Text>
             </Pressable>
@@ -533,31 +583,33 @@ export default function CheckInScreen({ route, navigation }: any) {
 
           <Pressable
             onPress={() => setTargetType('event')}
-            style={[
+            style={({ pressed }) => [
               styles.targetPill,
               targetType === 'event'
                 ? { backgroundColor: colors.primary, borderColor: colors.primary }
                 : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+              pressed && { opacity: 0.8 },
             ]}
           >
-            <Feather name="calendar" size={13} color={targetType === 'event' ? '#FFFFFF' : colors.textMuted} />
-            <Text style={[styles.targetText, { color: targetType === 'event' ? '#FFFFFF' : colors.textMuted }]}>
-              Event & Kegiatan
+            <Feather name="calendar" size={14} color={targetType === 'event' ? '#FFFFFF' : colors.textMuted} />
+            <Text style={[styles.targetText, { color: targetType === 'event' ? '#FFFFFF' : colors.textMuted }]} numberOfLines={1}>
+              Event & Giat
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => setTargetType('posko')}
-            style={[
+            style={({ pressed }) => [
               styles.targetPill,
               targetType === 'posko'
                 ? { backgroundColor: colors.primary, borderColor: colors.primary }
                 : { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', borderColor: colors.border },
+              pressed && { opacity: 0.8 },
             ]}
           >
-            <Feather name="map-pin" size={13} color={targetType === 'posko' ? '#FFFFFF' : colors.textMuted} />
-            <Text style={[styles.targetText, { color: targetType === 'posko' ? '#FFFFFF' : colors.textMuted }]}>
-              Posko Lapangan
+            <Feather name="map-pin" size={14} color={targetType === 'posko' ? '#FFFFFF' : colors.textMuted} />
+            <Text style={[styles.targetText, { color: targetType === 'posko' ? '#FFFFFF' : colors.textMuted }]} numberOfLines={1}>
+              Posko
             </Text>
           </Pressable>
         </View>
@@ -676,10 +728,10 @@ export default function CheckInScreen({ route, navigation }: any) {
             <Feather name="map-pin" size={16} color={colors.primary} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>
-                {poskoCheckIn.poskoName}
+                {currentUser.coordinatorContact?.posko || poskoCheckIn.poskoName}
               </Text>
               <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
-                Kel. Dago, Kec. Coblong • Koordinator: {currentUser.coordinatorContact?.name || 'Asep Ridwan'}
+                Kec. {currentUser.coordinatorContact?.region || 'Sumur Bandung'}, Kota Bandung • Koordinator: {currentUser.coordinatorContact?.name || 'Hendra Gunawan'} ({currentUser.coordinatorContact?.phone || '0813-2211-4455'})
               </Text>
             </View>
           </View>
@@ -690,10 +742,10 @@ export default function CheckInScreen({ route, navigation }: any) {
             <Feather name="home" size={16} color={colors.primary} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: fonts.bold, fontSize: 12, color: colors.text }}>
-                TPS {assignedTps.tpsNumber} — Kel. {assignedTps.district}, {assignedTps.regency}
+                TPS {assignedTps.tpsNumber} — Kel. {assignedTps.village || 'Braga'}, Kec. {assignedTps.district || 'Sumur Bandung'}
               </Text>
               <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
-                DPT: 284 Pemilih • Radius Geofence Validasi: 100 meter
+                {assignedTps.regency || 'Kota Bandung'}, {assignedTps.province || 'Jawa Barat'} • DPT: {assignedTps.dpt || 268} Pemilih • Geofence Validasi: 100m
               </Text>
             </View>
           </View>
@@ -731,19 +783,19 @@ export default function CheckInScreen({ route, navigation }: any) {
             <View style={{ gap: 3 }}>
               <Text style={[styles.compactTargetTitle, { color: colors.text }]} numberOfLines={2}>
                 {targetType === 'tps'
-                  ? `TPS ${assignedTps?.tpsNumber ?? ''} — ${assignedTps?.district}, ${assignedTps?.regency}`
+                  ? `TPS ${assignedTps?.tpsNumber ?? '18'} — Kel. ${assignedTps?.village || 'Braga'}, Kec. ${assignedTps?.district || 'Sumur Bandung'}`
                   : targetType === 'event'
                   ? selectedEvent?.title
-                  : poskoCheckIn.poskoName}
+                  : (currentUser.coordinatorContact?.posko || poskoCheckIn.poskoName)}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Feather name="map-pin" size={12} color={colors.textMuted} />
                 <Text style={[styles.compactTargetSubtitle, { color: colors.textMuted }]} numberOfLines={1}>
                   {targetType === 'tps'
-                    ? `${assignedTps?.district}, ${assignedTps?.regency}`
+                    ? `${assignedTps?.regency || 'Kota Bandung'}, ${assignedTps?.province || 'Jawa Barat'}`
                     : targetType === 'event'
                     ? selectedEvent?.location
-                    : 'Kel. Dago, Kec. Coblong, Bandung'}
+                    : `Kec. ${currentUser.coordinatorContact?.region || 'Sumur Bandung'}, Kota Bandung`}
                 </Text>
               </View>
             </View>
@@ -754,7 +806,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                 <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Waktu Hadir</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Feather name="clock" size={11} color={colors.primary} />
-                  <Text style={[styles.compactMetaValue, { color: colors.text }]}>{currentCheckInTime || '08:15'} WIB</Text>
+                  <Text style={[styles.compactMetaValue, { color: colors.text }]}>{currentCheckInTime || '07:12'} WIB</Text>
                 </View>
               </View>
 
@@ -765,7 +817,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Feather name="navigation" size={11} color={colors.success} />
                   <Text style={[styles.compactMetaValue, { color: colors.success }]}>
-                    Dalam Radius ({Math.round(distanceToTarget ?? 28)}m)
+                    Dalam Radius ({Math.round(distanceToTarget ?? 24)}m)
                   </Text>
                 </View>
               </View>
@@ -776,13 +828,60 @@ export default function CheckInScreen({ route, navigation }: any) {
               <View style={[styles.compactMapWrap, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#CBD5E1' }]}>
                 <WebView
                   source={{ html: buildLiveLocationMapHtml(location.lat, location.lng, location.accuracy) }}
-                  style={{ width: '100%', height: 105 }}
+                  style={{ width: '100%', height: 115 }}
                   originWhitelist={['*']}
                 />
                 <View style={[styles.mapOverlayPill, { backgroundColor: isDark ? 'rgba(6,21,36,0.85)' : 'rgba(255,255,255,0.92)' }]}>
                   <Feather name="lock" size={10} color={colors.success} />
-                  <Text style={[styles.mapOverlayText, { color: colors.text }]}>Titik Lokasi Terkunci</Text>
+                  <Text style={[styles.mapOverlayText, { color: colors.text }]}>Titik Lokasi Bilik Terkunci</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Quick Action Shortcuts untuk Saksi TPS Terverifikasi */}
+            {targetType === 'tps' && (
+              <View style={styles.verifiedActionRow}>
+                <Pressable
+                  onPress={() => navigation.navigate('AssignmentLetter', { witnessId: witness.id })}
+                  style={({ pressed }) => [
+                    styles.verifiedActionBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255,255,255,0.12)' : colors.border,
+                    },
+                    pressed && { opacity: 0.75 },
+                  ]}
+                >
+                  <Feather name="file-text" size={13} color={colors.primary} />
+                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>E-Mandat KPU</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => navigation.navigate('TpsDetail', { tpsId: assignedTps.id })}
+                  style={({ pressed }) => [
+                    styles.verifiedActionBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255,255,255,0.12)' : colors.border,
+                    },
+                    pressed && { opacity: 0.75 },
+                  ]}
+                >
+                  <Feather name="info" size={13} color={colors.primary} />
+                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>Data DPT</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => navigation.navigate('C1Ocr')}
+                  style={({ pressed }) => [
+                    styles.verifiedActionBtn,
+                    { backgroundColor: colors.primary, borderColor: colors.primary },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Feather name="camera" size={13} color="#FFFFFF" />
+                  <Text style={[styles.verifiedActionBtnText, { color: '#FFFFFF' }]}>Scan C1 Plano</Text>
+                </Pressable>
               </View>
             )}
 
@@ -1320,15 +1419,59 @@ export default function CheckInScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerLeftRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  avatarImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#0066B3' },
-  greetingText: { fontFamily: fonts.bold, fontSize: fontSize.md },
-  rolePill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, alignSelf: 'flex-start' },
-  rolePillText: { fontFamily: fonts.bold, fontSize: 10 },
-  modernClockBox: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, alignItems: 'flex-end', borderWidth: 1 },
-  modernClockTime: { fontFamily: fonts.bold, fontSize: fontSize.sm, fontVariant: ['tabular-nums'] },
-  modernClockDate: { fontFamily: fonts.medium, fontSize: 10, marginTop: 1 },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  headerLeftRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  avatarImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#0066B3',
+  },
+  greetingText: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+  },
+  rolePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: radius.pill,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  rolePillText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+  },
+  modernClockBox: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    borderWidth: 1,
+    minWidth: 88,
+  },
+  modernClockTime: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
+  modernClockDate: {
+    fontFamily: fonts.medium,
+    fontSize: 9.5,
+    marginTop: 1,
+  },
 
   accentStripe: { height: 3, width: '100%' },
   headerNumBadge: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -1491,6 +1634,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FFFFFF',
   },
+  verifiedActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    paddingTop: 4,
+  },
+  verifiedActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    minHeight: 38,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  verifiedActionBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+  },
 
   // Timeline
   timelineTitle: { fontFamily: fonts.bold, fontSize: fontSize.sm },
@@ -1519,7 +1685,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 7,
+    minHeight: 44,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
