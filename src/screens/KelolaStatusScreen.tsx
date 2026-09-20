@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -60,7 +60,7 @@ export default function KelolaStatusScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: isMember ? 'Tata Kelola Keanggotaan' : 'Kelola Partisipasi Relawan',
+      title: isMember ? 'Status Keanggotaan' : 'Partisipasi Relawan',
     });
   }, [navigation, isMember]);
 
@@ -95,6 +95,17 @@ export default function KelolaStatusScreen() {
   const [selectedVolReason, setSelectedVolReason] = useState<string>(VOLUNTEER_REASONS[0]);
   const [showTaskGuardModal, setShowTaskGuardModal] = useState(false);
   const [pendingVolunteerAction, setPendingVolunteerAction] = useState<'pause' | 'stop' | null>(null);
+
+  // Realtime synchronization with AppContext dimensions
+  useEffect(() => {
+    const isPaused = dims.volunteer === 'paused' || Boolean(currentUser.volunteerPauseInfo?.isPaused);
+    const isInactive = dims.volunteer === 'inactive';
+    setVolunteerStatus(isPaused ? 'PAUSED' : isInactive ? 'INACTIVE' : 'ACTIVE');
+  }, [dims.volunteer, currentUser.volunteerPauseInfo?.isPaused]);
+
+  useEffect(() => {
+    setMembershipStatus(dims.membership === 'resignation_requested' ? 'RESIGNATION_REQUESTED' : 'ACTIVE');
+  }, [dims.membership]);
 
   // Success Dialog
   const [dialogInfo, setDialogInfo] = useState<{
@@ -240,17 +251,21 @@ export default function KelolaStatusScreen() {
         <View style={{ gap: spacing.md }}>
           {/* Card Status Saat Ini */}
           <Card style={{ gap: spacing.sm }}>
-            <View style={styles.rowBetween}>
-              <View style={{ gap: 2 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Status Keanggotaan Partai</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                  Nomor e-KTA: {officialMembership?.ktaNumber || '32.73.01.2024.08912'} | {officialMembership?.dpc || 'DPC Coblong'}
+            <View style={styles.statusCardHeader}>
+              <View style={{ flex: 1, minWidth: 150, gap: 2 }}>
+                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
+                  Status Keanggotaan Partai
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }} numberOfLines={1} ellipsizeMode="tail">
+                  Nomor e-KTA: {officialMembership?.ktaNumber || '32.73.01.2024.08912'} • {officialMembership?.dpc || 'DPC Coblong'}
                 </Text>
               </View>
-              <Pill
-                label={membershipStatus === 'ACTIVE' ? 'ANGGOTA RESMI AKTIF' : 'DALAM PROSES RESIGN'}
-                tone={membershipStatus === 'ACTIVE' ? 'success' : 'warning'}
-              />
+              <View style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+                <Pill
+                  label={membershipStatus === 'ACTIVE' ? 'ANGGOTA AKTIF' : 'PROSES RESIGN'}
+                  tone={membershipStatus === 'ACTIVE' ? 'success' : 'warning'}
+                />
+              </View>
             </View>
 
             <View style={[styles.statusNoticeBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}>
@@ -327,29 +342,33 @@ export default function KelolaStatusScreen() {
         <View style={{ gap: spacing.md }}>
           {/* Status Relawan Saat Ini */}
           <Card style={{ gap: spacing.sm }}>
-            <View style={styles.rowBetween}>
-              <View style={{ gap: 2 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Status Kerelawanan Lapangan</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                  Wilayah: {currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || 'Coblong Kluster 6'} | Korlap: {currentUser?.coordinatorContact?.name || 'Asep Ridwan'}
+            <View style={styles.statusCardHeader}>
+              <View style={{ flex: 1, minWidth: 150, gap: 2 }}>
+                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
+                  Status Kerelawanan Lapangan
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }} numberOfLines={1} ellipsizeMode="tail">
+                  Wilayah: {currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || 'Coblong Kluster 6'} • Korlap: {currentUser?.coordinatorContact?.name || 'Asep Ridwan'}
                 </Text>
               </View>
-              <Pill
-                label={
-                  volunteerStatus === 'ACTIVE'
-                    ? 'RELAWAN SIAGA AKTIF'
-                    : volunteerStatus === 'PAUSED'
-                    ? 'CUTI SEMENTARA'
-                    : 'NONAKTIF'
-                }
-                tone={
-                  volunteerStatus === 'ACTIVE'
-                    ? 'success'
-                    : volunteerStatus === 'PAUSED'
-                    ? 'warning'
-                    : 'danger'
-                }
-              />
+              <View style={{ flexShrink: 0, alignSelf: 'flex-start' }}>
+                <Pill
+                  label={
+                    volunteerStatus === 'ACTIVE'
+                      ? 'RELAWAN AKTIF'
+                      : volunteerStatus === 'PAUSED'
+                      ? 'CUTI SEMENTARA'
+                      : 'NONAKTIF'
+                  }
+                  tone={
+                    volunteerStatus === 'ACTIVE'
+                      ? 'success'
+                      : volunteerStatus === 'PAUSED'
+                      ? 'warning'
+                      : 'danger'
+                  }
+                />
+              </View>
             </View>
 
             {volunteerStatus === 'PAUSED' && (
@@ -394,7 +413,7 @@ export default function KelolaStatusScreen() {
                 </View>
 
                 {/* Duration Pills */}
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
                   {VOLUNTEER_PAUSE_DURATIONS.map((dur) => (
                     <Pressable
                       key={dur.value}
@@ -621,6 +640,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   headerTitle: {
     fontSize: 16,
@@ -636,6 +656,13 @@ const styles = StyleSheet.create({
   },
 
   // Cards
+  statusCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -700,10 +727,14 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   durChip: {
+    flex: 1,
+    minWidth: 75,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 7,
     borderRadius: radius.sm,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   durChipText: {
     fontSize: 11,

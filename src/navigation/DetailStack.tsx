@@ -57,7 +57,7 @@ import KelolaStatusScreen from '../screens/KelolaStatusScreen';
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string; headerShown?: boolean }> = [
   { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
-  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status Saya' },
+  { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status' },
   { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
   { name: 'Tasks', component: TasksScreen, title: 'Tugas Lapangan' },
   { name: 'Notifications', component: NotificationsScreen, title: 'Notifikasi' },

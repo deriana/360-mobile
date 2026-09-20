@@ -35,6 +35,8 @@ export default function ProfileScreen({ navigation }: any) {
     applyCareerStatePreset,
     applyVolunteerStatePreset,
     currentUser,
+    setVolunteerPause,
+    cancelMembershipResignation,
     logout,
   } = useApp();
   const { colors, isDark } = useTheme();
@@ -50,6 +52,130 @@ export default function ProfileScreen({ navigation }: any) {
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
   const isOfficialMember = Boolean(officialMembership && (officialMembership.status === 'verified' || officialMembership.status === 'active'));
   const currentMembership = officialMembership || currentUser.memberships[0];
+
+  const dims = currentUser.dimensions || {
+    membership: 'active',
+    volunteer: 'active',
+  };
+
+  const isVolunteerPaused = dims.volunteer === 'paused' || Boolean(currentUser.volunteerPauseInfo?.isPaused);
+  const isVolunteerInactive = dims.volunteer === 'inactive';
+  const isResignationRequested = dims.membership === 'resignation_requested';
+  const isMembershipInactive = dims.membership === 'inactive';
+
+  const isNonActiveStatus = isVolunteerPaused || isVolunteerInactive || isResignationRequested || isMembershipInactive;
+
+  const statusDotColor = isVolunteerPaused || isResignationRequested
+    ? '#F59E0B'
+    : isVolunteerInactive || isMembershipInactive
+    ? colors.danger
+    : colors.success;
+
+  const getAlertConfig = () => {
+    if (isVolunteerPaused) {
+      const pauseInfo = currentUser.volunteerPauseInfo;
+      const durationLabel = pauseInfo?.durationMonths ? `${pauseInfo.durationMonths} Bulan` : '3 Bulan';
+      const reasonLabel = pauseInfo?.reason || 'Cuti terencana';
+      return {
+        cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+        borderColor: isDark ? '#B45309' : '#FDE68A',
+        iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
+        icon: 'pause-circle' as const,
+        iconColor: '#D97706',
+        title: 'Masa Cuti Relawan Aktif',
+        titleColor: isDark ? '#FDE047' : '#92400E',
+        badge: 'CUTI SEMENTARA',
+        pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
+        pillText: '#B45309',
+        description: `Partisipasi tugas lapangan Anda sedang dijeda (${durationLabel} • ${reasonLabel}). Penugasan baru dinonaktifkan tanpa menghapus portofolio Anda.`,
+        descColor: isDark ? '#FDE047' : '#78350F',
+        btnText: 'Aktifkan Kembali',
+        btnIcon: 'play' as const,
+        btnBg: '#D97706',
+        onPrimaryAction: () => {
+          setVolunteerPause({ isPaused: false });
+          setRoleSwitchNotice('Status kerelawanan aktif kembali! Penugasan lapangan dan bursa aksi siap diterima.');
+        },
+        secondaryText: 'Atur Masa Jeda',
+      };
+    }
+
+    if (isVolunteerInactive) {
+      return {
+        cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+        borderColor: isDark ? '#991B1B' : '#FECACA',
+        iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
+        icon: 'user-x' as const,
+        iconColor: '#DC2626',
+        title: 'Status Kerelawanan Nonaktif',
+        titleColor: isDark ? '#FCA5A5' : '#991B1B',
+        badge: 'NONAKTIF',
+        pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
+        pillText: '#991B1B',
+        description: 'Anda sedang tidak aktif dalam kegiatan relawan lapangan. Rekam jejak tugas dan sertifikat bimtek tetap tersimpan utuh di simPAN.',
+        descColor: isDark ? '#FECACA' : '#7F1D1D',
+        btnText: 'Aktifkan Relawan',
+        btnIcon: 'rotate-ccw' as const,
+        btnBg: '#DC2626',
+        onPrimaryAction: () => {
+          setVolunteerPause({ isPaused: false });
+          setRoleSwitchNotice('Status kerelawanan berhasil diaktifkan kembali!');
+        },
+        secondaryText: 'Detail Partisipasi',
+      };
+    }
+
+    if (isResignationRequested) {
+      return {
+        cardBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
+        borderColor: isDark ? '#B45309' : '#FDE68A',
+        iconBg: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FEF3C7',
+        icon: 'clock' as const,
+        iconColor: '#D97706',
+        title: 'Pengunduran Diri Diproses',
+        titleColor: isDark ? '#FDE047' : '#92400E',
+        badge: 'REVIEW DPD',
+        pillBg: isDark ? 'rgba(245, 158, 11, 0.3)' : '#FEF3C7',
+        pillText: '#B45309',
+        description: 'Pengajuan pengunduran diri keanggotaan Anda sedang ditinjau administrasi DPD PAN. Hak suara permusyawaratan dibekukan sementara.',
+        descColor: isDark ? '#FDE047' : '#78350F',
+        btnText: 'Batalkan Resign',
+        btnIcon: 'rotate-ccw' as const,
+        btnBg: '#0284C7',
+        onPrimaryAction: () => {
+          cancelMembershipResignation();
+          setRoleSwitchNotice('Pengajuan pengunduran diri dibatalkan. Status keanggotaan tetap Aktif Penuh.');
+        },
+        secondaryText: 'Detail Status',
+      };
+    }
+
+    if (isMembershipInactive) {
+      return {
+        cardBg: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+        borderColor: isDark ? '#991B1B' : '#FECACA',
+        iconBg: isDark ? 'rgba(239, 68, 68, 0.25)' : '#FEE2E2',
+        icon: 'shield-off' as const,
+        iconColor: '#DC2626',
+        title: 'Keanggotaan Nonaktif',
+        titleColor: isDark ? '#FCA5A5' : '#991B1B',
+        badge: 'NONAKTIF',
+        pillBg: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FEE2E2',
+        pillText: '#991B1B',
+        description: 'Status keanggotaan resmi partai Anda saat ini tidak aktif. Silakan hubungi Sekretariat DPD PAN untuk pembaruan data.',
+        descColor: isDark ? '#FECACA' : '#7F1D1D',
+        btnText: undefined,
+        btnIcon: undefined,
+        btnBg: undefined,
+        onPrimaryAction: undefined,
+        secondaryText: 'Detail Keanggotaan',
+      };
+    }
+
+    return null;
+  };
+
+  const alertConfig = getAlertConfig();
 
   const activeAssignment = currentUser.roles.find((r) => r.role === role) ?? currentUser.roles[0];
   const activityTimeline = ROLE_ACTIVITY_TIMELINE[user.email] || ROLE_ACTIVITY_TIMELINE['saksi@pan.go.id'] || [];
@@ -153,7 +279,7 @@ export default function ProfileScreen({ navigation }: any) {
               source={getWitnessAvatar(user.avatarIndex ?? 0)}
               style={styles.avatarImage}
             />
-            <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+            <View style={[styles.onlineDot, { backgroundColor: statusDotColor }]} />
           </View>
 
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
@@ -210,9 +336,44 @@ export default function ProfileScreen({ navigation }: any) {
               </View>
             )}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={[styles.passBarTitle, { color: colors.textMuted }]} numberOfLines={1}>
-                {isOfficialMember ? 'e-KTA simPAN Digital' : 'ID RELAWAN SIMPATISAN'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={[styles.passBarTitle, { color: colors.textMuted }]} numberOfLines={1}>
+                  {isOfficialMember ? 'e-KTA simPAN Digital' : 'ID RELAWAN SIMPATISAN'}
+                </Text>
+                {isNonActiveStatus && (
+                  <View
+                    style={[
+                      styles.passStatusTag,
+                      {
+                        backgroundColor:
+                          isVolunteerPaused || isResignationRequested
+                            ? isDark ? 'rgba(245,158,11,0.25)' : '#FEF3C7'
+                            : isDark ? 'rgba(239,68,68,0.25)' : '#FEE2E2',
+                        borderColor:
+                          isVolunteerPaused || isResignationRequested ? '#F59E0B' : '#EF4444',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.passStatusTagText,
+                        {
+                          color:
+                            isVolunteerPaused || isResignationRequested
+                              ? isDark ? '#FDE047' : '#B45309'
+                              : isDark ? '#FCA5A5' : '#DC2626',
+                        },
+                      ]}
+                    >
+                      {isVolunteerPaused
+                        ? 'CUTI SEMENTARA'
+                        : isVolunteerInactive || isMembershipInactive
+                        ? 'NONAKTIF'
+                        : 'PROSES RESIGN'}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={[styles.passBarNumber, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
                 {isOfficialMember
                   ? officialMembership?.ktaNumber || '32.73.01.2024.08912'
@@ -336,6 +497,79 @@ export default function ProfileScreen({ navigation }: any) {
           </Pressable>
         )}
       </Card>
+
+      {/* 1.5 INFORMATIVE STATUS ALERT BANNER (Muncul ketika status akun selain aktif) */}
+      {isNonActiveStatus && alertConfig && (
+        <View
+          style={[
+            styles.statusAlertCard,
+            {
+              backgroundColor: alertConfig.cardBg,
+              borderColor: alertConfig.borderColor,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <View style={[styles.statusAlertIconWrap, { backgroundColor: alertConfig.iconBg }]}>
+              <Feather name={alertConfig.icon} size={20} color={alertConfig.iconColor} />
+            </View>
+
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <View style={styles.statusAlertHeaderRow}>
+                <Text
+                  style={[styles.statusAlertTitle, { color: alertConfig.titleColor }]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {alertConfig.title}
+                </Text>
+                <View style={[styles.statusAlertPill, { backgroundColor: alertConfig.pillBg }]}>
+                  <Text style={[styles.statusAlertPillText, { color: alertConfig.pillText }]}>
+                    {alertConfig.badge}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={[styles.statusAlertDesc, { color: alertConfig.descColor }]}>
+                {alertConfig.description}
+              </Text>
+
+              <View style={styles.statusAlertActionRow}>
+                {alertConfig.onPrimaryAction && (
+                  <Pressable
+                    onPress={alertConfig.onPrimaryAction}
+                    style={({ pressed }) => [
+                      styles.statusAlertPrimaryBtn,
+                      { backgroundColor: alertConfig.btnBg },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Feather name={alertConfig.btnIcon as any} size={12} color="#FFFFFF" />
+                    <Text style={styles.statusAlertPrimaryBtnText}>{alertConfig.btnText}</Text>
+                  </Pressable>
+                )}
+
+                <Pressable
+                  onPress={() => navigation.navigate('KelolaStatus')}
+                  style={({ pressed }) => [
+                    styles.statusAlertSecondaryBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
+                      borderColor: alertConfig.borderColor,
+                    },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <Text style={[styles.statusAlertSecondaryBtnText, { color: alertConfig.titleColor }]}>
+                    {alertConfig.secondaryText || 'Kelola Status'}
+                  </Text>
+                  <Feather name="chevron-right" size={12} color={alertConfig.titleColor} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 2. KHUSUS RELAWAN: STATISTIK PENCAPAIAN, KEAHLIAN & KORLAP */}
       {!isOfficialMember && (role === 'VOLUNTEER' || role === 'RELAWAN') && (
@@ -634,6 +868,39 @@ export default function ProfileScreen({ navigation }: any) {
                 : 'Pengaturan masa jeda tugas dan status relawan'}
             </Text>
           </View>
+          {isNonActiveStatus && (
+            <View
+              style={[
+                styles.actionRowStatusPill,
+                {
+                  backgroundColor:
+                    isVolunteerPaused || isResignationRequested
+                      ? isDark ? 'rgba(245,158,11,0.2)' : '#FEF3C7'
+                      : isDark ? 'rgba(239,68,68,0.2)' : '#FEE2E2',
+                  borderColor:
+                    isVolunteerPaused || isResignationRequested ? '#F59E0B' : '#EF4444',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.actionRowStatusPillText,
+                  {
+                    color:
+                      isVolunteerPaused || isResignationRequested
+                        ? isDark ? '#FDE047' : '#B45309'
+                        : isDark ? '#FCA5A5' : '#DC2626',
+                  },
+                ]}
+              >
+                {isVolunteerPaused
+                  ? 'Cuti'
+                  : isVolunteerInactive || isMembershipInactive
+                  ? 'Nonaktif'
+                  : 'Proses Resign'}
+              </Text>
+            </View>
+          )}
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </Pressable>
 
@@ -1965,5 +2232,100 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 4,
+  },
+  statusAlertCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  statusAlertIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  statusAlertHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  statusAlertTitle: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    flex: 1,
+    minWidth: 140,
+  },
+  statusAlertPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    flexShrink: 0,
+  },
+  statusAlertPillText: {
+    fontSize: 9.5,
+    fontFamily: fonts.bold,
+  },
+  statusAlertDesc: {
+    fontSize: 11,
+    fontFamily: fonts.regular,
+    lineHeight: 16,
+  },
+  statusAlertActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+    flexWrap: 'wrap',
+  },
+  statusAlertPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radius.sm,
+  },
+  statusAlertPrimaryBtnText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: '#FFFFFF',
+  },
+  statusAlertSecondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+  },
+  statusAlertSecondaryBtnText: {
+    fontSize: 11,
+    fontFamily: fonts.semiBold,
+  },
+  passStatusTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  passStatusTagText: {
+    fontSize: 9,
+    fontFamily: fonts.bold,
+  },
+  actionRowStatusPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    marginRight: 4,
+  },
+  actionRowStatusPillText: {
+    fontSize: 9.5,
+    fontFamily: fonts.bold,
   },
 });
