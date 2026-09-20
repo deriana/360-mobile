@@ -600,34 +600,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {!isVolunteer && (
-              <Pressable
-                onPress={() => navigation.navigate('StatusPeranSaya')}
-                style={({ pressed }) => [
-                  styles.switchModeBtn,
-                  { backgroundColor: isDark ? 'rgba(0,102,179,0.3)' : '#E0F2FE' },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Feather name="user-check" size={12} color={colors.primary} />
-                <Text style={[styles.switchModeBtnText, { color: colors.primary }]}>Peran</Text>
-              </Pressable>
-            )}
-
-            {!isVolunteer && currentUser.roles.length > 1 && (
-              <Pressable
-                onPress={() => setShowRoleModal(true)}
-                style={({ pressed }) => [
-                  styles.switchModeBtn,
-                  { backgroundColor: colors.primaryLight },
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Feather name="repeat" size={12} color={colors.primary} />
-                <Text style={[styles.switchModeBtnText, { color: colors.primary }]}>Mode</Text>
-              </Pressable>
-            )}
-
             <Pressable
               onPress={() => setShowKtaQrModal(true)}
               style={({ pressed }) => [
