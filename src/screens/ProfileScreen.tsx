@@ -156,15 +156,17 @@ export default function ProfileScreen({ navigation }: any) {
             <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
           </View>
 
-          <View style={{ flex: 1, gap: 4 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+              <Text style={[styles.userName, { color: colors.text, flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">
+                {user.name}
+              </Text>
               {isMultiRole && (
                 <Pressable
                   onPress={() => setRoleModalVisible(true)}
                   style={({ pressed }) => [
                     styles.changeRoleChipBtn,
-                    { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+                    { backgroundColor: colors.primaryLight, borderColor: colors.primary, flexShrink: 0 },
                     pressed && { opacity: 0.75 },
                   ]}
                 >
@@ -177,14 +179,13 @@ export default function ProfileScreen({ navigation }: any) {
             {/* Badge Role Aktif */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <View style={[styles.activeRoleChip, { backgroundColor: colors.primaryLight, borderColor: 'transparent' }]}>
-                <Feather name={ROLE_ICON[role as MobileRole] || 'user'} size={12} color={colors.primary} />
                 <Text style={[styles.activeRoleChipText, { color: colors.primary }]}>
                   {getRoleFriendlyName(role as MobileRole)}
                 </Text>
               </View>
             </View>
 
-            <Text style={[styles.userContactText, { color: colors.textMuted }]}>
+            <Text style={[styles.userContactText, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
               {maskPhone(user.phone)} • {user.email}
             </Text>
           </View>
@@ -200,7 +201,7 @@ export default function ProfileScreen({ navigation }: any) {
             },
           ]}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
             {isOfficialMember ? (
               <Image source={BRAND_ASSETS.official} style={{ width: 28, height: 28 }} resizeMode="contain" />
             ) : (
@@ -208,11 +209,11 @@ export default function ProfileScreen({ navigation }: any) {
                 <Feather name="shield" size={14} color="#FFFFFF" />
               </View>
             )}
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.passBarTitle, { color: colors.textMuted }]}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.passBarTitle, { color: colors.textMuted }]} numberOfLines={1}>
                 {isOfficialMember ? 'e-KTA simPAN Digital' : 'ID RELAWAN SIMPATISAN'}
               </Text>
-              <Text style={[styles.passBarNumber, { color: colors.text }]}>
+              <Text style={[styles.passBarNumber, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
                 {isOfficialMember
                   ? officialMembership?.ktaNumber || '32.73.01.2024.08912'
                   : currentMembership?.ktaNumber || 'REL-3273-2024-0042'}
@@ -220,7 +221,7 @@ export default function ProfileScreen({ navigation }: any) {
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             <Pressable
               onPress={() => setQrModalVisible(true)}
               style={({ pressed }) => [
@@ -249,6 +250,47 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
         </View>
 
+        {/* Informasi Wilayah & Keanggotaan Terpadu */}
+        <View
+          style={[
+            styles.heroInfoBox,
+            {
+              backgroundColor: isDark ? 'rgba(0, 43, 82, 0.22)' : '#F8FAFC',
+              borderColor: isDark ? 'rgba(10, 61, 107, 0.5)' : '#E2E8F0',
+            },
+          ]}
+        >
+          <View style={styles.heroInfoRow}>
+            <View style={styles.heroInfoRowLeft}>
+              <View style={[styles.heroInfoIconCircle, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="map-pin" size={11} color={colors.primary} />
+              </View>
+              <Text style={[styles.heroInfoLabel, { color: colors.textMuted }]}>Struktur Wilayah</Text>
+            </View>
+            <Text
+              style={[styles.heroInfoValue, { color: colors.text }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {currentMembership?.dpd || 'DPD PAN Kota Bandung'} • {currentMembership?.dpc || 'DPC Coblong'}
+            </Text>
+          </View>
+
+          <View style={[styles.heroInfoDivider, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0' }]} />
+
+          <View style={styles.heroInfoRow}>
+            <View style={styles.heroInfoRowLeft}>
+              <View style={[styles.heroInfoIconCircle, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="calendar" size={11} color={colors.primary} />
+              </View>
+              <Text style={[styles.heroInfoLabel, { color: colors.textMuted }]}>Terdaftar Sejak</Text>
+            </View>
+            <Text style={[styles.heroInfoValue, { color: colors.text }]} numberOfLines={1}>
+              {currentMembership?.registeredAt || '01 Maret 2024'}
+            </Text>
+          </View>
+        </View>
+
         {/* Upgrade Banner Khusus Non-Kader (Ajakan Jadi Kader Resmi) */}
         {!isOfficialMember && (
           <Pressable
@@ -267,18 +309,18 @@ export default function ProfileScreen({ navigation }: any) {
               pressed && { opacity: 0.8 },
             ]}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
               <Feather name="award" size={15} color="#D97706" />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: '#B45309' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 11, color: '#B45309' }} numberOfLines={1}>
                   Ingin memiliki e-KTA Kader Resmi?
                 </Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 10, color: colors.textMuted }}>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 10, color: colors.textMuted }} numberOfLines={1} ellipsizeMode="tail">
                   Tingkatkan status keanggotaan simPAN resmi partai
                 </Text>
               </View>
             </View>
-            <View style={styles.upgradeBannerAction}>
+            <View style={[styles.upgradeBannerAction, { flexShrink: 0 }]}>
               <Text style={styles.upgradeBannerActionText}>Ajukan</Text>
               <Feather name="arrow-right" size={11} color="#B45309" />
             </View>
@@ -488,34 +530,7 @@ export default function ProfileScreen({ navigation }: any) {
         </Card>
       )}
 
-      {/* 3. INFORMASI IDENTITAS & WILAYAH */}
-      <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Informasi Identitas & Wilayah</Text>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoRowLeft}>
-            <Feather name="map-pin" size={14} color={colors.primary} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Struktur Wilayah</Text>
-          </View>
-          <Text style={[styles.infoValue, { color: colors.text }]}>
-            {currentMembership?.dpd || 'DPD PAN Kota Bandung'} • {currentMembership?.dpc || 'DPC Coblong'}
-          </Text>
-        </View>
-
-        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoRowLeft}>
-            <Feather name="calendar" size={14} color={colors.primary} />
-            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Terdaftar Sejak</Text>
-          </View>
-          <Text style={[styles.infoValue, { color: colors.text }]}>
-            {currentMembership?.registeredAt || '01 Maret 2024'}
-          </Text>
-        </View>
-      </Card>
-
-      {/* 4. LAYANAN & PENGATURAN */}
+      {/* 3. LAYANAN & PENGATURAN */}
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
 
@@ -707,7 +722,7 @@ export default function ProfileScreen({ navigation }: any) {
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </Pressable>
       </Card>
-      {/* 5. TOMBOL LOGOUT & FOOTER APLIKASI */}
+      {/* 4. TOMBOL LOGOUT & FOOTER APLIKASI */}
       <View style={{ marginTop: spacing.xs, gap: spacing.md, alignItems: 'center' }}>
         <Pressable
           onPress={() => setConfirmLogoutVisible(true)}
@@ -1419,6 +1434,48 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 11,
   },
+
+  // Hero Info Box (Struktur Wilayah & Terdaftar Sejak)
+  heroInfoBox: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 9,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 7,
+  },
+  heroInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  heroInfoRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  },
+  heroInfoIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroInfoLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+  },
+  heroInfoValue: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    flex: 1,
+    textAlign: 'right',
+  },
+  heroInfoDivider: {
+    height: 1,
+    width: '100%',
+  },
   upgradeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1591,27 +1648,6 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     height: 1,
-  },
-
-  // Info Rows
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 2,
-  },
-  infoRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoLabel: {
-    fontFamily: fonts.medium,
-    fontSize: 11.5,
-  },
-  infoValue: {
-    fontFamily: fonts.semiBold,
-    fontSize: 11.5,
   },
 
   // Action Menu Rows
