@@ -24,9 +24,7 @@ const ProfileStack = buildDetailStack('Profile', ProfileScreen, 'Profil Saya');
 
 const STANDARD_BOTTOM_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
-  // { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
   { name: 'CheckInTab', component: CheckInStack, label: 'Presensi', icon: 'map-pin' as const },
-  // { name: 'NewsTab', component: NewsStack, label: 'Kabar', icon: 'book-open' as const },
   { name: 'ProfileTab', component: ProfileStack, label: 'Profil', icon: 'user' as const },
 ];
 

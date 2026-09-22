@@ -347,10 +347,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const notif: NotificationItem = {
       id: `NOTIF-PRESET-${Date.now()}`,
       type: 'assignment',
-      title: `Preset Karir Diaktifkan: ${preset?.name ?? presetId}`,
-      body: `Profil Anda kini berada di simulasi ${preset?.desc ?? ''}. Seluruh 7 dimensi identitas telah diselaraskan.`,
+      title: `Jenjang Karir Aktif: ${preset?.name ?? presetId}`,
+      body: `Profil Ahmad Fauzan kini berada pada jenjang ${preset?.name ?? ''}. Seluruh wewenang operasional, modul tugas, dan akses lapangan telah diselaraskan.`,
       sentAt: 'Baru saja',
-      sentBy: 'DPP PAN Simulator',
+      sentBy: 'DPP PAN Kaderisasi',
       read: false,
     };
     setNotifications((prev) => [notif, ...prev]);

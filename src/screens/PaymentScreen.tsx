@@ -9,11 +9,11 @@ import { CURRENT_WITNESS_ID } from '../utils/scope';
 import { getActiveWitnessScope } from '../utils/witnessResolver';
 
 export default function PaymentScreen() {
-  const { payments, currentUser, witnesses } = useApp();
+  const { payments, currentUser, witnesses, tps } = useApp();
   const { colors } = useTheme();
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
   const myPayment = payments.find((p) => p.witnessId === activeScope.witnessId) || {
     witnessId: activeScope.witnessId,
     amount: 350000,

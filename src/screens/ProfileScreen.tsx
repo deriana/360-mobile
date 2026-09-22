@@ -19,7 +19,7 @@ import { fontSize, fonts, radius, spacing } from '../theme';
 import { ROLE_ICON, ROLE_LABEL } from '../utils/scope';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { maskPhone } from '../utils/masking';
-import { CareerStatePresetId, MobileRole, VolunteerStatePresetId } from '../types';
+import { CareerStatePresetId, MobileRole, UserDimensions, VolunteerStatePresetId } from '../types';
 import {
   CAREER_PRESETS,
   ROLE_ACTIVITY_TIMELINE,
@@ -48,7 +48,6 @@ export default function ProfileScreen({ navigation }: any) {
   const [roleSwitchNotice, setRoleSwitchNotice] = useState<string | null>(null);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
-  const [roleModalTab, setRoleModalTab] = useState<'roles' | 'presets'>('roles');
 
   const user = currentUser.identity;
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
@@ -56,9 +55,14 @@ export default function ProfileScreen({ navigation }: any) {
   const isOfficialMember = hasOfficialMembership;
   const currentMembership = officialMembership || currentUser.memberships[0];
 
-  const dims = currentUser.dimensions || {
+  const dims: UserDimensions = currentUser.dimensions || {
     membership: 'active',
+    kader: 'non_kader',
+    position: { position: 'NONE', region: 'Kota Bandung' },
+    electoral: { status: 'NONE' },
     volunteer: 'active',
+    programs: { amanatAcademy: 'NONE', pandawa: 'NONE', programSaksi: 'NONE' },
+    operationalRole: 'MEMBER',
   };
 
   // Cadre / Official Member dimension statuses
@@ -226,7 +230,7 @@ export default function ProfileScreen({ navigation }: any) {
     applyCareerStatePreset(presetId);
     setRoleModalVisible(false);
     const preset = CAREER_PRESETS[presetId];
-    setRoleSwitchNotice(`Preset "${preset?.name}" aktif! Seluruh 7 dimensi identitas diselaraskan secara real-time.`);
+    setRoleSwitchNotice(`Jenjang "${preset?.name}" aktif! Seluruh 7 dimensi identitas diselaraskan secara real-time.`);
   };
 
   const handleApplyVolunteerPreset = (presetId: VolunteerStatePresetId) => {
@@ -245,7 +249,7 @@ export default function ProfileScreen({ navigation }: any) {
       case 'FIELD_COORDINATOR':
         return 'Koordinator Lapangan';
       case 'VOLUNTEER':
-        return 'Relawan Simpatisan';
+        return isOfficialMember ? 'Satgas Kader Penggerak PANdawa' : 'Relawan Simpatisan';
       case 'CALEG_OPS':
         return 'Bakal Calon Legislatif (Caleg)';
       case 'MEMBER':
@@ -900,6 +904,75 @@ export default function ProfileScreen({ navigation }: any) {
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
+        {/* Struktur Pengurus Partai */}
+        {isOfficialMember && (
+          <>
+            <Pressable
+              onPress={() => navigation.navigate('SimpanStructure')}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="git-branch" size={15} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Struktur Pengurus Partai</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Bagan hierarki pengurus DPD, DPC & DPRT
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        )}
+
+        {/* Fraksi Parlemen DPR RI */}
+        {isOfficialMember && (
+          <>
+            <Pressable
+              onPress={() => navigation.navigate('PartyRoster')}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="users" size={15} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Fraksi Parlemen DPR RI</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Direktori anggota legislatif fraksi PAN di parlemen
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        )}
+
+        {/* Pendaftaran Bacaleg 2029 */}
+        {isOfficialMember && (
+          <>
+            <Pressable
+              onPress={() => navigation.navigate('SimpanBacaleg')}
+              style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+                <Feather name="user-plus" size={15} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[styles.actionTitle, { color: colors.text }]}>Pendaftaran Bacaleg 2029</Text>
+                <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+                  Portal pendaftaran caleg KPPN Pemilu 2029
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+          </>
+        )}
+
         {/* Transparansi & Akuntabilitas */}
         <Pressable
           onPress={() => navigation.navigate('TransparencyHub')}
@@ -1050,14 +1123,14 @@ export default function ProfileScreen({ navigation }: any) {
             <View style={styles.modalHeader}>
               <View style={{ gap: 2, flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Feather name="layers" size={16} color={colors.primary} />
+                  <Feather name="award" size={16} color={colors.primary} />
                   <Text style={[styles.modalTitle, { color: colors.text }]}>
-                    {isOfficialMember ? 'Ganti Mode & Simulasi Karir' : 'Mode Transisi Relawan PAN'}
+                    {isOfficialMember ? 'Jenjang Karir & Amanat Kader' : 'Mode Transisi Relawan PAN'}
                   </Text>
                 </View>
                 <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
                   {isOfficialMember
-                    ? 'Peralihan peran operasional & 6 state presets demonstrasi DPP'
+                    ? 'Perjalanan jenjang kader Ahmad Fauzan (Level 0 s.d. Level 4 & Tata Kelola)'
                     : 'Peralihan mode relawan posko menuju mandat saksi TPS'}
                 </Text>
               </View>
@@ -1066,174 +1139,26 @@ export default function ProfileScreen({ navigation }: any) {
               </Pressable>
             </View>
 
-            {/* If Official Member (Ahmad Fauzan / Kader): Show Tabs for Peran Operasional vs State Presets */}
+            {/* MODAL CONTENT: JENJANG KARIR LEVEL 0 TO LEVEL N (AKUN KADER AHMAD FAUZAN) */}
             {isOfficialMember && (
-              <View style={styles.modalTabRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.modalTabBtn,
-                    roleModalTab === 'roles' && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setRoleModalTab('roles')}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="users" size={13} color={roleModalTab === 'roles' ? '#FFFFFF' : colors.textMuted} />
-                  <Text
-                    style={[
-                      styles.modalTabText,
-                      { color: roleModalTab === 'roles' ? '#FFFFFF' : colors.textMuted },
-                    ]}
-                  >
-                    Peran Operasional
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.modalTabBtn,
-                    roleModalTab === 'presets' && { backgroundColor: colors.primary, borderColor: colors.primary },
-                  ]}
-                  onPress={() => setRoleModalTab('presets')}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="play-circle" size={13} color={roleModalTab === 'presets' ? '#FFFFFF' : colors.textMuted} />
-                  <Text
-                    style={[
-                      styles.modalTabText,
-                      { color: roleModalTab === 'presets' ? '#FFFFFF' : colors.textMuted },
-                    ]}
-                  >
-                    Preset Karir (Demo)
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* MODAL CONTENT: ROLE SWITCHER (AKUN ANGGOTA) */}
-            {isOfficialMember && roleModalTab === 'roles' && (
-              <ScrollView style={{ maxHeight: 350 }} showsVerticalScrollIndicator={false}>
-                <View style={{ gap: spacing.xs, paddingVertical: spacing.xs }}>
-                  {availableRoles.map((assignment) => {
-                    const isCurrent = role === assignment.role;
-                    const iconName = ROLE_ICON[assignment.role] || 'user';
-                    const friendlyName = getRoleFriendlyName(assignment.role);
-                    const eligibility = checkRoleEligibility(currentUser, assignment.role);
-
-                    return (
-                      <Pressable
-                        key={assignment.role}
-                        onPress={() => handleSwitchRoleWithGuard(assignment.role)}
-                        style={({ pressed }) => [
-                          styles.roleModalCard,
-                          {
-                            backgroundColor: isCurrent
-                              ? isDark
-                                ? 'rgba(0, 66, 128, 0.4)'
-                                : '#F0F9FF'
-                              : !eligibility.allowed
-                              ? isDark
-                                ? 'rgba(245, 158, 11, 0.08)'
-                                : '#FFFBEB'
-                              : colors.surface,
-                            borderColor: isCurrent
-                              ? colors.primary
-                              : !eligibility.allowed
-                              ? '#FDE68A'
-                              : colors.border,
-                          },
-                          pressed && { opacity: 0.85 },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.roleIconCircle,
-                            {
-                              backgroundColor: isCurrent
-                                ? colors.primary
-                                : !eligibility.allowed
-                                ? '#FEF3C7'
-                                : isDark
-                                ? 'rgba(255,255,255,0.08)'
-                                : '#F1F5F9',
-                            },
-                          ]}
-                        >
-                          <Feather
-                            name={iconName}
-                            size={16}
-                            color={isCurrent ? '#FFFFFF' : !eligibility.allowed ? '#D97706' : colors.textMuted}
-                          />
-                        </View>
-
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            <Text
-                              style={[
-                                styles.roleCardTitle,
-                                { color: isCurrent ? colors.primary : colors.text },
-                              ]}
-                            >
-                              {friendlyName}
-                            </Text>
-                            {!eligibility.allowed ? (
-                              <View style={[styles.lockedPill, { backgroundColor: '#FEF3C7' }]}>
-                                <Feather name="lock" size={9} color="#B45309" />
-                                <Text style={styles.lockedPillText}>Prasyarat BSN</Text>
-                              </View>
-                            ) : (
-                              <Pill
-                                label={getStatusLabel(assignment.status)}
-                                tone={getStatusTone(assignment.status)}
-                              />
-                            )}
-                          </View>
-
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Feather name="map-pin" size={11} color={colors.textMuted} />
-                            <Text style={[styles.roleCardScope, { color: colors.textMuted }]} numberOfLines={1}>
-                              {assignment.scope.name}
-                            </Text>
-                          </View>
-
-                          {!eligibility.allowed && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                              <Feather name="alert-triangle" size={10} color="#D97706" />
-                              <Text style={[styles.eligibilityHint, { marginTop: 0 }]} numberOfLines={1}>
-                                {eligibility.reason}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {isCurrent ? (
-                          <View style={[styles.activeRolePill, { backgroundColor: colors.primary }]}>
-                            <Feather name="check" size={11} color="#FFFFFF" strokeWidth={3} />
-                            <Text style={styles.activeRoleText}>Aktif</Text>
-                          </View>
-                        ) : !eligibility.allowed ? (
-                          <View style={[styles.switchRoleBtn, { borderColor: '#FDE68A', backgroundColor: '#FEF3C7' }]}>
-                            <Feather name="lock" size={12} color="#B45309" />
-                          </View>
-                        ) : (
-                          <View style={[styles.switchRoleBtn, { borderColor: colors.border }]}>
-                            <Text style={[styles.switchRoleText, { color: colors.primary }]}>Pilih</Text>
-                            <Feather name="chevron-right" size={13} color={colors.primary} />
-                          </View>
-                        )}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            )}
-
-            {/* MODAL CONTENT: 6 STATE PRESETS (AKUN ANGGOTA AHMAD FAUZAN) */}
-            {isOfficialMember && roleModalTab === 'presets' && (
-              <ScrollView style={{ maxHeight: 370 }} showsVerticalScrollIndicator={false}>
-                <View style={{ gap: 8, paddingVertical: spacing.xs }}>
+              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                <View style={{ gap: 10, paddingVertical: spacing.xs }}>
                   {(Object.keys(CAREER_PRESETS) as CareerStatePresetId[]).map((presetId) => {
                     const preset = CAREER_PRESETS[presetId];
-                    const isPresetRole = role === preset.role;
+                    const isCurrentLevel = role === preset.role && (
+                      presetId === 'state_6'
+                        ? dims.membership === 'resignation_requested'
+                        : presetId === 'state_5'
+                        ? dims.position?.position === 'PENGURUS' && dims.electoral?.status === 'CALEG'
+                        : presetId === 'state_4'
+                        ? dims.position?.position === 'KOORDINATOR'
+                        : presetId === 'state_3'
+                        ? dims.programs?.programSaksi === 'MANDATED' && dims.position?.position === 'NONE'
+                        : presetId === 'state_2'
+                        ? dims.programs?.pandawa === 'ACTIVE' && dims.kader === 'kader_aktif' && dims.programs?.programSaksi !== 'MANDATED'
+                        : dims.kader === 'non_kader' && dims.membership === 'active'
+                    );
+                    const isGov = preset.levelCode === 'LVL-GOV';
 
                     return (
                       <TouchableOpacity
@@ -1242,37 +1167,113 @@ export default function ProfileScreen({ navigation }: any) {
                         style={[
                           styles.presetCard,
                           {
-                            backgroundColor: isPresetRole
+                            backgroundColor: isCurrentLevel
                               ? isDark
                                 ? 'rgba(0, 66, 128, 0.4)'
                                 : '#F0F9FF'
+                              : isGov
+                              ? isDark
+                                ? 'rgba(245, 158, 11, 0.08)'
+                                : '#FFFBEB'
                               : colors.surface,
-                            borderColor: isPresetRole ? colors.primary : colors.border,
+                            borderColor: isCurrentLevel
+                              ? colors.primary
+                              : isGov
+                              ? '#FDE68A'
+                              : colors.border,
                           },
                         ]}
                         activeOpacity={0.8}
                       >
                         <View style={styles.presetTopRow}>
-                          <Text style={[styles.presetName, { color: colors.text }]}>{preset.name}</Text>
-                          <View style={[styles.presetBadge, { backgroundColor: '#E0F2FE' }]}>
-                            <Text style={[styles.presetBadgeText, { color: '#0066B3' }]}>{preset.badge}</Text>
-                          </View>
-                        </View>
-                        <Text style={[styles.presetDesc, { color: colors.textMuted }]}>{preset.desc}</Text>
-                        <View style={styles.presetFooter}>
-                          <View style={styles.presetRolePill}>
-                            <Feather name="tag" size={10} color={colors.primary} />
-                            <Text style={[styles.presetRoleText, { color: colors.primary }]}>
-                              Role: {getRoleFriendlyName(preset.role)}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                            <View
+                              style={{
+                                paddingHorizontal: 7,
+                                paddingVertical: 2.5,
+                                borderRadius: radius.xs,
+                                backgroundColor: isCurrentLevel ? colors.primary : isGov ? '#FEF3C7' : colors.primaryLight,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontFamily: fonts.bold,
+                                  fontSize: 10,
+                                  color: isCurrentLevel ? '#FFFFFF' : isGov ? '#B45309' : colors.primary,
+                                  letterSpacing: 0.5,
+                                }}
+                              >
+                                {preset.levelCode}
+                              </Text>
+                            </View>
+                            <Text style={[styles.presetName, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                              {preset.name}
                             </Text>
                           </View>
-                          {isPresetRole ? (
+
+                          <View
+                            style={[
+                              styles.presetBadge,
+                              { backgroundColor: isGov ? '#FEF3C7' : '#E0F2FE' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.presetBadgeText,
+                                { color: isGov ? '#92400E' : '#0066B3' },
+                              ]}
+                            >
+                              {preset.badge}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Text style={[styles.presetDesc, { color: colors.textMuted }]}>{preset.desc}</Text>
+
+                        {/* Key Competency */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                          <Feather name="check-circle" size={11} color={colors.primary} />
+                          <Text style={{ fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted }}>
+                            Kompetensi: <Text style={{ color: colors.text, fontFamily: fonts.semiBold }}>{preset.keyCompetency}</Text>
+                          </Text>
+                        </View>
+
+                        {/* Unlocked Features Pills */}
+                        {preset.unlockedFeatures && preset.unlockedFeatures.length > 0 && (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                            {preset.unlockedFeatures.map((feat, idx) => (
+                              <View
+                                key={idx}
+                                style={{
+                                  paddingHorizontal: 6,
+                                  paddingVertical: 1.5,
+                                  borderRadius: 4,
+                                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                                }}
+                              >
+                                <Text style={{ fontFamily: fonts.medium, fontSize: 9.5, color: colors.textMuted }}>
+                                  • {feat}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        <View style={[styles.presetFooter, { marginTop: 8 }]}>
+                          <View style={styles.presetRolePill}>
+                            <Feather name="shield" size={10} color={colors.primary} />
+                            <Text style={[styles.presetRoleText, { color: colors.primary }]}>
+                              Wewenang: {getRoleFriendlyName(preset.role)}
+                            </Text>
+                          </View>
+
+                          {isCurrentLevel ? (
                             <View style={[styles.activePillSmall, { backgroundColor: colors.primary }]}>
-                              <Feather name="check" size={10} color="#FFFFFF" />
+                              <Feather name="check" size={10} color="#FFFFFF" strokeWidth={3} />
                               <Text style={styles.activePillSmallText}>Aktif</Text>
                             </View>
                           ) : (
-                            <Text style={[styles.applyText, { color: colors.primary }]}>Aktifkan →</Text>
+                            <Text style={[styles.applyText, { color: colors.primary }]}>Aktifkan Jenjang →</Text>
                           )}
                         </View>
                       </TouchableOpacity>

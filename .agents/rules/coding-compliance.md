@@ -244,42 +244,43 @@ Duplikasi akses, tombol kembar yang berdekatan, dan pengulangan teks adalah musu
 
 ### 6.1 Arsitektur Navigasi Tri-Layer
 Sistem antarmuka dibagi menjadi 3 lapis peran yang **TIDAK BOLEH SALING TUMPANG TINDIH**:
-1. **Lapis 1: Bottom Navigation Bar (5 Pilar Utama)**:
-   `[ BERANDA ]  •  [ TUGAS ]  •  [ KEGIATAN ]  •  [ ACADEMY ]  •  [ PROFIL ]`
+1. **Lapis 1: Bottom Navigation Bar (Pilar Utama Aplikasi)**:
+   `[ BERANDA ]  •  [ PRESENSI GPS ]  •  [ PROFIL ]` (atau tab dinamis sesuai konfigurasi).
 2. **Lapis 2: Beranda (`DashboardScreen.tsx`)**:
-   Dikhususkan untuk **Aksi Operasional Cepat Hari-H**:
+   Dikhususkan untuk **Aksi Operasional Cepat Hari-H & Tugas Lapangan**:
    - Header salam & status peran aktif.
-   - Quick Menu: **TEPAT 4 TOMBOL ESENSIAL** (1 baris rapi).
+   - **Quick Menu Adaptif Fleksibel**:
+     - *Mode 2 Seksi Berimbang:* Diterapkan saat peran memiliki modul aksi taktis lapangan yang kaya (misal: Saksi TPS Hari-H, Koordinator 15 TPS, Caleg Dapil).
+     - *Mode 1 Baris Ringkas (Tepat 4 Tombol):* Diterapkan saat peran tidak memiliki aksi taktis berlebih atau untuk mencegah kehabisan menu taktis tanpa memaksakan menu statis/kembar (seperti pada **Relawan Murni State R-1 Siti Rahmawati** dan **Anggota Pemula Level 0 Ahmad Fauzan**).
    - Kartu penugasan kontekstual (hanya muncul saat ada tugas aktif).
    - Ticker maklumat resmi partai (bukan card list berita berulang).
 3. **Lapis 3: Profil & Direktori Layanan (`ProfileScreen.tsx`)**:
-   Dikhususkan untuk **Portofolio Identitas & Direktori Lengkap**:
+   Dikhususkan untuk **Portofolio Identitas & Direktori Lengkap Partai**:
    - Kartu e-KTA / Digital ID & Rekam Jejak Aktivitas.
-   - **Grid 4-Kolom Atas ("Direktori Layanan")**: HANYA modul operasional lapangan, tugas, dan direktori basis partai (disaring ketat sesuai role).
-   - **List Bawah ("Layanan & Pengaturan")**: HANYA tata kelola status akun, legalitas SK, keamanan PIN, dan pusat bantuan.
+   - **Direktori Organisasi & Informasi Statis Partai**: Menjadi rumah bagi menu referensi kepartaian statis (Struktur Pengurus DPD, Fraksi DPR RI Parlemen, Pendaftaran Bacaleg KPPN, Kantor Sekretariat, Transparansi WTP) sehingga tidak mengotori Beranda.
+   - **Layanan & Pengaturan**: Tata kelola status akun, legalitas SK, keamanan PIN, dan pusat bantuan.
 
 ### 6.2 Kaidah Emas Anti-Duplikasi:
-1. **Aturan 1 (Tab Exclusivity):** Modul yang telah memiliki tab permanen di Bottom Bar (seperti *Amanat Academy*, *Bursa Tugas*, atau *Kegiatan*) **DILARANG KERAS** dijadikan item generic di Quick Menu Beranda atau icon Grid Profil.
-2. **Aturan 2 (Grid vs List Exclusivity di Profil):** Tidak boleh ada satu pun menu di Grid Profil yang muncul kembali pada List Pengaturan di bawahnya.
-   - *Terlarang:* Meletakkan icon "Status Peran" di Grid sekaligus row "Status & Peran Saya" di List.
-   - *Terlarang:* Meletakkan icon "Bantuan" di Grid sekaligus row "Pusat Bantuan" di List.
-   - *Terlarang:* Meletakkan icon "Keamanan" di Grid sekaligus row "Keamanan & PIN" di List.
-3. **Aturan 3 (Single Distinct Access Path):** Pada satu layar atau viewport, **DILARANG MENAMPILKAN DUA TOMBOL BERBEDA YANG MENUJU KE SCREEN YANG SAMA**.
-   - *Terlarang:* Menaruh tombol Quick Menu "Entri C1 TPS" berdampingan dengan tombol "Lapor C1" di dalam Card Penugasan Saksi di bawahnya. Jadikan kartu di bawahnya sebagai *Status Monitor TPS*, bukan tombol kembar.
-   - *Terlarang:* Menaruh tombol Quick Menu "Surat Mandat" berdampingan dengan tombol "Lihat Mandat" pada kartu saksi.
-   - *Terlarang:* Menaruh tombol Quick Menu "Supervisi TPS" berdampingan dengan tombol "Supervisi Wilayah" pada kartu koordinator.
-4. **Aturan 4 (Zero Text & News Duplication):** Jangan menampilkan daftar kartu berita panjang di Beranda jika sudah ada warta terpadu. Gunakan format **Ticker Berita Ringkas** di Beranda.
+1. **Aturan 1 (Tab Exclusivity):** Modul yang telah memiliki tab permanen di Bottom Bar (seperti *Presensi GPS* atau *Bursa Tugas*) **DILARANG KERAS** dijadikan item generic di Quick Menu Beranda atau icon Grid Profil.
+2. **Aturan 2 (Static vs Operational Separation):** Menu yang bersifat informasi statis atau direktori kepartaian (seperti Struktur DPD, Fraksi Parlemen, Bacaleg) **DITEMPATKAN DI PROFIL**, bukan di Quick Menu Beranda. Jangan menaruh menu statis di Beranda hanya untuk memenuhi kuota tombol.
+3. **Aturan 3 (Card vs Menu Exclusivity):** Modul yang telah memiliki representasi kartu utuh di Beranda (seperti Card *Agenda Kegiatan Terdekat*) **DILARANG KERAS** dibuatkan tombol kembar di Quick Menu pada layar yang sama.
+4. **Aturan 4 (Single Distinct Access Path):** Pada satu layar atau viewport, **DILARANG MENAMPILKAN DUA TOMBOL BERBEDA YANG MENUJU KE SCREEN YANG SAMA**.
+5. **Aturan 5 (Zero Text & News Duplication):** Gunakan format **Ticker Berita Ringkas** di Beranda, hindari pengulangan kartu berita panjang.
 
-### 6.3 Matriks Personalisasi Quick Menu Beranda (Tepat 4 Tombol)
-Quick Menu di `DashboardScreen.tsx` wajib mengikuti formula 4 tombol di bawah ini (menu ke-4 selalu `Broadcast`):
+### 6.3 Prinsip Fleksibilitas Adaptif Quick Menu Beranda
+Quick Menu di `DashboardScreen.tsx` bersifat adaptif terhadap ketersediaan aksi operasional peran aktif:
 
-| Role Aktif Pengguna | Tombol 1 | Tombol 2 | Tombol 3 | Tombol 4 (Kanal) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Relawan Murni (State R-1)** | **Peta Sebaran GIS** | **Catat Aspirasi** | **Titik Posko DPD** | **Broadcast Maklumat** |
-| **Relawan Mandat / Saksi TPS**| **Presensi GPS Bilik** | **Entri C1 Plano** | **Lapor Insiden SOS** | **Broadcast Saksi** |
-| **Koordinator Lapangan** | **Supervisi 15 TPS** | **Peta Sebaran GIS** | **Lapor Kejadian** | **Broadcast Wilayah** |
-| **Kader / Anggota Resmi** | **Peta Kader GIS** | **Serap Aspirasi** | **Struktur DPD** | **Warta Resmi DPP** |
-| **Calon Legislatif (CALEG_OPS)** | **Peta Basis Dapil** | **Hitung Real Count** | **Suara Warga** | **Broadcast Timses** |
+| Kondisi Peran / Jenjang | Format Quick Menu | Komposisi Menu Utama |
+| :--- | :--- | :--- |
+| **Relawan Murni (State R-1 Siti)** | **1 Baris Ringkas (4 Tombol)** | **Bursa Tugas** • **Amanat Academy** • **Sebaran Relawan** • **Saluran Relawan** |
+| **Anggota Pemula (Level 0 Fauzan)** | **1 Baris Ringkas (4 Tombol)** | **Peta Basis GIS** • **Amanat Academy** • **Serap Aspirasi** • **Portofolio Kader** |
+| **Kader & Satgas (Level 1 Fauzan)** | **2 Seksi Berimbang** | *Operasional:* **Satgas PANdawa** • **Diklat Saksi BSN** • **Tugas Lapangan** • **Lapor Insiden**<br/>*Layanan Utama:* **Peta GIS** • **Aspirasi** • **Akademi** • **Broadcast** |
+| **Relawan Mandat / Saksi TPS** | **2 Seksi Berimbang** | *Operasional:* **Scan C1 AI** • **Tally Bilik** • **Lapor SOS** • **Bukti Foto**<br/>*Layanan Utama:* **Peta Wilayah** • **Aspirasi** • **Akademi** • **Broadcast** |
+| **Koordinator Lapangan (Korlap)** | **2 Seksi Berimbang** | *Operasional:* **Supervisi 15 TPS** • **Validasi Mandat** • **Lapor Insiden** • **Radar Insiden**<br/>*Layanan Utama:* **Peta Wilayah** • **Aspirasi** • **Akademi** • **Broadcast** |
+| **Calon Legislatif (CALEG_OPS)** | **2 Seksi Berimbang** | *Operasional:* **Real Count Kursi** • **Audit Berkas KPPN** • **Suara Warga** • **Broadcast Timses**<br/>*Layanan Utama:* **Peta Basis Dapil** • **Aspirasi** • **Akademi** • **Broadcast** |
+
+> [!NOTE]
+> **Kaidah Penyatuan Baris (Graceful Collapse):** Jika sebuah peran/state kehabisan opsi menu operasional harian yang murni dan valid, sistem **WAJIB menyatukan Quick Menu menjadi 1 baris tunggal tepat 4 tombol**, tanpa memaksakan menu statis atau tombol duplikat.
 
 ---
 

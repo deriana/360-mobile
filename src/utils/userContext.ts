@@ -1,4 +1,4 @@
-import { CareerStatePresetId, CurrentUser, MobileRole, Role, UserDimensions, VolunteerOpportunity, VolunteerStatePresetId } from '../types';
+import { CareerPresetMeta, CareerStatePresetId, CurrentUser, MobileRole, Role, UserDimensions, VolunteerOpportunity, VolunteerStatePresetId } from '../types';
 import { Feather } from '@expo/vector-icons';
 
 // ============================================================================
@@ -167,23 +167,20 @@ export const ROLE_ACTIVITY_TIMELINE: Record<string, ActivityTimelineItem[]> = {
 };
 
 // ============================================================================
-// STATE PRESETS UNTUK LIVE DEMO DPP PAN
 // ============================================================================
-export interface CareerPresetMeta {
-  id: CareerStatePresetId;
-  name: string;
-  badge: string;
-  desc: string;
-  dimensions: UserDimensions;
-  role: MobileRole;
-}
+// JENJANG KARIR & AMANAT KADER (LEVEL 0 TO LEVEL N) — AHMAD FAUZAN
+// ============================================================================
 
 export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
   state_1: {
     id: 'state_1',
-    name: 'State 1: Anggota Pemula',
+    level: 0,
+    levelCode: 'LVL-0',
+    name: 'Level 0: Anggota Pemula',
     badge: 'Anggota Baru',
-    desc: 'Akun baru mendaftar, e-KTA simPAN aktif, orientasi anggota baru.',
+    desc: 'Akun baru mendaftar, e-KTA simPAN aktif, orientasi nilai partai & AD/ART.',
+    keyCompetency: 'e-KTA simPAN Terverifikasi',
+    unlockedFeatures: ['e-KTA Digital', 'Portofolio 7 Dimensi', 'Pendaftaran Diklat'],
     role: 'MEMBER',
     dimensions: {
       membership: 'active',
@@ -197,10 +194,14 @@ export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
   },
   state_2: {
     id: 'state_2',
-    name: 'State 2: Kader LKK + Relawan',
-    badge: 'Kader & Relawan',
-    desc: 'Lulus LKK di Amanat Academy, aktif di posko & Satgas PANdawa, Diklat Saksi 80%.',
-    role: 'VOLUNTEER',
+    level: 1,
+    levelCode: 'LVL-1',
+    name: 'Level 1: Kader Penggerak & Satgas PANdawa',
+    badge: 'Kader LKK & Satgas',
+    desc: 'Lulus LKK di Amanat Academy, kesiapsiagaan Satgas Barisan PANdawa, Diklat Saksi BSN 80%.',
+    keyCompetency: 'Lulus LKK & Satgas PANdawa Aktif',
+    unlockedFeatures: ['Aksi Satgas Lapangan', 'Amanat Academy', 'Bursa Aksi Partai'],
+    role: 'MEMBER',
     dimensions: {
       membership: 'active',
       kader: 'kader_aktif',
@@ -214,14 +215,18 @@ export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
         programSaksi: 'TRAINING',
         saksiProgress: 80,
       },
-      operationalRole: 'VOLUNTEER',
+      operationalRole: 'MEMBER',
     },
   },
   state_3: {
     id: 'state_3',
-    name: 'State 3: Saksi TPS Resmi BSN',
+    level: 2,
+    levelCode: 'LVL-2',
+    name: 'Level 2: Saksi TPS Ber-Mandat BSN',
     badge: 'Saksi TPS 014',
     desc: 'Mengantongi SK Mandat BSN, mode saksi bilik suara aktif penuh (C1 Plano & GPS).',
+    keyCompetency: 'Lulus Diklat BSN 100% & SK Mandat',
+    unlockedFeatures: ['Presensi GPS Bilik TPS', 'Form C1 Plano', 'Scan AI C1', 'Tombol SOS'],
     role: 'WITNESS',
     dimensions: {
       membership: 'active',
@@ -242,9 +247,13 @@ export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
   },
   state_4: {
     id: 'state_4',
-    name: 'State 4: Koordinator TPS DPC',
+    level: 3,
+    levelCode: 'LVL-3',
+    name: 'Level 3: Koordinator TPS DPC',
     badge: 'Koordinator 15 TPS',
-    desc: 'Mandat supervisi 15 TPS di Kecamatan Sumur Bandung (monitoring & broadcast).',
+    desc: 'Mandat supervisi 15 TPS di Kecamatan Sumur Bandung (monitoring saksi & broadcast tim).',
+    keyCompetency: 'SK Koordinator Lapangan DPC',
+    unlockedFeatures: ['Radar Supervisi 15 TPS', 'Validasi Barcode Mandat', 'Broadcast Wilayah'],
     role: 'TPS_COORDINATOR',
     dimensions: {
       membership: 'active',
@@ -269,9 +278,13 @@ export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
   },
   state_5: {
     id: 'state_5',
-    name: 'State 5: Pengurus DPD & Caleg 2029',
+    level: 4,
+    levelCode: 'LVL-4',
+    name: 'Level 4: Fungsionaris DPD & Caleg DPR-RI',
     badge: 'Sekretaris & Caleg',
     desc: 'Sekretaris DPD Kota Bandung & Caleg DPR-RI Jabar I (Peta Dapil & Audit KPPN).',
+    keyCompetency: 'SK Pengurus DPD & Caleg DPR-RI',
+    unlockedFeatures: ['Peta Basis Suara Dapil', 'Tabulasi Real Count', 'Audit Dana KPPN'],
     role: 'CALEG_OPS',
     dimensions: {
       membership: 'active',
@@ -304,9 +317,13 @@ export const CAREER_PRESETS: Record<CareerStatePresetId, CareerPresetMeta> = {
   },
   state_6: {
     id: 'state_6',
-    name: 'State 6: Uji Kelola Status',
-    badge: 'Menunggu Review',
-    desc: 'Simulasi pengunduran diri anggota (Review DPD) dan jeda relawan (Task Guard).',
+    level: 5,
+    levelCode: 'LVL-GOV',
+    name: 'Tata Kelola: Uji Integritas & Status',
+    badge: 'Review DPD & Cuti',
+    desc: 'Simulasi pengunduran diri anggota (Review DPD) dan jeda tugas lapangan (Task Guard).',
+    keyCompetency: 'Tata Kelola Status & Transparansi',
+    unlockedFeatures: ['Watermark Review KTA', 'Active Task Guard', 'Audit Trail Mahkamah'],
     role: 'MEMBER',
     dimensions: {
       membership: 'resignation_requested',

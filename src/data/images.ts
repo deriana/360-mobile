@@ -11,11 +11,11 @@ export const BRAND_ASSETS = {
 };
 
 export const LEADER_AVATARS = {
-  ketuaUmum: require('../../assets/avatars/ketua-umum.png'),
-  ketuaDpp: require('../../assets/avatars/ketua-dpp.png'),
-  wakilKetuaUmum: require('../../assets/avatars/wakil-ketua-umum.png'),
-  sekretarisJendral: require('../../assets/avatars/sekretaris-jendral.png'),
-  bendaharaUmum: require('../../assets/avatars/bendahara-umum.png'),
+  ketuaUmum: require('../../assets/avatars/ketua-umum.webp'),
+  ketuaDpp: require('../../assets/avatars/ketua-dpp.webp'),
+  wakilKetuaUmum: require('../../assets/avatars/wakil-ketua-umum.webp'),
+  sekretarisJendral: require('../../assets/avatars/sekretaris-jendral.webp'),
+  bendaharaUmum: require('../../assets/avatars/bendahara-umum.webp'),
 };
 
 

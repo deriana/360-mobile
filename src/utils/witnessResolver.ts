@@ -120,16 +120,34 @@ export function getActiveWitnessScope(
     tpsList.find((t) => t.regency === 'Kota Bandung') ||
     tpsList[0];
 
-  const defaultTps: Tps = {
-    ...bandungTps,
+  const fallbackTpsData: Tps = {
+    id: defaultWitness?.assignedTpsId || 'TPS-001',
     province: 'Jawa Barat',
     regency: 'Kota Bandung',
-    district: bandungTps.district || 'Coblong',
-    village: bandungTps.village || 'Dago',
-    tpsNumber: bandungTps.tpsNumber || 1,
-    lat: bandungTps.lat || -6.8833,
-    lng: bandungTps.lng || 107.6167,
+    district: 'Coblong',
+    village: 'Dago',
+    tpsNumber: 1,
+    dpt: 268,
+    status: 'in_progress',
+    lat: -6.8833,
+    lng: 107.6167,
+    votersPresent: 184,
+    votes: {
+      partyVotes: { 'PAN': 72, 'Partai Golkar': 34, 'PDI Perjuangan': 28, 'Gerindra': 38 },
+      candidateVotes: {
+        'Paslon 01 — Anies & Muhaimin': 64,
+        'Paslon 02 — Prabowo & Gibran': 92,
+        'Paslon 03 — Ganjar & Mahfud': 25,
+      },
+      dprCandidateVotes: {
+        'Dr. H. Ahmad Fauzi, M.Si. (No. 1)': 58,
+      },
+      invalidVotes: 3,
+    },
+    coordinatorId: 'COORD-1',
   };
+
+  const defaultTps: Tps = bandungTps ? { ...fallbackTpsData, ...bandungTps } : fallbackTpsData;
 
   const resolvedDefaultWitness: Witness = defaultWitness
     ? {

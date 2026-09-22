@@ -10,6 +10,7 @@ const STATUS_WEIGHTS: WitnessStatus[] = [
 // One coordinator per Kecamatan cluster in Kota Bandung — matches the district
 // order tps.ts uses to assign coordinatorId (COORD-1..COORD-7).
 const COORDINATOR_SEED: Array<{ id: string; name: string; nik: string; phone: string; district: string; avatarIndex: number }> = [
+  { id: 'USR-FAUZAN', name: 'Ahmad Fauzan', nik: '3273011405900892', phone: '0812-9988-7766', district: 'Sumur Bandung', avatarIndex: 1 },
   { id: 'COORD-1', name: 'Asep Ridwan', nik: '3273011503850002', phone: '0811-2233-4455', district: 'Coblong', avatarIndex: 3 },
   { id: 'COORD-2', name: 'Dedi Kurniawan', nik: '3273012207830011', phone: '0812-5566-7788', district: 'Sukajadi', avatarIndex: 0 },
   { id: 'COORD-3', name: 'Yani Setiawan', nik: '3273014412790022', phone: '0813-4477-8899', district: 'Cicendo', avatarIndex: 1 },

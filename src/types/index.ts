@@ -84,6 +84,19 @@ export type CareerStatePresetId =
   | 'state_5'
   | 'state_6';
 
+export interface CareerPresetMeta {
+  id: CareerStatePresetId;
+  level: number;
+  levelCode: string;
+  name: string;
+  badge: string;
+  desc: string;
+  keyCompetency: string;
+  unlockedFeatures: string[];
+  role: MobileRole;
+  dimensions: UserDimensions;
+}
+
 export type VolunteerStatePresetId = 'state_r1' | 'state_r2';
 
 export interface ResignationRequestPayload {

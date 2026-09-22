@@ -465,7 +465,7 @@ function getRoleMenuConfig(
 }
 
 export default function MoreMenuScreen({ navigation }: any) {
-  const { role, logout, witnesses, currentUser } = useApp();
+  const { role, logout, witnesses, currentUser, tps } = useApp();
   const { colors, isDark, toggleTheme } = useTheme();
   const [showCandidateExplorer, setShowCandidateExplorer] = useState(false);
 
@@ -474,7 +474,7 @@ export default function MoreMenuScreen({ navigation }: any) {
   const permissions = ROLE_PERMISSIONS[role];
   const userProfile = getUserProfile(role);
   const avatarUrl = getWitnessAvatar(userProfile.avatarIndex);
-  const activeScope = getActiveWitnessScope(currentUser, witnesses);
+  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
   const currentWitness = activeScope.witness;
 
   const menuConfig = getRoleMenuConfig(role, permissions, currentWitness);

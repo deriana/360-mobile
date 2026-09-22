@@ -9,11 +9,36 @@ import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
 
 export default function CoordinatorDetailScreen({ route, navigation }: any) {
-  const coordinatorId = route?.params?.coordinatorId || 'KORLAP-001';
-  const { coordinators, witnesses, tps } = useApp();
+  const coordinatorId = route?.params?.coordinatorId || 'COORD-1';
+  const { coordinators, witnesses, tps, currentUser, role } = useApp();
   const { colors } = useTheme();
 
-  const coordinator = coordinators.find((c) => c.id === coordinatorId);
+  let coordinator = coordinators.find((c) => c.id === coordinatorId);
+  if (
+    !coordinator &&
+    (coordinatorId === currentUser.identity?.id ||
+      coordinatorId === currentUser.id ||
+      role === 'TPS_COORDINATOR' ||
+      role === 'FIELD_COORDINATOR')
+  ) {
+    const region = currentUser.dimensions?.position?.region || 'DPC Sumur Bandung (15 TPS)';
+    const district = region.includes('Sumur Bandung')
+      ? 'Sumur Bandung'
+      : (currentUser.memberships?.find((m) => m.type === 'member')?.dpc?.replace('DPC ', '') || 'Coblong');
+    coordinator = {
+      id: currentUser.identity?.id || 'USR-FAUZAN',
+      name: currentUser.identity?.name || 'Ahmad Fauzan',
+      nik: currentUser.identity?.nikFull || currentUser.identity?.nikMasked || '3273011405900892',
+      phone: currentUser.identity?.phone || '0812-9988-7766',
+      address: `Jl. Merdeka No. 45, Kec. ${district}, Kota Bandung`,
+      regency: 'Kota Bandung',
+      district: district,
+      avatarIndex: currentUser.identity?.avatarIndex ?? 1,
+      status: 'checked_in',
+      checkInTime: '06:45',
+      checkInLocation: `Sekretariat ${region}`,
+    };
+  }
 
   if (!coordinator) {
     return <EmptyState title="Koordinator Tidak Ditemukan" body="Data koordinator ini tidak tersedia." icon="user-x" />;

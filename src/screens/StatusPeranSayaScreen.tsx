@@ -101,7 +101,9 @@ export default function StatusPeranSayaScreen() {
 
   // Dynamic Subtitle Elements
   const kaderSub = isOfficialMember
-    ? (dims.kader === 'kader_aktif' ? 'Kader Aktif simPAN' : dims.kader === 'calon_kader' ? 'Calon Kader (Orientasi)' : 'Anggota simPAN')
+    ? (dims.kader === 'kader_aktif'
+        ? (dims.programs?.pandawa === 'ACTIVE' ? 'Kader Penggerak & Satgas PANdawa' : 'Kader Aktif simPAN')
+        : dims.kader === 'calon_kader' ? 'Calon Kader (Orientasi)' : 'Anggota simPAN')
     : null;
   const posSub = isOfficialMember ? (dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : null)) : null;
   const elecSub = isOfficialMember ? (dims.electoral?.status === 'CALEG' ? 'Caleg 2029' : dims.electoral?.status === 'BACALEG' ? 'Bacaleg 2029' : null) : null;
