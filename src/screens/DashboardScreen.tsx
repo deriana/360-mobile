@@ -777,21 +777,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         {/* A. Header Identitas Pengguna */}
         <View style={styles.headerTopRow}>
           <View style={styles.headerTitleCol}>
-            <Text style={[styles.welcomeGreeting, { color: colors.text }]}>
-              {isSatgasMember
-                ? 'SATGAS KADER PENGGERAK PANDAWA'
-                : isVolunteer && !isOfficialMember
-                ? 'SELAMAT DATANG'
-                : isWitnessRole
-                ? 'SIAGA HARI-H'
-                : (role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR')
-                ? 'KOMANDO LAPANGAN'
-                : isCaleg
-                ? 'PEMENANGAN LEGISLATIF'
-                : 'SELAMAT DATANG'}
-            </Text>
+            {/* Label mood ("SIAGA HARI-H" dst) sebelumnya baris terpisah di
+                atas nama — isinya sudah terwakili oleh badge peran di
+                strip bawah, jadi dipangkas. "Halo, Nama" jadi satu-satunya
+                baris identitas di sini. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.welcomeAccountSub, { color: colors.text, fontFamily: fonts.bold }]}>
+              <Text style={[styles.welcomeAccountSub, { color: colors.text, fontFamily: fonts.bold }]} numberOfLines={1}>
                 {`Halo, ${user.name || profile.name || 'Ahmad Fauzan'}`}
               </Text>
               {isOfficialMember && (
@@ -837,13 +828,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 ? 'Kel. Dago, Kec. Coblong, Kota Bandung'
                 : profile.scopeLocation}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-              <Text style={[styles.swIdText, { color: colors.text }]}>
-                {isOfficialMember
-                  ? `e-KTA: ${officialMembership?.ktaNumber || '32.73.01.2024.08912'}`
-                  : `ID: ${volunteerMembership?.ktaNumber || 'REL-3273-2024-0042'}`}
-              </Text>
-            </View>
+            {/* Nomor e-KTA/ID relawan dipangkas dari sini — sudah tampil di
+                modal QR Pass (tombol di sebelah) & layar Profil, supaya
+                header tidak menumpuk 3 baris teks sekaligus. */}
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -881,14 +868,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             <>
               {/* E1. Menu Operasional Lapangan (Spesifik Role / Mendukung Multi-Baris) */}
               <View style={{ gap: 4 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
-                  <Text style={[styles.quickMenuCategoryLabel, { color: colors.textMuted }]}>
-                    {`MENU OPERASIONAL (${operationalRoleLabel.toUpperCase()})`}
-                  </Text>
-                  <Text style={[styles.quickMenuCategoryCount, { color: colors.textMuted }]}>
-                    {`${operationalMenuItems.length} Aksi`}
-                  </Text>
-                </View>
+                {/* Badge "N Aksi" dipangkas — jumlahnya sudah kelihatan
+                    langsung dari banyaknya ikon di grid bawah ini. */}
+                <Text style={[styles.quickMenuCategoryLabel, { color: colors.textMuted, paddingHorizontal: 2 }]}>
+                  {`MENU OPERASIONAL (${operationalRoleLabel.toUpperCase()})`}
+                </Text>
                 <View style={styles.quickIconGrid}>
                   {operationalMenuItems.map(renderQuickItem)}
                 </View>
@@ -975,10 +959,13 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   </Text>
                 </View>
 
+                {/* Baris "Kec. X, Kota Y" (sebelumnya baris terpisah dengan
+                    ikon map-pin sendiri) digabung jadi bagian dari satu
+                    baris meta di bawah judul, memangkas satu baris teks. */}
                 <View style={styles.tpsGeoRow}>
-                  <Feather name="map-pin" size={12} color={colors.textMuted} />
+                  <Feather name="map-pin" size={11} color={colors.textMuted} />
                   <Text style={[styles.tpsGeoText, { color: colors.textMuted }]} numberOfLines={1}>
-                    Kec. {activeScope.tps?.district || 'Coblong'}, {activeScope.tps?.regency || 'Kota Bandung'}
+                    {activeScope.tps?.district || 'Coblong'}, {activeScope.tps?.regency || 'Kota Bandung'}
                   </Text>
                 </View>
               </View>
@@ -1003,14 +990,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 <Text style={[styles.mandatChipText, { color: colors.primary }]}>E-Mandat</Text>
               </Pressable>
             </View>
-
-            {/* SK Mandat Tag */}
-            <View style={[styles.skTagRow, { borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
-              <Text style={[styles.skTagLabel, { color: colors.textMuted }]}>SK BSN:</Text>
-              <Text style={[styles.skTagValue, { color: colors.text }]} numberOfLines={1}>
-                {activeScope.skMandatNumber}
-              </Text>
-            </View>
+            {/* Baris "SK BSN: ..." dipangkas — nomor SK lengkap sudah
+                tampil begitu tombol "E-Mandat" di atas ditekan, tidak perlu
+                diulang lagi sebagai teks statis di sini. */}
           </View>
 
           {/* C. Metrics Strip: Clean 3-Column Statistical Summary */}
@@ -1055,14 +1037,14 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             </View>
           </View>
 
-          {/* D. Progress Bar (Suara Masuk) */}
+          {/* D. Progress Bar (Suara Masuk) — teks angka detail dipangkas
+              karena sudah persis sama dengan 3 kartu metrik di atas
+              (DPT/Hadir/Partisipasi%); bar ini cukup jadi representasi
+              visualnya saja. */}
           <View style={styles.progressSection}>
             <View style={styles.progressLabelRow}>
               <Text style={[styles.progressTitle, { color: colors.textMuted }]}>
                 Progres Partisipasi TPS
-              </Text>
-              <Text style={[styles.progressPct, { color: colors.primary }]}>
-                {presentCount} / {targetDpt} Pemilih ({participationPct}%)
               </Text>
             </View>
             <View style={[styles.progressBarTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
@@ -1164,20 +1146,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               </Pressable>
             </View>
 
-            {/* Hint row: Full width, interactive, zero text collision */}
-            <Pressable
-              onPress={() => navigation.navigate('WitnessList')}
-              style={({ pressed }) => [
-                styles.coordHintRow,
-                { borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,43,82,0.08)' },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather name="check-circle" size={12} color={colors.success} />
-              <Text style={[styles.coordHintText, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
-                Ketuk angka di atas untuk membuka daftar personel
-              </Text>
-            </Pressable>
+            {/* Hint row "Ketuk angka di atas..." dipangkas — tombol
+                "Daftar Saksi" di action row bawah sudah menuju layar yang
+                sama, jadi baris petunjuk ini berlebihan. */}
           </View>
 
           {/* C. Action Row (Responsive & Touch Target >= 44pt, Zero Collision) */}
@@ -1243,7 +1214,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
 
         {/* Normalized 3 News Items List with Right-Side Thumbnail */}
         <View style={{ gap: 2 }}>
-          {PORTAL_NEWS_LIST.slice(0, 3).map((news, idx) => (
+          {PORTAL_NEWS_LIST.slice(0, 2).map((news, idx) => (
             <React.Fragment key={news.id}>
               {idx > 0 && <View style={[styles.newsDivider, { backgroundColor: colors.border }]} />}
               <Pressable
@@ -1296,7 +1267,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          {events.slice(0, 3).map((ev) => (
+          {events.slice(0, 2).map((ev) => (
             <Pressable
               key={ev.id}
               onPress={() => navigation.navigate('Activities')}

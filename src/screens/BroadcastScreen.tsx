@@ -176,6 +176,17 @@ export default function BroadcastScreen() {
   const [activeTab, setActiveTab] = useState<BroadcastTab>('channel');
   const [isFollowed, setIsFollowed] = useState(true);
   const [userReactions, setUserReactions] = useState<Record<string, 'thumbs' | 'heart' | 'fire' | null>>({});
+  // Isi post sebelumnya selalu tampil penuh tanpa batas — postingan panjang
+  // bisa mendominasi satu layar penuh. Sekarang dipangkas 4 baris + tombol
+  // "Baca Selengkapnya" per-post.
+  const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
+  const togglePostExpanded = (id: string) =>
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // Group chat states
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_GROUP_CHATS);
@@ -421,9 +432,19 @@ export default function BroadcastScreen() {
                       {post.title}
                     </Text>
 
-                    <Text style={[styles.postDescText, { color: colors.text }]}>
+                    <Text
+                      style={[styles.postDescText, { color: colors.text }]}
+                      numberOfLines={expandedPosts.has(post.id) ? undefined : 4}
+                    >
                       {post.content}
                     </Text>
+                    {post.content && post.content.length > 220 && (
+                      <Pressable onPress={() => togglePostExpanded(post.id)} hitSlop={6}>
+                        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+                          {expandedPosts.has(post.id) ? 'Tutup' : 'Baca Selengkapnya'}
+                        </Text>
+                      </Pressable>
+                    )}
 
                     {/* DOKUMEN LAMPIRAN */}
                     {post.documentName && (

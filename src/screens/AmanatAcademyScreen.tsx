@@ -373,7 +373,7 @@ export default function AmanatAcademyScreen() {
                 </View>
               </View>
 
-              <Text style={[styles.courseDesc, { color: colors.textMuted }]}>
+              <Text style={[styles.courseDesc, { color: colors.textMuted }]} numberOfLines={2}>
                 {course.description}
               </Text>
 

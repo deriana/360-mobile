@@ -14,6 +14,7 @@ interface GuardRule {
     isOfficialMember: boolean;
     isWitnessMandated: boolean;
     isCoordinator: boolean;
+    isPengurusOrPejabat: boolean;
   }) => boolean;
   title: string;
   badge: string;
@@ -102,7 +103,34 @@ const GUARD_RULES: Record<string, GuardRule> = {
     actionLabel: 'Ajukan Jadi Anggota Resmi',
     actionScreen: 'RegisterMember',
   },
+  CommandCenter: {
+    // Dipersempit (2026-09-28): sebelumnya semua role === 'MEMBER' lolos,
+    // padahal catatan produk bilang fitur ini eksklusif "pengurus partai,
+    // caleg, atau pejabat daerah" — bukan seluruh anggota resmi biasa.
+    isAllowed: ({ isCoordinator, role, isPengurusOrPejabat }) =>
+      isCoordinator || isPengurusOrPejabat || role === 'CALEG_OPS',
+    title: 'Akses Khusus Pengurus & Komando',
+    badge: 'Pusat Kendali 360',
+    message:
+      'Layar Peta Sebaran & Command Center dirancang khusus untuk Pengurus Partai (DPP/DPW/DPD/DPC), Caleg, Pejabat Daerah, dan Komandan Lapangan untuk pemantauan taktis hari-H pemilu.',
+    actionLabel: 'Kembali ke Beranda',
+  },
+  NominateVolunteer: {
+    isAllowed: ({ role, isCoordinator }) =>
+      role === 'VOLUNTEER' || role === 'WITNESS' || isCoordinator || role === 'CALEG_OPS',
+    title: 'Khusus Relawan Terdaftar',
+    badge: 'Nominasi Relawan',
+    message:
+      'Pendaftaran calon relawan baru hanya dapat dilakukan oleh relawan yang sudah terdaftar dan aktif di PAN 360.',
+    actionLabel: 'Kembali ke Beranda',
+  },
 };
+
+// Peta Sebaran & Command Center kini satu layar (2026-09-28) — setiap nama
+// route yang menunjuk ke layar gabungan itu memakai aturan akses yang sama.
+GUARD_RULES.MapSebaranRelawanAnggota = GUARD_RULES.CommandCenter;
+GUARD_RULES.MapSebaran = GUARD_RULES.CommandCenter;
+GUARD_RULES.PetaSebaran = GUARD_RULES.CommandCenter;
 
 export function withRoleGuard(
   ScreenComponent: React.ComponentType<any>,
@@ -132,11 +160,20 @@ export function withRoleGuard(
 
     const isCoordinator = role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR';
 
+    // "Anggota Resmi" eksklusif per catatan produk = pengurus partai, caleg,
+    // atau pejabat daerah — bukan sekadar kader ber-KTA biasa. Dicek dari
+    // posisi struktural (bukan NONE) atau status elektoral (bukan NONE).
+    const position = currentUser.dimensions?.position?.position;
+    const electoralStatus = currentUser.dimensions?.electoral?.status;
+    const isPengurusOrPejabat =
+      Boolean(position && position !== 'NONE') || Boolean(electoralStatus && electoralStatus !== 'NONE');
+
     const allowed = rule.isAllowed({
       role: role as MobileRole,
       isOfficialMember,
       isWitnessMandated,
       isCoordinator,
+      isPengurusOrPejabat,
     });
 
     if (allowed) {

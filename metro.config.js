@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
+const fs = require('fs');
 
 // Workaround for Windows file watching bottleneck:
 // When Watchman is not installed on Windows, Metro falls back to FallbackWatcher,
@@ -68,9 +69,11 @@ const config = getDefaultConfig(__dirname);
 // (e.g. setUpFuseboxReactDevToolsDispatcher.js) execute twice.
 config.resolver.unstable_enableSymlinks = true;
 
-// Ensure Metro watches the pnpm virtual store where real files live
+// Ensure Metro watches the pnpm virtual store where real files live (if using pnpm)
 const pnpmStore = path.join(__dirname, 'node_modules', '.pnpm');
-config.watchFolders = [...(config.watchFolders || []), pnpmStore];
+if (fs.existsSync(pnpmStore)) {
+  config.watchFolders = [...(config.watchFolders || []), pnpmStore];
+}
 
 
 // Exclude build artifacts and temporary export directories from Metro's resolution

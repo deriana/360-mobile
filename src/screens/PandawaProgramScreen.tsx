@@ -191,8 +191,10 @@ export default function PandawaProgramScreen() {
         <View style={styles.statusHeaderRow}>
           <View style={{ gap: 2 }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Kurikulum Diklat Kesamaptaan</Text>
+            {/* Persentase dipangkas dari sini — sudah ada di pill
+                sebelah kanan, tidak perlu diulang dalam kurung. */}
             <Text style={[styles.sectionSub, { color: colors.textMuted }]}>
-              {completedCount} dari {modules.length} modul selesai ({progressPct}%)
+              {completedCount} dari {modules.length} modul selesai
             </Text>
           </View>
           <Pill label={`${progressPct}% Tuntas`} tone={progressPct === 100 ? 'success' : 'primary'} />
@@ -248,7 +250,7 @@ export default function PandawaProgramScreen() {
                 >
                   {m.title}
                 </Text>
-                <Text style={[styles.modDesc, { color: colors.textMuted }]}>{m.desc}</Text>
+                <Text style={[styles.modDesc, { color: colors.textMuted }]} numberOfLines={2}>{m.desc}</Text>
               </View>
 
               <Feather name={m.icon as any} size={18} color={m.completed ? colors.success : colors.textMuted} />

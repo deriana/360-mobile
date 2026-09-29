@@ -800,19 +800,11 @@ export default function CheckInScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            {/* Ringkasan Validasi 2-Kolom Ringkas (Tanpa Koordinat Teknis Mentah) */}
+            {/* Status Lokasi saja — "Waktu Hadir" dipangkas dari sini karena
+                sudah persis sama dengan jam di header kartu ("{clockDate} • ..."),
+                jadi tidak perlu diulang dua kali. */}
             <View style={[styles.compactMetaRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]}>
-              <View style={styles.compactMetaCol}>
-                <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Waktu Hadir</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="clock" size={11} color={colors.primary} />
-                  <Text style={[styles.compactMetaValue, { color: colors.text }]}>{currentCheckInTime || '07:12'} WIB</Text>
-                </View>
-              </View>
-
-              <View style={[styles.compactMetaDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]} />
-
-              <View style={styles.compactMetaCol}>
+              <View style={[styles.compactMetaCol, { flex: 1 }]}>
                 <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Status Lokasi</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Feather name="navigation" size={11} color={colors.success} />
@@ -1046,7 +1038,9 @@ export default function CheckInScreen({ route, navigation }: any) {
                   originWhitelist={['*']}
                 />
                 <View style={styles.chipsRow}>
-                  <Pill icon="map-pin" label={`${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`} tone="neutral" />
+                  {/* Koordinat lat/lng mentah dipangkas (prinsip yang sama
+                      sudah dipakai di kartu status setelah presensi: "Tanpa
+                      Koordinat Teknis Mentah") — cukup akurasi GPS-nya saja. */}
                   <Pill icon="crosshair" label={location.accuracy ? `± ${Math.round(location.accuracy)}m` : '—'} tone="neutral" />
                   <Pressable
                     onPress={fetchLocation}

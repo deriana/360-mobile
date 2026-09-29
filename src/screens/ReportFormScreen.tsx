@@ -430,12 +430,8 @@ export default function ReportFormScreen({ route, navigation }: any) {
                           Suara Sah Paslon: <Text style={{ fontWeight: '800' }}>{topCandidate ? `${topCandidate[0].split('—')[0]}: ${topCandidate[1]} Suara` : '-'}</Text>
                         </Text>
                       </View>
-                      <View style={styles.summaryRow}>
-                        <Feather name="image" size={13} color={colors.success} />
-                        <Text style={[styles.summaryText, { color: colors.success }]}>
-                          Lampiran C1 Plano Terunggah & Terverifikasi
-                        </Text>
-                      </View>
+                      {/* Baris "Lampiran C1 Plano Terunggah & Terverifikasi" dipangkas —
+                          StatusBadge di header kartu (isDone) sudah menyatakan hal yang sama. */}
                     </View>
                   ) : (
                     <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>
@@ -604,11 +600,15 @@ export default function ReportFormScreen({ route, navigation }: any) {
                         />
                       </View>
 
-                      <Text style={{ fontSize: 11, color: colors.text, lineHeight: 16 }}>
-                        {match
-                          ? `Total suara masuk (${totalMasuk}) seimbang dengan Pemilih Hadir (${hadir}). Rincian: ${activeSah} Suara Sah (${entryCategory.toUpperCase()}) + ${tdkSah} Suara Tidak Sah.`
-                          : `Total suara masuk (${totalMasuk}) tidak sama dengan Pemilih Hadir (${hadir}). Rincian: ${activeSah} Suara Sah (${entryCategory.toUpperCase()}) + ${tdkSah} Tidak Sah. Selisih ${selisih > 0 ? `kelebihan +${selisih}` : `kekurangan ${selisih}`} suara.`}
-                      </Text>
+                      {/* Kalau sudah cocok, judul + pill di atas sudah cukup
+                          — paragraf rincian cuma ditampilkan saat ada
+                          selisih, karena di situ rinciannya benar-benar
+                          dibutuhkan untuk mencari letak kesalahan. */}
+                      {!match && (
+                        <Text style={{ fontSize: 11, color: colors.text, lineHeight: 16 }}>
+                          {`Total masuk (${totalMasuk}) vs Hadir (${hadir}): ${activeSah} Sah (${entryCategory.toUpperCase()}) + ${tdkSah} Tidak Sah. Selisih ${selisih > 0 ? `kelebihan +${selisih}` : `kekurangan ${selisih}`} suara.`}
+                        </Text>
+                      )}
                     </Card>
                   );
                 })()}

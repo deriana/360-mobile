@@ -268,7 +268,7 @@ export default function InsightsScreen() {
                   <Text style={[styles.insightToneBadge, { color: cfg.color }]}>{cfg.label}</Text>
                 </View>
               </View>
-              <Text style={[styles.insightBody, { color: colors.textMuted }]}>{insight.body}</Text>
+              <Text style={[styles.insightBody, { color: colors.textMuted }]} numberOfLines={3}>{insight.body}</Text>
             </Card>
           );
         })}
@@ -341,7 +341,7 @@ function TpsAuditRow({
             tone={isValid ? 'success' : 'warning'}
           />
         </View>
-        <Text style={[styles.auditNotes, { color: colors.textMuted }]}>{notes}</Text>
+        <Text style={[styles.auditNotes, { color: colors.textMuted }]} numberOfLines={2}>{notes}</Text>
         <Text style={{ fontSize: 10.5, fontFamily: fonts.bold, color: colors.primary, marginTop: 2 }}>
           Perolehan Suara PAN: {votesParty}
         </Text>

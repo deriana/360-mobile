@@ -43,6 +43,7 @@ import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import SimpanOfficeDetailScreen from '../screens/SimpanOfficeDetailScreen';
 import RegisterMemberScreen from '../screens/RegisterMemberScreen';
 import RegisterVolunteerScreen from '../screens/RegisterVolunteerScreen';
+import NominateVolunteerScreen from '../screens/NominateVolunteerScreen';
 import WitnessAcademyScreen from '../screens/WitnessAcademyScreen';
 import WitnessLessonScreen from '../screens/WitnessLessonScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
@@ -95,14 +96,19 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
   { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
   { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Registrasi Relawan PAN' },
+  { name: 'NominateVolunteer', component: NominateVolunteerScreen, title: 'Daftarkan Relawan Baru' },
   { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
   { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
   { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
   { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy Hub' },
   { name: 'PandawaProgram', component: PandawaProgramScreen, title: 'Satgas Muda PANdawa' },
-  { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
-  { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
-  { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran GIS', headerShown: false },
+  // Peta Sebaran & Command Center digabung menjadi satu layar (2026-09-28):
+  // semua nama route lama tetap didaftarkan agar tidak ada call site yang
+  // patah, tetapi kini menunjuk ke komponen gabungan yang sama.
+  { name: 'MapSebaranRelawanAnggota', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran & Command Center', headerShown: false },
+  { name: 'MapSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran & Command Center', headerShown: false },
+  { name: 'PetaSebaran', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran & Command Center', headerShown: false },
+  { name: 'CommandCenter', component: MapSebaranRelawanAnggotaScreen, title: 'Peta Sebaran & Command Center', headerShown: false },
 ];
 
 const GUARDED_SCREENS = DETAIL_SCREENS.map((s) => ({

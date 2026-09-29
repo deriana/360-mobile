@@ -18,6 +18,7 @@ import {
   EmergencyReport,
   EventItem,
   MobileRole,
+  NominatedVolunteerCandidate,
   NotificationItem,
   Payment,
   ResignationRequestPayload,
@@ -220,6 +221,14 @@ interface AppContextValue {
   volunteerOpportunities: VolunteerOpportunity[];
   joinOpportunity: (opportunityId: string) => void;
   applyWitnessCandidate: () => void;
+  nominatedVolunteers: NominatedVolunteerCandidate[];
+  nominateVolunteerCandidate: (payload: {
+    fullName: string;
+    phone: string;
+    region: string;
+    interest?: string;
+    note?: string;
+  }) => void;
   upgradeToMember: (ktaNumber: string, details?: { dpd?: string; dpc?: string; registeredAt?: string }) => void;
   checkInEvent: (eventId: string, details?: any) => void;
   poskoCheckIn: { checkedIn: boolean; time: string | null; poskoName: string };
@@ -247,6 +256,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [volunteerOpportunities, setVolunteerOpportunities] = useState<VolunteerOpportunity[]>(INITIAL_VOLUNTEER_OPPORTUNITIES);
+  const [nominatedVolunteers, setNominatedVolunteers] = useState<NominatedVolunteerCandidate[]>([]);
   const [poskoCheckIn, setPoskoCheckIn] = useState<{ checkedIn: boolean; time: string | null; poskoName: string }>({
     checkedIn: false,
     time: null,
@@ -596,6 +606,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Relawan aktif mendaftarkan/menominasikan calon relawan baru di
+  // wilayahnya — calon TIDAK perlu membuat akun terlebih dahulu, dan
+  // verifikasi datanya dilakukan sepenuhnya oleh tim pusat via Web
+  // Command Center. Kredensial (email/password) untuk calon dikirim oleh
+  // BACKEND setelah verifikasi (di luar cakupan mobile — lihat catatan
+  // analisis "Pengiriman Kredensial via WhatsApp").
+  const nominateVolunteerCandidate: AppContextValue['nominateVolunteerCandidate'] = (payload) => {
+    const nominatorName = currentUser?.identity?.name || 'Relawan PAN';
+    const newCandidate: NominatedVolunteerCandidate = {
+      id: `NOM-${Date.now()}`,
+      fullName: payload.fullName,
+      phone: payload.phone,
+      region: payload.region,
+      interest: payload.interest,
+      note: payload.note,
+      nominatedByName: nominatorName,
+      nominatedAt: new Date().toISOString(),
+      status: 'PENDING_VERIFICATION',
+    };
+    setNominatedVolunteers((prev) => [newCandidate, ...prev]);
+
+    const notif: NotificationItem = {
+      id: `NOTIF-NOM-${Date.now()}`,
+      type: 'assignment',
+      title: 'Pengajuan Calon Relawan Terkirim',
+      body: `Data ${payload.fullName} telah dikirim ke tim pusat untuk verifikasi. Kredensial akun akan dikirim otomatis via WhatsApp ke ${payload.phone} setelah diverifikasi.`,
+      sentAt: 'Baru saja',
+      sentBy: 'Tim Verifikasi Pusat PAN 360',
+      read: false,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+  };
+
   const applyWitnessCandidate = () => {
     setCurrentUser((prev) => ({
       ...prev,
@@ -928,6 +971,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       volunteerOpportunities,
       joinOpportunity,
       applyWitnessCandidate,
+      nominatedVolunteers,
+      nominateVolunteerCandidate,
       upgradeToMember,
       checkInEvent,
       poskoCheckIn,
@@ -950,6 +995,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       tasks,
       notifications,
       volunteerOpportunities,
+      nominatedVolunteers,
       poskoCheckIn,
     ],
   );

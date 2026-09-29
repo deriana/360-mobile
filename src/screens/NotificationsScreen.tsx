@@ -163,8 +163,8 @@ export default function NotificationsScreen({ navigation }: any) {
                     </View>
                   </View>
 
-                  <Text style={[styles.notifTitle, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.notifBody, { color: colors.textMuted }]}>{item.body}</Text>
+                  <Text style={[styles.notifTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+                  <Text style={[styles.notifBody, { color: colors.textMuted }]} numberOfLines={2}>{item.body}</Text>
 
                   {item.actionScreen && (
                     <View style={styles.actionRow}>

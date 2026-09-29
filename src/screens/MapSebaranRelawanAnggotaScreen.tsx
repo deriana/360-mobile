@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   BackHandler,
   Modal,
   Platform,
@@ -14,805 +15,271 @@ import {
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { fonts, radius, spacing } from '../theme';
+import { buildCommandCenterMapHtml } from '../utils/gisHtmlBuilder';
+import { INDONESIA_GEOJSON } from '../data/indonesiaGeojsonData';
+import { getProvinceKabupatenGeoJson, getKabupatenKecamatanGeoJson, getFeatureCentroid } from '../utils/geoRegistry';
 import {
-  GisLayerMode,
-  gisDistributionService,
-} from '../services/gisDistributionService';
-import { buildIndonesiaGisMapHtml } from '../utils/gisHtmlBuilder';
-import GisScorecardInspector from '../components/gis/GisScorecardInspector';
-import PoskoActionSheet from '../components/gis/PoskoActionSheet';
-import {
-  GIS_NATIONAL_SUMMARY,
-  GIS_POSKO_LOCATIONS,
-  GIS_REGIONAL_CLUSTERS,
-  PoskoDesaItem,
-  PoskoLocation,
-  RegionalCluster,
-} from '../data/gisRegionalData';
-import { KantorSekretariat } from '../data/simpan';
-import { PAN_MEMBER_CLUSTERS } from '../data/panMemberDistributionData';
-import {
-  INDONESIA_GEOJSON,
-  JAWA_BARAT_GEOJSON,
-  KOTA_BANDUNG_GEOJSON,
-} from '../data/indonesiaGeojsonData';
-import {
-  getProvinceKabupatenGeoJson,
-  getKabupatenKecamatanGeoJson,
-  getFeatureCentroid,
-} from '../utils/geoRegistry';
+  commandCenterService,
+  CommandMode,
+  ProvinceCommandItem,
+  RegencyBreakdownItem,
+  SELECTED_REGION_STYLE,
+  ACHIEVEMENT_STATUS_MAP,
+  PAN_VICTORY_CONFIG,
+  getProvinceSlug,
+  getTierColorForMode,
+  getTierValueLabelForMode,
+  formatNumberID,
+  formatPercent,
+} from '../services/commandCenterService';
 
-export type GisDrillTier = 'NATIONAL' | 'PROVINCE' | 'REGENCY' | 'DISTRICT';
+/**
+ * Peta Sebaran & Command Center Terpadu — PAN 360
+ *
+ * Digabung total (2026-09-28) sesuai permintaan: menu "Command Center"
+ * dan "Peta Sebaran" sekarang satu layar. Yang dipertahankan dari Peta
+ * Sebaran versi lama HANYA peta Indonesia + pembagian wilayahnya
+ * (poligon GeoJSON provinsi/kab-kota/kecamatan + drill-down zoom) —
+ * seluruh layer pin posko/kantor/kader/relawan & mode layer lama sudah
+ * dihapus (lihat gisHtmlBuilder.ts). Warna choropleth dan highlight
+ * wilayah terpilih di peta memakai persis tier & warna yang sama dengan
+ * commandCenterService.ts (identik dengan yang tampil di kartu KPI),
+ * mengikuti ANALISA_MOBILE_COMMAND_CENTER.md Bagian 4.3/4.4.
+ */
+
+type DrillTier = 'NATIONAL' | 'PROVINCE' | 'REGENCY';
+
+const NATIONAL_CAMERA = { lat: -2.5, lng: 118.0, zoom: 5, label: 'Nasional (38 Provinsi)' };
 
 export default function MapSebaranRelawanAnggotaScreen() {
   const navigation = useNavigation<any>();
-  const { role } = useApp();
   const { colors, isDark } = useTheme();
   const webViewRef = useRef<WebView>(null);
 
-  // Data State (Synchronous Cache-First Initial State)
-  const [clusters, setClusters] = useState<RegionalCluster[]>(GIS_REGIONAL_CLUSTERS);
-  const [poskos, setPoskos] = useState<PoskoLocation[]>(GIS_POSKO_LOCATIONS);
-  const [poskoDesasList, setPoskoDesasList] = useState<PoskoDesaItem[]>(() =>
-    gisDistributionService.getPoskoDesaList()
-  );
-  const [offices, setOffices] = useState<KantorSekretariat[]>(() =>
-    gisDistributionService.getOfficialOffices()
-  );
-  const [selectedCluster, setSelectedCluster] = useState<RegionalCluster | null>(() =>
-    GIS_REGIONAL_CLUSTERS.find((c) => c.name.toLowerCase().includes('coblong')) || GIS_REGIONAL_CLUSTERS[0]
-  );
+  const modeTabs = useMemo(() => commandCenterService.getModeTabs(), []);
+  const allProvinces = useMemo(() => commandCenterService.getProvinces(), []);
+  const nationalSummary = useMemo(() => commandCenterService.getNationalSummary(), []);
 
-  // Camera Focus State (Role-Adaptive Initial Scoping)
-  const defaultFocus = useMemo(() => {
-    return gisDistributionService.getCameraFocusByRole(role);
-  }, [role]);
+  const [mode, setMode] = useState<CommandMode>('saksi_tps');
+  const [drillTier, setDrillTier] = useState<DrillTier>('NATIONAL');
+  const [selectedProvince, setSelectedProvince] = useState<ProvinceCommandItem | null>(null);
+  const [activeProvinceName, setActiveProvinceName] = useState<string | null>(null);
+  const [activeRegencyName, setActiveRegencyName] = useState<string | null>(null);
+  const [camera, setCamera] = useState(NATIONAL_CAMERA);
 
-  // 4-Tier Hierarchical State (Nasional > Provinsi > Kab/Kota > Kecamatan & Posko Desa)
-  const [drillTier, setDrillTier] = useState<GisDrillTier>(
-    defaultFocus.scopeLevel === 'POSKO' || defaultFocus.scopeLevel === 'DISTRICT'
-      ? 'DISTRICT'
-      : defaultFocus.scopeLevel === 'REGENCY'
-      ? 'REGENCY'
-      : defaultFocus.scopeLevel === 'PROVINCE'
-      ? 'PROVINCE'
-      : 'NATIONAL'
-  );
-  const [activeProvince, setActiveProvince] = useState<RegionalCluster | null>(() =>
-    GIS_REGIONAL_CLUSTERS.find(c => c.level === 'PROVINSI' && c.name.toLowerCase().includes('jawa barat')) || null
-  );
-  const [activeRegency, setActiveRegency] = useState<RegionalCluster | null>(() =>
-    GIS_REGIONAL_CLUSTERS.find(c => c.level === 'KAB_KOTA' && c.name.toLowerCase().includes('bandung')) || null
-  );
-  const [activeDistrict, setActiveDistrict] = useState<RegionalCluster | null>(() =>
-    GIS_REGIONAL_CLUSTERS.find(c => c.level === 'KECAMATAN' && c.name.toLowerCase().includes('coblong')) || null
-  );
-
-  // Modals & Sheets State
-  const [activeLayer, setActiveLayer] = useState<GisLayerMode>('ALL');
-  const [isLayerSheetVisible, setIsLayerSheetVisible] = useState(false);
+  const [isModeSheetVisible, setIsModeSheetVisible] = useState(false);
   const [isRegionSheetVisible, setIsRegionSheetVisible] = useState(false);
-  const [isScorecardVisible, setIsScorecardVisible] = useState(false);
-  const [actionSheetData, setActionSheetData] = useState<{
-    visible: boolean;
-    posko: PoskoLocation | null;
-    office: KantorSekretariat | null;
-  }>({ visible: false, posko: null, office: null });
+  const [isRingkasanVisible, setIsRingkasanVisible] = useState(false);
 
-  const [currentCamera, setCurrentCamera] = useState({
-    lat: defaultFocus.lat,
-    lng: defaultFocus.lng,
-    zoom: defaultFocus.zoom,
-    label: defaultFocus.label,
-  });
+  const activeModeMeta = modeTabs.find((t) => t.mode === mode)!;
 
-  const isGrassroots = role === 'VOLUNTEER' || role === 'MEMBER';
+  // -------------------------------------------------------------
+  // WARNA CHOROPLETH — identik commandCenterService (Bagian 4.3/4.4)
+  // -------------------------------------------------------------
+  const regionColorMap = useMemo(() => commandCenterService.getRegionColorMap(mode), [mode]);
+  const selectedSlug = selectedProvince ? getProvinceSlug(selectedProvince.name) : null;
 
-  // Load Data on Mount (Cache-First)
-  useEffect(() => {
-    let isMounted = true;
-    Promise.all([
-      gisDistributionService.getRegionalClusters(),
-      gisDistributionService.getPoskoLocations(),
-    ]).then(([clusterData, poskoData]) => {
-      if (isMounted) {
-        setClusters(clusterData);
-        setPoskos(poskoData);
-        setOffices(gisDistributionService.getOfficialOffices());
-        const allDesas = gisDistributionService.getPoskoDesaList();
-        setPoskoDesasList(allDesas);
+  // -------------------------------------------------------------
+  // GEOJSON DRILL-DOWN — hanya pembagian wilayah, tanpa data agregat
+  // per kab/kota & kecamatan (Fase 1, lihat Bagian 9 Roadmap)
+  // -------------------------------------------------------------
+  const regencyGeoJson = useMemo(
+    () => (activeProvinceName ? getProvinceKabupatenGeoJson(activeProvinceName) : null),
+    [activeProvinceName],
+  );
+  const districtGeoJson = useMemo(
+    () => (activeRegencyName ? getKabupatenKecamatanGeoJson(activeRegencyName) : null),
+    [activeRegencyName],
+  );
 
-        // Inisialisasi kluster awal sesuai fokus
-        const match = clusterData.find((c) => c.name.toLowerCase().includes('coblong')) || clusterData[0];
-        setSelectedCluster(match || null);
-        if (match) {
-          if (match.level === 'KECAMATAN') {
-            setActiveDistrict(match);
-            const parentReg = clusterData.find(c => c.level === 'KAB_KOTA' && (c.name.toLowerCase().includes('bandung') || match.parentRegion?.toLowerCase().includes(c.name.toLowerCase())));
-            if (parentReg) setActiveRegency(parentReg);
-            const parentProv = clusterData.find(c => c.level === 'PROVINSI' && c.name.toLowerCase().includes('jawa barat'));
-            if (parentProv) setActiveProvince(parentProv);
-          }
-        }
-      }
-    });
+  const mapHtml = useMemo(
+    () =>
+      buildCommandCenterMapHtml({
+        centerLat: camera.lat,
+        centerLng: camera.lng,
+        zoom: camera.zoom,
+        nationalGeoJson: INDONESIA_GEOJSON,
+        regencyGeoJson: drillTier !== 'NATIONAL' ? regencyGeoJson : null,
+        districtGeoJson: drillTier === 'REGENCY' ? districtGeoJson : null,
+        regionFillColors: regionColorMap.colors,
+        regionValueLabels: regionColorMap.labels,
+        selectedRegionSlug: selectedSlug,
+        selectedBorderColor: SELECTED_REGION_STYLE.borderColor,
+        isDark,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [camera, drillTier, regencyGeoJson, districtGeoJson, regionColorMap, selectedSlug, isDark],
+  );
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Helper Drill-Down ke Tier Tertentu (Dengan Dynamic GeoJSON Injection)
-  const drillDownTo = (tier: GisDrillTier, cluster: RegionalCluster, targetZoom: number) => {
-    setSelectedCluster(cluster);
-    setCurrentCamera({
-      lat: cluster.lat,
-      lng: cluster.lng,
-      zoom: targetZoom,
-      label: cluster.name,
-    });
-
-    if (tier === 'PROVINCE') {
-      setDrillTier('PROVINCE');
-      setActiveProvince(cluster);
-      setActiveRegency(null);
-      setActiveDistrict(null);
-
-      // Injeksi GeoJSON kabupaten untuk provinsi yang dipilih
-      const provGeo = getProvinceKabupatenGeoJson(cluster.name);
-      if (provGeo && webViewRef.current) {
-        const payloadStr = JSON.stringify(provGeo);
-        const nameStr = JSON.stringify(cluster.name);
-        webViewRef.current.injectJavaScript(`if (window.panUpdateRegencyPolygons) { window.panUpdateRegencyPolygons(${payloadStr}, ${nameStr}); }`);
-      }
-    } else if (tier === 'REGENCY') {
-      setDrillTier('REGENCY');
-      setActiveRegency(cluster);
-      setActiveDistrict(null);
-      if (!activeProvince && cluster.parentRegion) {
-        const foundProv = clusters.find(c => c.level === 'PROVINSI' && cluster.parentRegion?.toLowerCase().includes(c.name.toLowerCase()));
-        if (foundProv) setActiveProvince(foundProv);
-      }
-
-      // Injeksi GeoJSON kecamatan untuk kab/kota yang dipilih
-      const kabGeo = getKabupatenKecamatanGeoJson(cluster.name);
-      if (kabGeo && webViewRef.current) {
-        const payloadStr = JSON.stringify(kabGeo);
-        const nameStr = JSON.stringify(cluster.name);
-        webViewRef.current.injectJavaScript(`if (window.panUpdateDistrictPolygons) { window.panUpdateDistrictPolygons(${payloadStr}, ${nameStr}); }`);
-      }
-    } else if (tier === 'DISTRICT') {
-      setDrillTier('DISTRICT');
-      setActiveDistrict(cluster);
-      if (!activeRegency && cluster.parentRegion) {
-        const foundReg = clusters.find(c => c.level === 'KAB_KOTA' && cluster.parentRegion?.toLowerCase().includes(c.name.toLowerCase()));
-        if (foundReg) setActiveRegency(foundReg);
-      }
-      if (webViewRef.current) {
-        const nameStr = JSON.stringify(cluster.name);
-        webViewRef.current.injectJavaScript(`if (window.panUpdateDistrictPolygons) { window.panUpdateDistrictPolygons(null, ${nameStr}); }`);
-      }
-    }
-
-    if (webViewRef.current) {
-      const script = `if (window.panFlyTo) { window.panFlyTo(${cluster.lat}, ${cluster.lng}, ${targetZoom}); }`;
-      webViewRef.current.injectJavaScript(script);
-    }
+  // -------------------------------------------------------------
+  // NAVIGASI WILAYAH
+  // -------------------------------------------------------------
+  const findCentroidBySlug = (slug: string) => {
+    const feature = (INDONESIA_GEOJSON as any)?.features?.find(
+      (f: any) => getProvinceSlug(f.properties?.PROVINSI || f.properties?.name || '') === slug,
+    );
+    if (feature) return getFeatureCentroid(feature);
+    return { lat: NATIONAL_CAMERA.lat, lng: NATIONAL_CAMERA.lng };
   };
 
-  // Navigasi Bertahap Mundur (Hardware Back & Header Back Button)
-  const handleBackStep = (): boolean => {
-    if (drillTier === 'DISTRICT') {
-      setDrillTier('REGENCY');
-      setActiveDistrict(null);
-      if (activeRegency) {
-        setSelectedCluster(activeRegency);
-        setCurrentCamera({
-          lat: activeRegency.lat,
-          lng: activeRegency.lng,
-          zoom: 11.2,
-          label: activeRegency.name,
-        });
-        const kabGeo = getKabupatenKecamatanGeoJson(activeRegency.name);
-        if (webViewRef.current) {
-          if (kabGeo) {
-            webViewRef.current.injectJavaScript(`if (window.panUpdateDistrictPolygons) { window.panUpdateDistrictPolygons(${JSON.stringify(kabGeo)}, ''); }`);
-          }
-          webViewRef.current.injectJavaScript(`if (window.panFlyTo) { window.panFlyTo(${activeRegency.lat}, ${activeRegency.lng}, 11.2); }`);
-        }
-      } else {
-        setDrillTier('PROVINCE');
-        if (activeProvince) {
-          setSelectedCluster(activeProvince);
-          setCurrentCamera({
-            lat: activeProvince.lat,
-            lng: activeProvince.lng,
-            zoom: 8.5,
-            label: activeProvince.name,
-          });
-          const provGeo = getProvinceKabupatenGeoJson(activeProvince.name);
-          if (webViewRef.current) {
-            if (provGeo) {
-              webViewRef.current.injectJavaScript(`if (window.panUpdateRegencyPolygons) { window.panUpdateRegencyPolygons(${JSON.stringify(provGeo)}, ${JSON.stringify(activeProvince.name)}); }`);
-            }
-            webViewRef.current.injectJavaScript(`if (window.panFlyTo) { window.panFlyTo(${activeProvince.lat}, ${activeProvince.lng}, 8.5); }`);
-          }
-        }
-      }
-      return true;
-    }
+  const selectProvince = (province: ProvinceCommandItem) => {
+    setIsRegionSheetVisible(false);
+    setSelectedProvince(province);
+    setActiveProvinceName(province.name);
+    setActiveRegencyName(null);
+    setDrillTier('PROVINCE');
+    const centroid = findCentroidBySlug(getProvinceSlug(province.name));
+    setCamera({ lat: centroid.lat, lng: centroid.lng, zoom: 7.4, label: province.name });
+  };
 
+  const goBackOneTier = (): boolean => {
     if (drillTier === 'REGENCY') {
       setDrillTier('PROVINCE');
-      setActiveRegency(null);
-      if (activeProvince) {
-        setSelectedCluster(activeProvince);
-        setCurrentCamera({
-          lat: activeProvince.lat,
-          lng: activeProvince.lng,
-          zoom: 8.5,
-          label: activeProvince.name,
-        });
-        const provGeo = getProvinceKabupatenGeoJson(activeProvince.name);
-        if (webViewRef.current) {
-          if (provGeo) {
-            webViewRef.current.injectJavaScript(`if (window.panUpdateRegencyPolygons) { window.panUpdateRegencyPolygons(${JSON.stringify(provGeo)}, ${JSON.stringify(activeProvince.name)}); }`);
-          }
-          webViewRef.current.injectJavaScript(`if (window.panFlyTo) { window.panFlyTo(${activeProvince.lat}, ${activeProvince.lng}, 8.5); }`);
-        }
-      } else {
-        setDrillTier('NATIONAL');
-        handleSelectNationalScope();
+      setActiveRegencyName(null);
+      if (selectedProvince) {
+        const centroid = findCentroidBySlug(getProvinceSlug(selectedProvince.name));
+        setCamera({ lat: centroid.lat, lng: centroid.lng, zoom: 7.4, label: selectedProvince.name });
       }
       return true;
     }
-
     if (drillTier === 'PROVINCE') {
       setDrillTier('NATIONAL');
-      handleSelectNationalScope();
+      setSelectedProvince(null);
+      setActiveProvinceName(null);
+      setActiveRegencyName(null);
+      setCamera(NATIONAL_CAMERA);
       return true;
     }
-
-    // Jika sudah di level Nasional: keluar dari screen
     navigation.goBack();
     return true;
   };
 
   useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      return handleBackStep();
-    });
-    return () => subscription.remove();
-  }, [drillTier, activeRegency, activeProvince]);
+    const sub = BackHandler.addEventListener('hardwareBackPress', goBackOneTier);
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drillTier, selectedProvince]);
 
-  // Handle Posko Desa Aksi Lembar
-  const handleSelectPoskoDesa = (desa: PoskoDesaItem) => {
-    setIsScorecardVisible(false);
-    setActionSheetData({
-      visible: true,
-      posko: {
-        id: desa.id,
-        name: `Posko ${desa.villageName}`,
-        category: 'POSKO_WARGA',
-        categoryLabel: 'Posko Desa Siaga (Level 4)',
-        address: `${desa.villageName}, ${desa.districtName}, ${desa.regencyName}`,
-        district: desa.districtName,
-        regency: desa.regencyName,
-        lat: desa.lat,
-        lng: desa.lng,
-        activeVolunteers: desa.registeredVolunteers,
-        picName: `${desa.coordinatorName} (${desa.skStatus})`,
-        phone: desa.coordinatorPhone || '0812-9900-1122',
-        isMainCommandCenter: false,
-      },
-      office: null,
-    });
-  };
-
-  // Handle Event Bridge dari WebView Leaflet
   const handleWebViewMessage = (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
-
       if (message.type === 'WEBVIEW_ERROR') {
-        console.warn('[MapWebView JS Error]', message.category, message.data);
+        console.warn('[PetaSebaran WebView]', message.data);
         return;
       }
+      if (message.type !== 'REGION_TAP') return;
 
-      if (message.type === 'DRILL_DOWN') {
-        const category = message.category;
-        const data = message.data;
-
-        if (category === 'PROVINCE') {
-          const found = data.cluster || clusters.find(c => c.name.toLowerCase().includes(data.name?.toLowerCase?.() || ''));
-          const cl: RegionalCluster = found || {
-            id: `PROV_${data.name || 'UNKNOWN'}`,
-            name: data.name || 'Provinsi',
-            level: 'PROVINSI',
-            lat: data.lat || -2.5,
-            lng: data.lng || 118.0,
-            totalCadres: 12500,
-            totalVolunteers: 4500,
-            targetVolunteers: 5000,
-            volunteerGap: -500,
-            status: 'DEFICIT',
-            totalTps: 1500,
-            coveredTps: 1350,
-            tpsCoveragePct: 90.0,
-            witnessCount: 1350,
-            poskoCount: 45,
-            targetSeats: 8,
-            density: 'SEDANG',
-          };
-          if (cl && cl.lat) {
-            drillDownTo('PROVINCE', cl, 8.5);
-          }
-          if (!isGrassroots && cl) {
-            setIsScorecardVisible(true);
-          }
-        } else if (category === 'REGENCY') {
-          const found = data.cluster || clusters.find(c => c.name.toLowerCase().includes(data.name?.toLowerCase?.() || ''));
-          const cl: RegionalCluster = found || {
-            id: `REG_${data.name || 'UNKNOWN'}`,
-            name: data.name || 'Kabupaten/Kota',
-            level: 'KAB_KOTA',
-            lat: data.lat || -6.9,
-            lng: data.lng || 107.6,
-            totalCadres: 3500,
-            totalVolunteers: 1200,
-            targetVolunteers: 1500,
-            volunteerGap: -300,
-            status: 'DEFICIT',
-            totalTps: 450,
-            coveredTps: 410,
-            tpsCoveragePct: 91.1,
-            witnessCount: 410,
-            poskoCount: 15,
-            targetSeats: 3,
-            density: 'SEDANG',
-          };
-          if (cl && cl.lat) {
-            drillDownTo('REGENCY', cl, 11.2);
-          }
-          if (!isGrassroots && cl) {
-            setIsScorecardVisible(true);
-          }
-        } else if (category === 'DISTRICT') {
-          const found = data.cluster || clusters.find(c => c.name.toLowerCase().includes(data.name?.toLowerCase?.() || ''));
-          const cl: RegionalCluster = found || {
-            id: `DIST_${data.name || 'UNKNOWN'}`,
-            name: data.name || 'Kecamatan',
-            level: 'KECAMATAN',
-            lat: data.lat || -6.88,
-            lng: data.lng || 107.61,
-            totalCadres: 850,
-            totalVolunteers: 280,
-            targetVolunteers: 300,
-            volunteerGap: -20,
-            status: 'DEFICIT',
-            totalTps: 85,
-            coveredTps: 80,
-            tpsCoveragePct: 94.1,
-            witnessCount: 80,
-            poskoCount: 4,
-            targetSeats: 1,
-            density: 'SEDANG',
-          };
-          if (cl && cl.lat) {
-            drillDownTo('DISTRICT', cl, 13.5);
-          }
-          if (!isGrassroots && cl) {
-            setIsScorecardVisible(true);
-          }
-        }
-      } else if (message.type === 'PROVINCE_TAP') {
-        const provName = message.data.name;
-        const cl = message.data.cluster || clusters.find(c => c.name.toLowerCase().includes(provName.toLowerCase()));
-        if (cl) {
-          drillDownTo('PROVINCE', cl, 8.5);
+      const { level, slug, name, lat, lng } = message.data;
+      if (level === 'PROVINCE') {
+        const province = slug ? commandCenterService.getProvinceBySlug(slug) : undefined;
+        if (province) {
+          setSelectedProvince(province);
+          setActiveProvinceName(province.name);
         } else {
-          setCurrentCamera((prev) => ({
-            ...prev,
-            label: provName,
-            lat: message.data.lat,
-            lng: message.data.lng,
-            zoom: 8.5,
-          }));
+          setActiveProvinceName(name);
         }
-        if (!isGrassroots && cl) {
-          setIsScorecardVisible(true);
-        }
-      } else if (message.type === 'MAP_VIEWPORT_CHANGE') {
-        const z = message.data.zoom;
-        if (z < 7.5 && drillTier !== 'NATIONAL') {
-          setDrillTier('NATIONAL');
-          setActiveProvince(null);
-          setActiveRegency(null);
-          setActiveDistrict(null);
-          setCurrentCamera((prev) => ({
-            ...prev,
-            zoom: z,
-            label: 'Nasional (38 DPW)',
-          }));
-        } else if (z >= 7.5 && z < 10.5 && drillTier !== 'PROVINCE') {
-          setDrillTier('PROVINCE');
-          setActiveDistrict(null);
-          setActiveRegency(null);
-        } else if (z >= 10.5 && z < 12.5 && drillTier !== 'REGENCY') {
-          setDrillTier('REGENCY');
-          setActiveDistrict(null);
-        } else if (z >= 12.5 && drillTier !== 'DISTRICT') {
-          setDrillTier('DISTRICT');
-        }
-      } else if (message.type === 'MARKER_CLICK') {
-        if (message.category === 'POSKO') {
-          setActionSheetData({
-            visible: true,
-            posko: message.data as PoskoLocation,
-            office: null,
-          });
-        } else if (message.category === 'OFFICE') {
-          setActionSheetData({
-            visible: true,
-            posko: null,
-            office: message.data as KantorSekretariat,
-          });
-        } else if (message.category === 'POSKO_DESA') {
-          handleSelectPoskoDesa(message.data as PoskoDesaItem);
-        } else if (message.category === 'CLUSTER') {
-          const cl = message.data as RegionalCluster;
-          setSelectedCluster(cl);
-          if (cl.level === 'PROVINSI') drillDownTo('PROVINCE', cl, 8.5);
-          else if (cl.level === 'KAB_KOTA') drillDownTo('REGENCY', cl, 11.2);
-          else if (cl.level === 'KECAMATAN') drillDownTo('DISTRICT', cl, 13.5);
-
-          if (isGrassroots) {
-            const matchingPosko = poskos.find((p) =>
-              p.district.toLowerCase().includes(cl.name.toLowerCase()) ||
-              p.regency.toLowerCase().includes(cl.name.toLowerCase()) ||
-              cl.name.toLowerCase().includes(p.district.toLowerCase())
-            );
-            const matchingOffice = offices.find((o) =>
-              o.kota.toLowerCase().includes(cl.name.toLowerCase()) ||
-              o.provinsi.toLowerCase().includes(cl.name.toLowerCase())
-            );
-
-            if (matchingPosko) {
-              setActionSheetData({ visible: true, posko: matchingPosko, office: null });
-            } else if (matchingOffice) {
-              setActionSheetData({ visible: true, posko: null, office: matchingOffice });
-            } else if (poskos.length > 0) {
-              setActionSheetData({ visible: true, posko: poskos[0], office: null });
-            }
-          } else {
-            setIsScorecardVisible(true);
-          }
-        }
+        setActiveRegencyName(null);
+        setDrillTier('PROVINCE');
+        setCamera({ lat, lng, zoom: 7.6, label: name });
+      } else if (level === 'REGENCY') {
+        setActiveRegencyName(name);
+        setDrillTier('REGENCY');
+        setCamera({ lat, lng, zoom: 9.8, label: name });
+      } else if (level === 'DISTRICT') {
+        Alert.alert('Data Tingkat Kecamatan', `Data agregat ${name} akan tersedia pada pengembangan berikutnya.`);
+        setCamera((prev) => ({ ...prev, lat, lng, zoom: 11 }));
       }
     } catch (err) {
-      console.warn('[MapWebView] Error handling message:', err);
+      console.warn('[PetaSebaran] Gagal memproses pesan WebView:', err);
     }
   };
 
-  // Pusatkan Kembali Kamera ke Wilayah Penugasan Akun
-  const handleCenterToAssignment = () => {
-    setCurrentCamera({
-      lat: defaultFocus.lat,
-      lng: defaultFocus.lng,
-      zoom: defaultFocus.zoom,
-      label: defaultFocus.label,
-    });
+  // -------------------------------------------------------------
+  // KPI RINGKASAN — identik dengan mapping Bagian 5 (dipakai juga di
+  // bottom card & sheet Ringkasan)
+  // -------------------------------------------------------------
+  const activeSource = selectedProvince ? selectedProvince[mode] : nationalSummary[mode];
+  const wilayahLabel = selectedProvince ? selectedProvince.name : 'NASIONAL (38 Provinsi)';
 
-    if (webViewRef.current) {
-      const script = `if (window.panFlyTo) { window.panFlyTo(${defaultFocus.lat}, ${defaultFocus.lng}, ${defaultFocus.zoom}); }`;
-      webViewRef.current.injectJavaScript(script);
+  const kpiCards = useMemo(() => {
+    if (mode === 'relawan') {
+      const s = activeSource as ProvinceCommandItem['relawan'];
+      return [
+        { icon: 'target' as const, label: 'Target Relawan', value: formatNumberID(s.target) },
+        { icon: 'users' as const, label: 'Relawan Terdaftar', value: formatNumberID(s.active) },
+        { icon: 'trending-up' as const, label: 'Capaian Target', value: formatPercent(s.percent), badge: s.statusMeta.label, badgeColor: s.statusMeta.color },
+        { icon: 'home' as const, label: 'Total Posko', value: formatNumberID(s.poskoCount) },
+      ];
     }
-  };
-
-  // Pilih Wilayah dari Chip Atas / Modal Selector
-  const handleSelectRegionScope = (cluster: RegionalCluster) => {
-    setIsRegionSheetVisible(false);
-    const targetZoom = cluster.level === 'PROVINSI' ? 8.5 : cluster.level === 'KAB_KOTA' ? 11.2 : 13.5;
-    const targetTier: GisDrillTier = cluster.level === 'PROVINSI' ? 'PROVINCE' : cluster.level === 'KAB_KOTA' ? 'REGENCY' : 'DISTRICT';
-    drillDownTo(targetTier, cluster, targetZoom);
-  };
-
-  const handleSelectNationalScope = () => {
-    setIsRegionSheetVisible(false);
-    setDrillTier('NATIONAL');
-    setActiveProvince(null);
-    setActiveRegency(null);
-    setActiveDistrict(null);
-    setCurrentCamera({
-      lat: -2.5,
-      lng: 118.0,
-      zoom: 5.0,
-      label: 'Nasional (38 DPW)',
-    });
-    if (webViewRef.current) {
-      webViewRef.current.injectJavaScript(`if (window.panFlyTo) { window.panFlyTo(-2.5, 118.0, 5.0); }`);
+    if (mode === 'saksi_tps') {
+      const s = activeSource as ProvinceCommandItem['saksi_tps'];
+      return [
+        { icon: 'shield' as const, label: 'Mandat Saksi & TPS', value: formatNumberID(s.saksiMandat), sublabel: `Target: ${formatNumberID(s.tpsCount)} TPS` },
+        {
+          icon: 'map-pin' as const,
+          label: 'Saksi Hadir (Presensi)',
+          value: formatNumberID(s.saksiHadirCount),
+          badge: `${formatPercent(s.tpsStats.selesaiPercent)} C1`,
+          badgeColor: colors.primary,
+          sublabel: `C1 Masuk: ${formatNumberID(s.tpsStats.selesai)} TPS`,
+        },
+        { icon: 'check-circle' as const, label: 'Kehadiran Saksi', value: formatPercent(s.saksiPercent), badge: s.saksiStatusMeta.label, badgeColor: s.saksiStatusMeta.color },
+        {
+          icon: 'alert-triangle' as const,
+          label: 'Anomali Terdeteksi',
+          value: `${s.saksiAnomaliCount} TPS`,
+          badge: s.saksiAnomaliCount > 0 ? 'Alert' : undefined,
+          badgeColor: colors.danger,
+          isDanger: s.saksiAnomaliCount > 0,
+        },
+      ];
     }
-  };
+    const s = activeSource as ProvinceCommandItem['kemenangan'];
+    return [
+      { icon: 'bar-chart-2' as const, label: 'Total Suara PAN', value: formatNumberID(s.panVotes) },
+      { icon: 'percent' as const, label: 'Persentase PAN', value: formatPercent(s.panPercent), badge: s.tierConfig.shortLabel, badgeColor: s.tierConfig.color },
+      { icon: 'award' as const, label: 'Peringkat Partai', value: `#${s.partyRank} dari ${s.totalParties} Parpol` },
+      { icon: 'briefcase' as const, label: `Estimasi Kursi ${s.kursiLabel}`, value: formatNumberID(s.kursiEstimasi) },
+    ];
+  }, [activeSource, mode, colors.primary, colors.danger]);
 
-  // Daftar Lengkap 38 DPW Provinsi Se-Indonesia untuk Drawer
-  const allProvincesList = useMemo(() => {
-    const provMap = new Map<string, RegionalCluster>();
-    clusters.filter(c => c.level === 'PROVINSI').forEach(c => {
-      provMap.set(c.name.toLowerCase(), c);
-    });
-
-    if (INDONESIA_GEOJSON && Array.isArray(INDONESIA_GEOJSON.features)) {
-      INDONESIA_GEOJSON.features.forEach((f: any) => {
-        const name = f.properties?.PROVINSI || f.properties?.name || '';
-        if (name && !provMap.has(name.toLowerCase())) {
-          const centroid = getFeatureCentroid(f);
-          provMap.set(name.toLowerCase(), {
-            id: `reg-prov-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            name,
-            level: 'PROVINSI',
-            totalCadres: 35000,
-            totalVolunteers: 12500,
-            targetVolunteers: 15000,
-            volunteerGap: -2500,
-            status: 'TARGET_MET',
-            totalTps: 5200,
-            coveredTps: 4800,
-            tpsCoveragePct: 92.3,
-            witnessCount: 9600,
-            poskoCount: 120,
-            targetSeats: 4,
-            lat: centroid.lat,
-            lng: centroid.lng,
-            density: 'SEDANG',
-          });
-        }
-      });
+  // -------------------------------------------------------------
+  // LEGENDA WARNA — persis mengikuti tabel tier website (Bagian 4.3)
+  // -------------------------------------------------------------
+  const legendItems = useMemo(() => {
+    if (mode === 'kemenangan') {
+      // Urutan tampil dari capaian tertinggi ke terendah
+      return PAN_VICTORY_CONFIG.map((tier) => ({ color: tier.color, label: tier.label }));
     }
+    return [
+      ACHIEVEMENT_STATUS_MAP.TARGET_MET,
+      ACHIEVEMENT_STATUS_MAP.NEAR_TARGET,
+      ACHIEVEMENT_STATUS_MAP.LOW,
+      ACHIEVEMENT_STATUS_MAP.ZERO_VOLUNTEER,
+      ACHIEVEMENT_STATUS_MAP.NO_DATA,
+    ].map((tier) => ({ color: tier.color, label: tier.label }));
+  }, [mode]);
 
-    return Array.from(provMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [clusters]);
-
-  // Daftar DPC Kab/Kota Terkait Provinsi Aktif (Memanfaatkan GeoJSON Provinsi)
-  const availableDpcList: RegionalCluster[] = useMemo(() => {
-    if (activeProvince) {
-      const provGeo = getProvinceKabupatenGeoJson(activeProvince.name);
-      if (provGeo && Array.isArray(provGeo.features) && provGeo.features.length > 0) {
-        return provGeo.features.map((f: any, idx: number): RegionalCluster => {
-          const kabName = f.properties?.kabupaten || f.properties?.name || `Kabupaten ${idx + 1}`;
-          const existing = clusters.find(c => c.level === 'KAB_KOTA' && (
-            c.name.toLowerCase().includes(kabName.toLowerCase()) || kabName.toLowerCase().includes(c.name.toLowerCase())
-          ));
-          if (existing) return existing;
-          const centroid = getFeatureCentroid(f);
-          return {
-            id: `reg-dpc-${kabName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            name: kabName,
-            level: 'KAB_KOTA' as const,
-            parentRegion: activeProvince.name,
-            totalCadres: 3400,
-            totalVolunteers: 1250,
-            targetVolunteers: 1400,
-            volunteerGap: -150,
-            status: 'TARGET_MET' as const,
-            totalTps: 450,
-            coveredTps: 420,
-            tpsCoveragePct: 93.3,
-            witnessCount: 840,
-            poskoCount: 16,
-            targetSeats: 3,
-            lat: centroid.lat,
-            lng: centroid.lng,
-            density: 'SEDANG' as const,
-          };
-        }).sort((a: RegionalCluster, b: RegionalCluster) => a.name.localeCompare(b.name));
-      }
-    }
-    return clusters.filter(c => c.level === 'KAB_KOTA');
-  }, [activeProvince, clusters]);
-
-  // Daftar PAC Kecamatan Terkait Kab/Kota Aktif (Memanfaatkan GeoJSON Kabupaten)
-  const availablePacList: RegionalCluster[] = useMemo(() => {
-    if (activeRegency) {
-      const kabGeo = getKabupatenKecamatanGeoJson(activeRegency.name);
-      if (kabGeo && Array.isArray(kabGeo.features) && kabGeo.features.length > 0) {
-        return kabGeo.features.map((f: any, idx: number): RegionalCluster => {
-          const kecName = f.properties?.kecamatan || f.properties?.name || `Kecamatan ${idx + 1}`;
-          const existing = clusters.find(c => c.level === 'KECAMATAN' && (
-            c.name.toLowerCase().includes(kecName.toLowerCase()) || kecName.toLowerCase().includes(c.name.toLowerCase())
-          ));
-          if (existing) return existing;
-          const centroid = getFeatureCentroid(f);
-          return {
-            id: `reg-pac-${kecName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-            name: kecName.startsWith('Kec') ? kecName : `Kec. ${kecName}`,
-            level: 'KECAMATAN' as const,
-            parentRegion: activeRegency.name,
-            totalCadres: 750,
-            totalVolunteers: 280,
-            targetVolunteers: 300,
-            volunteerGap: -20,
-            status: 'TARGET_MET' as const,
-            totalTps: 85,
-            coveredTps: 80,
-            tpsCoveragePct: 94.1,
-            witnessCount: 160,
-            poskoCount: 4,
-            targetSeats: 1,
-            lat: centroid.lat,
-            lng: centroid.lng,
-            density: 'SEDANG' as const,
-          };
-        }).sort((a: RegionalCluster, b: RegionalCluster) => a.name.localeCompare(b.name));
-      }
-    }
-    return clusters.filter(c => c.level === 'KECAMATAN');
-  }, [activeRegency, clusters]);
-
-  // Sub-Clusters untuk Drill-Down di Scorecard
-  const activeSubClusters = useMemo(() => {
-    if (drillTier === 'PROVINCE') {
-      return availableDpcList;
-    }
-    if (drillTier === 'REGENCY') {
-      return availablePacList;
-    }
-    if (drillTier === 'NATIONAL') {
-      return allProvincesList;
-    }
-    return [];
-  }, [drillTier, availableDpcList, availablePacList, allProvincesList]);
-
-  // Posko Desa Aktif (Level 4)
-  const currentPoskoDesas = useMemo(() => {
-    const query = activeDistrict ? activeDistrict.name : (selectedCluster ? selectedCluster.name : 'Saguling');
-    return gisDistributionService.getPoskoDesaList(query);
-  }, [activeDistrict, selectedCluster]);
-
-  // Pimpinan Wilayah Sesuai Tier
-  const currentLeader = useMemo(() => {
-    const targetName = activeDistrict?.name || activeRegency?.name || activeProvince?.name || selectedCluster?.name;
-    return gisDistributionService.getRegionalLeader(targetName);
-  }, [activeDistrict, activeRegency, activeProvince, selectedCluster]);
-
-  // Hitung Metrik 4 Pilar untuk Kluster Terpilih
-  const activeMetrics = useMemo(() => {
-    if (!selectedCluster) return null;
-    return gisDistributionService.calculateFourPillars(selectedCluster, activeLayer);
-  }, [selectedCluster, activeLayer]);
-
-  // Label Dinamis untuk Chip Teritori di Header
-  const topChipLabel = useMemo(() => {
-    if (drillTier === 'DISTRICT') {
-      if (activeDistrict) return `Kec. ${activeDistrict.name.replace(/kecamatan /i, '').replace(/kec\. /i, '')}`;
-      return 'Kec. Coblong';
-    }
-    if (drillTier === 'REGENCY') {
-      if (activeRegency) return activeRegency.name.replace(/ \(.*\)/, '');
-      return 'Kota Bandung (DPC)';
-    }
-    if (drillTier === 'PROVINCE') {
-      if (activeProvince) return activeProvince.name;
-      return 'Jawa Barat (DPW)';
-    }
-    return currentCamera.label || 'Nasional (38 DPW)';
-  }, [drillTier, activeDistrict, activeRegency, activeProvince, currentCamera.label]);
-
-  const topChipTierTag = useMemo(() => {
-    switch (drillTier) {
-      case 'DISTRICT':
-        return 'TINGKAT KECAMATAN (PAC)';
-      case 'REGENCY':
-        return 'TINGKAT KAB/KOTA (DPC)';
-      case 'PROVINCE':
-        return 'TINGKAT PROVINSI (DPW)';
-      default:
-        return 'TINGKAT NASIONAL (38 DPW)';
-    }
-  }, [drillTier]);
-
-  // Informasi Ringkasan Dinamis Sesuai Wilayah Aktif (Harmonis & Tanpa Teks Terpotong)
-  const activeSummaryInfo = useMemo(() => {
-    // 1. Level 4: Kecamatan & Posko Desa
-    if (drillTier === 'DISTRICT') {
-      const dist = activeDistrict || clusters.find(c => c.level === 'KECAMATAN' && c.name.toLowerCase().includes('coblong')) || clusters[0];
-      const distClean = dist ? dist.name.replace(/kecamatan /i, '').replace(/kec\. /i, '').trim() : 'Coblong';
-      const matchedPosko = poskos.find(p => p.district.toLowerCase().includes(distClean.toLowerCase())) || poskos[0];
-      return {
-        badge: 'POSKO KECAMATAN (PAC)',
-        title: matchedPosko ? matchedPosko.name : (dist ? `Posko ${dist.name}` : 'Posko Kecamatan'),
-        subtitle: `${matchedPosko ? matchedPosko.activeVolunteers : (dist ? dist.totalVolunteers : 28)} Relawan Siaga • ${poskoDesasList.length > 0 ? `${poskoDesasList.length} Kelurahan Binaan` : 'Posko Siaga'}`,
-        actionLabel: isGrassroots ? 'Rute & Kontak' : 'Scorecard',
-        poskoData: matchedPosko || null,
-        clusterData: dist || null,
-      };
-    }
-
-    // 2. Level 3: Kabupaten / Kota (DPC)
-    if (drillTier === 'REGENCY') {
-      const reg = activeRegency || clusters.find(c => c.level === 'KAB_KOTA' && c.name.toLowerCase().includes('bandung')) || clusters[0];
-      return {
-        badge: 'KOMANDO DAERAH (DPC)',
-        title: reg ? reg.name.replace(/ \(.*\)/, '') : 'DPC Kota Bandung',
-        subtitle: `${reg && typeof reg.totalVolunteers === 'number' ? reg.totalVolunteers.toLocaleString('id-ID') : '14.850'} Relawan • ${reg?.totalCadres ? `${(reg.totalCadres / 1000).toFixed(0)}K Kader` : 'Daerah Siaga'}`,
-        actionLabel: 'Lihat Detail',
-        poskoData: null,
-        clusterData: reg || null,
-      };
-    }
-
-    // 3. Level 2: Provinsi (DPW)
-    if (drillTier === 'PROVINCE') {
-      const prov = activeProvince || clusters.find(c => c.level === 'PROVINSI' && c.name.toLowerCase().includes('jawa barat')) || clusters[0];
-      return {
-        badge: 'TERITORIAL WILAYAH (DPW)',
-        title: prov ? prov.name : 'DPW Jawa Barat',
-        subtitle: `${prov ? (prov.totalVolunteers / 1000).toFixed(1) : '96.4'}K Relawan • ${prov ? (prov.totalCadres / 1000).toFixed(0) : '284'}K Kader`,
-        actionLabel: 'Lihat Detail',
-        poskoData: null,
-        clusterData: prov || null,
-      };
-    }
-
-    // 4. Level 1: Nasional (38 DPW)
-    return {
-      badge: 'KEKUATAN NASIONAL',
-      title: '38 DPW Seluruh Indonesia',
-      subtitle: `${(GIS_NATIONAL_SUMMARY.totalNationalCadres / 1000000).toFixed(1)}M+ Kader • ${(GIS_NATIONAL_SUMMARY.totalNationalVolunteers / 1000).toFixed(0)}K Relawan`,
-      actionLabel: 'Evaluasi',
-      poskoData: null,
-      clusterData: clusters[0] || null,
-    };
-  }, [drillTier, activeDistrict, activeRegency, activeProvince, poskos, clusters, isGrassroots]);
-
-  // Memoize Leaflet HTML Generation to avoid re-stringifying 654 KB GeoJSON on every render
-  const mapHtml = useMemo(() => {
-    const initRegGeo = activeProvince ? (getProvinceKabupatenGeoJson(activeProvince.name) || JAWA_BARAT_GEOJSON) : JAWA_BARAT_GEOJSON;
-    const initDistGeo = activeRegency ? (getKabupatenKecamatanGeoJson(activeRegency.name) || KOTA_BANDUNG_GEOJSON) : KOTA_BANDUNG_GEOJSON;
-
-    return buildIndonesiaGisMapHtml({
-      centerLat: currentCamera.lat,
-      centerLng: currentCamera.lng,
-      zoom: currentCamera.zoom,
-      clusters,
-      poskos,
-      poskoDesas: poskoDesasList,
-      offices,
-      memberClusters: PAN_MEMBER_CLUSTERS,
-      nationalGeoJson: INDONESIA_GEOJSON,
-      regencyGeoJson: initRegGeo,
-      districtGeoJson: initDistGeo,
-      activeDistrictName: activeDistrict ? activeDistrict.name : 'Coblong',
-      filterType: activeLayer,
-      isDark,
-    });
-  }, [
-    clusters,
-    poskos,
-    poskoDesasList,
-    offices,
-    activeProvince?.name,
-    activeRegency?.name,
-    activeDistrict?.name,
-    activeLayer,
-    isDark,
-  ]);
+  // -------------------------------------------------------------
+  // RINCIAN KAB/KOTA — muncul di modal Ringkasan begitu satu provinsi
+  // dipilih, menampilkan persentase Relawan/Saksi Mandat/Kemenangan
+  // sekaligus per kab/kota (bukan cuma mode aktif di peta).
+  // -------------------------------------------------------------
+  const regencyBreakdown: RegencyBreakdownItem[] = useMemo(() => {
+    if (!selectedProvince || !regencyGeoJson) return [];
+    return commandCenterService.getRegencyBreakdown(selectedProvince, regencyGeoJson);
+  }, [selectedProvince, regencyGeoJson]);
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
 
-      {/* 1. KANVAS PETA LEAFLET (FULLSCREEN VIEWPORT) */}
+      {/* 1. KANVAS PETA — Indonesia + pembagian wilayah, choropleth Command Center */}
       <View style={StyleSheet.absoluteFill}>
         <WebView
           ref={webViewRef}
-          key={`leaflet-map-${activeLayer}`}
           source={{ html: mapHtml, baseUrl: 'https://localhost' }}
           style={StyleSheet.absoluteFill}
           onMessage={handleWebViewMessage}
@@ -820,47 +287,33 @@ export default function MapSebaranRelawanAnggotaScreen() {
           javaScriptEnabled
           domStorageEnabled
           mixedContentMode="always"
-          setSupportMultipleWindows={false}
           scrollEnabled={false}
-          onError={(e) => console.warn('[MapWebView] Error:', e.nativeEvent)}
+          onError={(e) => console.warn('[PetaSebaran WebView] Error:', e.nativeEvent)}
         />
       </View>
 
-      {/* 2. TOP FLOATING BAR (HEADER TUNGGAL TERPADU - HIERARCHICAL DRILL-DOWN STEP) */}
+      {/* 2. TOP BAR: Back + Chip Wilayah (mode & legenda dipindah jadi dock terpisah) */}
       <SafeAreaView style={styles.topSafeArea}>
         <View style={styles.topBarRow}>
           <TouchableOpacity
-            onPress={handleBackStep}
-            style={[
-              styles.floatingBackButton,
-              {
-                backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)',
-                borderColor: colors.border,
-              },
-            ]}
+            onPress={goBackOneTier}
+            style={[styles.circleButton, { backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)', borderColor: colors.border }]}
             activeOpacity={0.8}
           >
             <Feather name="arrow-left" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          {/* Chip Teritori Tunggal dengan Badge Tingkatan (WCAG AA Compliant) */}
           <TouchableOpacity
             onPress={() => setIsRegionSheetVisible(true)}
-            style={[
-              styles.territoryChip,
-              {
-                backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)',
-                borderColor: colors.border,
-              },
-            ]}
+            style={[styles.territoryChip, { backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)', borderColor: colors.border }]}
             activeOpacity={0.8}
           >
             <View style={{ flex: 1 }}>
               <Text style={[styles.territoryTierTag, { color: isDark ? '#7DD3FC' : '#005299' }]}>
-                {topChipTierTag}
+                {drillTier === 'NATIONAL' ? 'TINGKAT NASIONAL' : drillTier === 'PROVINCE' ? 'TINGKAT PROVINSI' : 'TINGKAT KAB/KOTA'}
               </Text>
               <Text style={[styles.territoryChipText, { color: colors.text }]} numberOfLines={1}>
-                {topChipLabel}
+                {activeRegencyName || activeProvinceName || wilayahLabel}
               </Text>
             </View>
             <Feather name="chevron-down" size={16} color={colors.textMuted} />
@@ -868,187 +321,91 @@ export default function MapSebaranRelawanAnggotaScreen() {
         </View>
       </SafeAreaView>
 
-      {/* 3. FLOATING RIGHT ACTION GROUP (CLEAN FAB PILL - NO REDUNDANT TOGGLE) */}
+      {/* 3. DOCK KANAN: Tombol Ganti Mode (Layer) — posisi FAB, sejajar top bar */}
       <View style={styles.rightDockContainer}>
-        {/* Tombol 1: Layer */}
         <TouchableOpacity
-          onPress={() => setIsLayerSheetVisible(true)}
-          style={[
-            styles.dockFabButton,
-            {
-              backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)',
-              borderColor: colors.border,
-            },
-          ]}
+          onPress={() => setIsModeSheetVisible(true)}
+          style={[styles.dockFabButton, { backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)', borderColor: colors.border }]}
           activeOpacity={0.8}
-          accessibilityLabel="Ganti Lapisan Data"
+          accessibilityLabel="Ganti Mode Peta"
         >
           <Feather name="layers" size={20} color={isDark ? '#7DD3FC' : '#005299'} />
         </TouchableOpacity>
-
-        {/* Tombol 2: Lokasi (Pusatkan ke Penugasan Akun) */}
-        <TouchableOpacity
-          onPress={handleCenterToAssignment}
-          style={[
-            styles.dockFabButton,
-            {
-              backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)',
-              borderColor: colors.border,
-            },
-          ]}
-          activeOpacity={0.8}
-          accessibilityLabel="Pusatkan ke Wilayah Penugasan"
-        >
-          <Feather name="crosshair" size={20} color={isDark ? '#7DD3FC' : '#005299'} />
-        </TouchableOpacity>
+        <Text style={[styles.dockFabCaption, { color: colors.textMuted }]} numberOfLines={2}>
+          {activeModeMeta.label}
+        </Text>
       </View>
 
-      {/* 4. FLOATING BOTTOM SUMMARY CARD (CLEAN, NO TRUNCATION, WCAG AAA) */}
+      {/* 4. DOCK KIRI: Legenda Warna (identik tier website, Bagian 4.3) */}
+      <View style={[styles.legendPanel, { backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)', borderColor: colors.border }]}>
+        {legendItems.map((item) => (
+          <View key={item.label} style={styles.legendRow}>
+            <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+            <Text style={[styles.legendLabel, { color: colors.text }]} numberOfLines={1}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      {/* 5. FLOATING BOTTOM SUMMARY CARD — minim info, detail lengkap ada di sheet Ringkasan */}
       <View style={styles.bottomCardContainer}>
         <TouchableOpacity
-          onPress={() => {
-            if (activeSummaryInfo.poskoData && isGrassroots) {
-              setActionSheetData({
-                visible: true,
-                posko: activeSummaryInfo.poskoData,
-                office: null,
-              });
-            } else if (activeSummaryInfo.clusterData) {
-              setSelectedCluster(activeSummaryInfo.clusterData);
-              setIsScorecardVisible(true);
-            }
-          }}
+          onPress={() => setIsRingkasanVisible(true)}
           style={[
             styles.floatingSummaryCard,
-            {
-              backgroundColor: isDark ? 'rgba(15,23,42,0.96)' : 'rgba(255,255,255,0.98)',
-              borderColor: isDark ? 'rgba(51,65,85,0.8)' : 'rgba(226,232,240,0.9)',
-            },
+            { backgroundColor: isDark ? 'rgba(15,23,42,0.96)' : 'rgba(255,255,255,0.98)', borderColor: isDark ? 'rgba(51,65,85,0.8)' : 'rgba(226,232,240,0.9)' },
           ]}
           activeOpacity={0.88}
         >
-          {/* Status Accent Stripe */}
-          <View style={styles.cardStatusAccent} />
-
+          <View style={[styles.cardStatusAccent, { backgroundColor: colors.primary }]} />
           <View style={{ flex: 1, paddingVertical: 2, paddingHorizontal: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <View style={styles.semanticActiveDot} />
-              <Text style={[styles.cardTierBadge, { color: isDark ? '#7DD3FC' : '#005299' }]}>
-                {activeSummaryInfo.badge}
-              </Text>
-            </View>
-
+            <Text style={[styles.cardTierBadge, { color: isDark ? '#7DD3FC' : '#005299' }]}>{activeModeMeta.label.toUpperCase()}</Text>
             <Text style={[styles.cardTitleText, { color: colors.text }]} numberOfLines={1}>
-              {activeSummaryInfo.title}
-            </Text>
-            <Text style={[styles.cardSubtitleText, { color: colors.textMuted }]} numberOfLines={1}>
-              {activeSummaryInfo.subtitle}
+              {wilayahLabel}
             </Text>
           </View>
-
           <View style={styles.cardActionContainer}>
-            <Text style={[styles.cardActionText, { color: isDark ? '#38BDF8' : '#005299' }]}>
-              {activeSummaryInfo.actionLabel}
-            </Text>
+            <Text style={[styles.cardActionText, { color: isDark ? '#38BDF8' : '#005299' }]}>Ringkasan</Text>
             <Feather name="chevron-right" size={16} color={isDark ? '#38BDF8' : '#005299'} />
           </View>
         </TouchableOpacity>
       </View>
 
-      {/* 5. MODAL SHEET: PILIH LAPISAN DATA (LAYER) */}
-      <Modal
-        visible={isLayerSheetVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsLayerSheetVisible(false)}
-      >
+      {/* 4. SHEET: PILIH MODE (Relawan / Saksi Mandat TPS / Kemenangan) */}
+      <Modal visible={isModeSheetVisible} transparent animationType="slide" onRequestClose={() => setIsModeSheetVisible(false)}>
         <View style={styles.modalBackdrop}>
-          <View
-            style={[
-              styles.drawerSheet,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
+          <View style={[styles.drawerSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.drawerHandle}>
               <View style={[styles.drawerHandleBar, { backgroundColor: colors.border }]} />
             </View>
-
             <View style={styles.drawerHeader}>
-              <Text style={[styles.drawerTitle, { color: colors.text }]}>Pilih Lapisan Data Peta</Text>
-              <TouchableOpacity onPress={() => setIsLayerSheetVisible(false)}>
+              <Text style={[styles.drawerTitle, { color: colors.text }]}>Pilih Mode Peta</Text>
+              <TouchableOpacity onPress={() => setIsModeSheetVisible(false)}>
                 <Feather name="x" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-
             <View style={{ gap: spacing.sm, paddingVertical: spacing.sm }}>
-              {[
-                {
-                  key: 'ALL' as const,
-                  label: 'Kekuatan Terpadu',
-                  desc: 'Seluruh kader ber-KTA, relawan posko, dan saksi TPS BSN',
-                  icon: 'grid',
-                },
-                {
-                  key: 'MEMBERS' as const,
-                  label: 'Anggota Resmi PAN (simPAN)',
-                  desc: 'Kader ber-e-KTA simPAN & Kantor Sekretariat Resmi DPP/DPW/DPD',
-                  icon: 'credit-card',
-                },
-                {
-                  key: 'VOLUNTEERS' as const,
-                  label: 'Relawan Posko Lapangan',
-                  desc: 'Relawan siaga posko warga, rumah aspirasi, dan tim pengawal suara',
-                  icon: 'heart',
-                },
-                {
-                  key: 'WITNESSES' as const,
-                  label: 'Saksi TPS Mandat BSN',
-                  desc: 'Cakupan kesiapan saksi resmi mandat BSN di bilik TPS',
-                  icon: 'check-circle',
-                },
-              ].map((opt) => {
-                const isSelected = activeLayer === opt.key;
+              {modeTabs.map((tab) => {
+                const isSelected = tab.mode === mode;
                 return (
                   <TouchableOpacity
-                    key={opt.key}
+                    key={tab.mode}
                     onPress={() => {
-                      setActiveLayer(opt.key);
-                      setIsLayerSheetVisible(false);
+                      setMode(tab.mode);
+                      setIsModeSheetVisible(false);
                     }}
                     style={[
-                      styles.layerOptionCard,
+                      styles.optionRow,
                       {
-                        backgroundColor: isSelected
-                          ? isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF'
-                          : isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+                        backgroundColor: isSelected ? (isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF') : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
                         borderColor: isSelected ? '#0066B3' : colors.border,
                       },
                     ]}
                   >
-                    <View
-                      style={[
-                        styles.layerIconBox,
-                        { backgroundColor: isSelected ? '#0066B3' : 'rgba(0,102,179,0.1)' },
-                      ]}
-                    >
-                      <Feather
-                        name={opt.icon as any}
-                        size={18}
-                        color={isSelected ? '#FFFFFF' : '#0066B3'}
-                      />
-                    </View>
-                    <View style={{ flex: 1, gap: 2 }}>
-                      <Text
-                        style={[
-                          styles.layerOptionTitle,
-                          { color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium },
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                      <Text style={[styles.layerOptionDesc, { color: colors.textMuted }]}>
-                        {opt.desc}
-                      </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitle, { color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium }]}>{tab.label}</Text>
+                      <Text style={[styles.optionDesc, { color: colors.textMuted }]}>{tab.sublabel}</Text>
                     </View>
                     {isSelected && <Feather name="check" size={18} color="#0066B3" />}
                   </TouchableOpacity>
@@ -1059,284 +416,64 @@ export default function MapSebaranRelawanAnggotaScreen() {
         </View>
       </Modal>
 
-      {/* 6. MODAL SHEET: PILIH CAKUPAN WILAYAH (CHIP ATAS) */}
-      <Modal
-        visible={isRegionSheetVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsRegionSheetVisible(false)}
-      >
+      {/* 5. SHEET: PILIH WILAYAH (38 Provinsi) */}
+      <Modal visible={isRegionSheetVisible} transparent animationType="slide" onRequestClose={() => setIsRegionSheetVisible(false)}>
         <View style={styles.modalBackdrop}>
-          <View
-            style={[
-              styles.drawerSheet,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
+          <View style={[styles.drawerSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.drawerHandle}>
               <View style={[styles.drawerHandleBar, { backgroundColor: colors.border }]} />
             </View>
-
             <View style={styles.drawerHeader}>
               <Text style={[styles.drawerTitle, { color: colors.text }]}>Pilih Cakupan Wilayah</Text>
               <TouchableOpacity onPress={() => setIsRegionSheetVisible(false)}>
                 <Feather name="x" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
-              {/* Opsi 1: Seluruh Indonesia (Nasional) */}
+            <ScrollView style={{ maxHeight: 460 }} showsVerticalScrollIndicator={false}>
               <TouchableOpacity
-                onPress={handleSelectNationalScope}
+                onPress={() => {
+                  setIsRegionSheetVisible(false);
+                  setDrillTier('NATIONAL');
+                  setSelectedProvince(null);
+                  setActiveProvinceName(null);
+                  setActiveRegencyName(null);
+                  setCamera(NATIONAL_CAMERA);
+                }}
                 style={[
-                  styles.regionOptionRow,
+                  styles.optionRow,
                   {
-                    backgroundColor: drillTier === 'NATIONAL'
-                      ? isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF'
-                      : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
-                    borderColor: drillTier === 'NATIONAL' ? '#0066B3' : colors.border,
                     marginBottom: spacing.xs,
+                    backgroundColor: drillTier === 'NATIONAL' ? (isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF') : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
+                    borderColor: drillTier === 'NATIONAL' ? '#0066B3' : colors.border,
                   },
                 ]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.regionOptionName,
-                      { color: colors.text, fontFamily: drillTier === 'NATIONAL' ? fonts.bold : fonts.medium },
-                    ]}
-                  >
-                    Skala Nasional (38 DPW)
+                  <Text style={[styles.optionTitle, { color: colors.text, fontFamily: drillTier === 'NATIONAL' ? fonts.bold : fonts.medium }]}>
+                    Skala Nasional (38 Provinsi)
                   </Text>
-                  <Text style={[styles.regionOptionStat, { color: colors.textMuted }]}>
-                    {(GIS_NATIONAL_SUMMARY.totalNationalCadres / 1000000).toFixed(1)}M+ Kader &bull; {(GIS_NATIONAL_SUMMARY.totalNationalVolunteers / 1000).toFixed(0)}K Relawan
-                  </Text>
+                  <Text style={[styles.optionDesc, { color: colors.textMuted }]}>Ringkasan agregat seluruh Indonesia</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View
-                    style={[
-                      styles.regionLevelBadge,
-                      {
-                        backgroundColor: drillTier === 'NATIONAL'
-                          ? isDark ? 'rgba(56,189,248,0.18)' : '#E0F2FE'
-                          : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                        borderColor: drillTier === 'NATIONAL'
-                          ? isDark ? 'rgba(56,189,248,0.4)' : '#BAE6FD'
-                          : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.regionLevelBadgeText,
-                        { color: drillTier === 'NATIONAL' ? (isDark ? '#7DD3FC' : '#005299') : colors.textMuted },
-                      ]}
-                    >
-                      NASIONAL
-                    </Text>
-                  </View>
-                  {drillTier === 'NATIONAL' ? (
-                    <Feather name="check" size={17} color={isDark ? '#38BDF8' : '#0066B3'} />
-                  ) : (
-                    <Feather name="chevron-right" size={17} color={colors.textMuted} />
-                  )}
-                </View>
+                {drillTier === 'NATIONAL' && <Feather name="check" size={18} color="#0066B3" />}
               </TouchableOpacity>
 
-              {/* Header DPW Provinsi (38 Provinsi Se-Indonesia) */}
-              <Text style={[styles.sectionHeadingText, { color: colors.textMuted }]}>
-                DEWAN PIMPINAN WILAYAH (38 PROVINSI)
-              </Text>
-              {allProvincesList.map((c) => {
-                const isSelected = selectedCluster?.id === c.id || activeProvince?.name.toLowerCase() === c.name.toLowerCase();
+              {allProvinces.map((province) => {
+                const isSelected = selectedProvince?.id === province.id;
+                const tierColor = getTierColorForMode(province, mode);
                 return (
                   <TouchableOpacity
-                    key={c.id}
-                    onPress={() => handleSelectRegionScope(c)}
+                    key={province.id}
+                    onPress={() => selectProvince(province)}
                     style={[
-                      styles.regionOptionRow,
-                      {
-                        backgroundColor: isSelected
-                          ? isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF'
-                          : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
-                        borderColor: isSelected ? '#0066B3' : colors.border,
-                      },
+                      styles.optionRow,
+                      { backgroundColor: isSelected ? (isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF') : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC', borderColor: isSelected ? '#0066B3' : colors.border },
                     ]}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.regionOptionName,
-                          { color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium },
-                        ]}
-                      >
-                        {c.name}
-                      </Text>
-                      <Text style={[styles.regionOptionStat, { color: colors.textMuted }]}>
-                        {(c.totalCadres ?? 0).toLocaleString('id-ID')} Kader &bull; {(c.totalVolunteers ?? 0).toLocaleString('id-ID')} Relawan
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <View
-                        style={[
-                          styles.regionLevelBadge,
-                          {
-                            backgroundColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.18)' : '#E0F2FE'
-                              : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                            borderColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.4)' : '#BAE6FD'
-                              : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.regionLevelBadgeText,
-                            { color: isSelected ? (isDark ? '#7DD3FC' : '#005299') : colors.textMuted },
-                          ]}
-                        >
-                          DPW
-                        </Text>
-                      </View>
-                      {isSelected ? (
-                        <Feather name="check" size={17} color={isDark ? '#38BDF8' : '#0066B3'} />
-                      ) : (
-                        <Feather name="chevron-right" size={17} color={colors.textMuted} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-
-              {/* Header DPC Kab/Kota */}
-              <Text style={[styles.sectionHeadingText, { color: colors.textMuted, marginTop: spacing.sm }]}>
-                {activeProvince ? `DEWAN PIMPINAN DAERAH (${activeProvince.name.toUpperCase()})` : 'DEWAN PIMPINAN DAERAH (KABUPATEN / KOTA)'}
-              </Text>
-              {availableDpcList.map((c: RegionalCluster) => {
-                const isSelected = selectedCluster?.id === c.id || activeRegency?.name.toLowerCase() === c.name.toLowerCase();
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    onPress={() => handleSelectRegionScope(c)}
-                    style={[
-                      styles.regionOptionRow,
-                      {
-                        backgroundColor: isSelected
-                          ? isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF'
-                          : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
-                        borderColor: isSelected ? '#0066B3' : colors.border,
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.regionOptionName,
-                          { color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium },
-                        ]}
-                      >
-                        {c.name}
-                      </Text>
-                      <Text style={[styles.regionOptionStat, { color: colors.textMuted }]}>
-                        {(c.totalCadres ?? 0).toLocaleString('id-ID')} Kader &bull; {(c.totalVolunteers ?? 0).toLocaleString('id-ID')} Relawan
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <View
-                        style={[
-                          styles.regionLevelBadge,
-                          {
-                            backgroundColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.18)' : '#E0F2FE'
-                              : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                            borderColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.4)' : '#BAE6FD'
-                              : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.regionLevelBadgeText,
-                            { color: isSelected ? (isDark ? '#7DD3FC' : '#005299') : colors.textMuted },
-                          ]}
-                        >
-                          DPC
-                        </Text>
-                      </View>
-                      {isSelected ? (
-                        <Feather name="check" size={17} color={isDark ? '#38BDF8' : '#0066B3'} />
-                      ) : (
-                        <Feather name="chevron-right" size={17} color={colors.textMuted} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-
-              {/* Header PAC Kecamatan */}
-              <Text style={[styles.sectionHeadingText, { color: colors.textMuted, marginTop: spacing.sm }]}>
-                {activeRegency ? `PIMPINAN ANAK CABANG (${activeRegency.name.toUpperCase()})` : 'PIMPINAN ANAK CABANG (KECAMATAN)'}
-              </Text>
-              {availablePacList.map((c: RegionalCluster) => {
-                const isSelected = selectedCluster?.id === c.id;
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    onPress={() => handleSelectRegionScope(c)}
-                    style={[
-                      styles.regionOptionRow,
-                      {
-                        backgroundColor: isSelected
-                          ? isDark ? 'rgba(0,102,179,0.18)' : '#F0F9FF'
-                          : isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC',
-                        borderColor: isSelected ? '#0066B3' : colors.border,
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.regionOptionName,
-                          { color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium },
-                        ]}
-                      >
-                        {c.name}
-                      </Text>
-                      <Text style={[styles.regionOptionStat, { color: colors.textMuted }]}>
-                        {(c.totalCadres ?? 0).toLocaleString('id-ID')} Kader &bull; {(c.totalVolunteers ?? 0).toLocaleString('id-ID')} Relawan
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <View
-                        style={[
-                          styles.regionLevelBadge,
-                          {
-                            backgroundColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.18)' : '#E0F2FE'
-                              : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                            borderColor: isSelected
-                              ? isDark ? 'rgba(56,189,248,0.4)' : '#BAE6FD'
-                              : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.regionLevelBadgeText,
-                            { color: isSelected ? (isDark ? '#7DD3FC' : '#005299') : colors.textMuted },
-                          ]}
-                        >
-                          PAC
-                        </Text>
-                      </View>
-                      {isSelected ? (
-                        <Feather name="check" size={17} color={isDark ? '#38BDF8' : '#0066B3'} />
-                      ) : (
-                        <Feather name="chevron-right" size={17} color={colors.textMuted} />
-                      )}
-                    </View>
+                    <View style={[styles.tierDot, { backgroundColor: tierColor }]} />
+                    <Text style={[styles.optionTitle, { flex: 1, color: colors.text, fontFamily: isSelected ? fonts.bold : fonts.medium }]}>
+                      {province.name}
+                    </Text>
+                    <Text style={[styles.optionValue, { color: tierColor }]}>{getTierValueLabelForMode(province, mode)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -1345,50 +482,127 @@ export default function MapSebaranRelawanAnggotaScreen() {
         </View>
       </Modal>
 
-      {/* 7. BOTTOM SHEET: GIS SCORECARD INSPECTOR (4 PILAR METRIK) */}
-      {isScorecardVisible && selectedCluster && activeMetrics ? (
-        <GisScorecardInspector
-          visible={isScorecardVisible}
-          onClose={() => setIsScorecardVisible(false)}
-          cluster={selectedCluster}
-          metrics={activeMetrics}
-          layerMode={activeLayer}
-          leaderInfo={currentLeader}
-          subClusters={activeSubClusters}
-          poskoDesas={currentPoskoDesas}
-          onSelectSubRegion={(sub) => {
-            setIsScorecardVisible(false);
-            if (sub.level === 'KAB_KOTA') drillDownTo('REGENCY', sub, 11.2);
-            else if (sub.level === 'KECAMATAN') drillDownTo('DISTRICT', sub, 13.5);
-            else if (sub.level === 'PROVINSI') drillDownTo('PROVINCE', sub, 8.5);
-          }}
-          onSelectPoskoDesa={handleSelectPoskoDesa}
-        />
-      ) : null}
+      {/* 6. SHEET: RINGKASAN (4 KPI sesuai mode aktif, Bagian 5) */}
+      <Modal visible={isRingkasanVisible} transparent animationType="slide" onRequestClose={() => setIsRingkasanVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.drawerSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.drawerHandle}>
+              <View style={[styles.drawerHandleBar, { backgroundColor: colors.border }]} />
+            </View>
+            <View style={styles.drawerHeader}>
+              <Text style={[styles.drawerTitle, { color: colors.text }]}>
+                Ringkasan — {wilayahLabel}
+              </Text>
+              <TouchableOpacity onPress={() => setIsRingkasanVisible(false)}>
+                <Feather name="x" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.optionDesc, { color: colors.textMuted, marginBottom: spacing.sm }]}>
+              Mode: {activeModeMeta.label} — {activeModeMeta.sublabel}
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.kpiGrid}>
+                {/* Kartu dipangkas jadi ikon + angka + label saja (1 arti per kartu).
+                    Detail (sublabel/badge tier) dipindah ke tap -> Alert, bukan
+                    ditumpuk sebagai teks tambahan di kartu (progressive disclosure). */}
+                {kpiCards.map((card) => {
+                  const hasDetail = Boolean((card as any).sublabel || (card as any).badge);
+                  const accentColor = (card as any).badgeColor || colors.border;
+                  return (
+                    <TouchableOpacity
+                      key={card.label}
+                      activeOpacity={hasDetail ? 0.7 : 1}
+                      disabled={!hasDetail}
+                      onPress={() => {
+                        if (!hasDetail) return;
+                        const parts = [
+                          (card as any).badge ? `Status: ${(card as any).badge}` : null,
+                          (card as any).sublabel || null,
+                        ].filter(Boolean);
+                        Alert.alert(card.label, `${card.value}\n\n${parts.join('\n')}`);
+                      }}
+                      style={[
+                        styles.kpiCard,
+                        { backgroundColor: colors.background, borderColor: colors.border, borderLeftColor: accentColor },
+                      ]}
+                    >
+                      <Feather name={card.icon} size={16} color={(card as any).isDanger ? colors.danger : colors.primary} />
+                      <Text style={[styles.kpiValue, { color: (card as any).isDanger ? colors.danger : colors.text }]} numberOfLines={1}>
+                        {card.value}
+                      </Text>
+                      <Text style={[styles.kpiLabel, { color: colors.textMuted }]} numberOfLines={1}>
+                        {card.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-      {/* 8. BOTTOM SHEET: POSKO & KANTOR ACTION SHEET (NAVIGASI GPS & KONTAK) */}
-      <PoskoActionSheet
-        visible={actionSheetData.visible}
-        onClose={() => setActionSheetData({ visible: false, posko: null, office: null })}
-        posko={actionSheetData.posko}
-        office={actionSheetData.office}
-      />
+              {/* Rincian Kab/Kota — muncul begitu satu provinsi dipilih (Relawan/Saksi Mandat/Kemenangan sekaligus) */}
+              {selectedProvince ? (
+                <>
+                  <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
+                    Kabupaten/Kota di {selectedProvince.name}
+                  </Text>
+                  {regencyBreakdown.length === 0 ? (
+                    <Text style={[styles.optionDesc, { color: colors.textMuted, paddingVertical: spacing.sm }]}>
+                      Data batas kab/kota untuk provinsi ini belum tersedia di dataset (batasan sumber pihak ketiga).
+                    </Text>
+                  ) : (
+                    // Label teks per metrik dipangkas jadi ikon saja (R/S/K
+                    // diwakili ikon, bukan kata penuh) — nama & rincian
+                    // lengkap muncul lewat tap -> Alert, bukan tertumpuk di kartu.
+                    regencyBreakdown.map((regency) => (
+                      <TouchableOpacity
+                        key={regency.name}
+                        activeOpacity={0.7}
+                        onPress={() =>
+                          Alert.alert(
+                            regency.name,
+                            `Relawan: ${formatPercent(regency.relawanPercent)}\nSaksi Mandat: ${formatPercent(regency.saksiPercent)}\nKemenangan: ${formatPercent(regency.kemenanganPercent)}`,
+                          )
+                        }
+                        style={[styles.regencyCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      >
+                        <Text style={[styles.regencyName, { color: colors.text }]} numberOfLines={1}>
+                          {regency.name}
+                        </Text>
+                        <View style={styles.regencyMetricsRow}>
+                          <View style={styles.regencyMetricItem}>
+                            <Feather name="target" size={11} color={regency.relawanTier.color} />
+                            <Text style={[styles.regencyMetricValue, { color: regency.relawanTier.color }]}>
+                              {formatPercent(regency.relawanPercent)}
+                            </Text>
+                          </View>
+                          <View style={styles.regencyMetricItem}>
+                            <Feather name="shield" size={11} color={regency.saksiTier.color} />
+                            <Text style={[styles.regencyMetricValue, { color: regency.saksiTier.color }]}>
+                              {formatPercent(regency.saksiPercent)}
+                            </Text>
+                          </View>
+                          <View style={styles.regencyMetricItem}>
+                            <Feather name="bar-chart-2" size={11} color={regency.kemenanganTier.color} />
+                            <Text style={[styles.regencyMetricValue, { color: regency.kemenanganTier.color }]}>
+                              {formatPercent(regency.kemenanganPercent)}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#091322',
-  },
-  topSafeArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 30,
-  },
+  container: { flex: 1, backgroundColor: '#091322' },
+  topSafeArea: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, gap: 8 },
   topBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1396,7 +610,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 8 : 36) : 10,
     gap: spacing.sm,
   },
-  floatingBackButton: {
+  circleButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1422,18 +636,18 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  territoryChipText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: fonts.bold,
-  },
+  territoryTierTag: { fontSize: 8.5, fontFamily: fonts.bold, letterSpacing: 0.5, marginBottom: 1 },
+  territoryChipText: { flex: 1, fontSize: 13, fontFamily: fonts.bold },
+
+  // Dock kanan: tombol ganti mode (posisi FAB, sejajar top bar — bukan
+  // menumpuk di bawah chip wilayah seperti sebelumnya)
   rightDockContainer: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 60 : 88) : 66,
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 62 : 90) : 66,
     right: 14,
-    zIndex: 40,
+    zIndex: 35,
     alignItems: 'center',
-    gap: 10,
+    gap: 4,
   },
   dockFabButton: {
     width: 44,
@@ -1447,13 +661,34 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  bottomCardContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 32 : 24,
-    left: 14,
-    right: 14,
-    zIndex: 40,
+  dockFabCaption: {
+    fontSize: 8.5,
+    fontFamily: fonts.semiBold,
+    textAlign: 'center',
+    maxWidth: 64,
   },
+
+  // Dock kiri: legenda warna choropleth
+  legendPanel: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 62 : 90) : 66,
+    left: 14,
+    zIndex: 35,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendLabel: { fontSize: 9.5, fontFamily: fonts.medium, maxWidth: 118 },
+
+  bottomCardContainer: { position: 'absolute', bottom: Platform.OS === 'ios' ? 32 : 24, left: 14, right: 14, zIndex: 40 },
   floatingSummaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1467,136 +702,32 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  cardStatusAccent: {
-    width: 4,
-    alignSelf: 'stretch',
-    backgroundColor: '#0066B3',
-    borderRadius: 2,
-  },
-  semanticActiveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#059669',
-  },
-  cardTierBadge: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  cardTitleText: {
-    fontSize: 13.5,
-    fontFamily: fonts.bold,
-    letterSpacing: -0.1,
-  },
-  cardSubtitleText: {
-    fontSize: 11,
-    fontFamily: fonts.medium,
-    marginTop: 1,
-  },
-  cardActionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingLeft: 6,
-  },
-  cardActionText: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  drawerSheet: {
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderTopWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-    maxHeight: '80%',
-  },
-  drawerHandle: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  drawerHandleBar: {
-    width: 38,
-    height: 4.5,
-    borderRadius: radius.full,
-  },
-  drawerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: spacing.sm,
-  },
-  drawerTitle: {
-    fontSize: 15,
-    fontFamily: fonts.bold,
-  },
-  layerOptionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-  },
-  layerIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  layerOptionTitle: {
-    fontSize: 13,
-  },
-  layerOptionDesc: {
-    fontSize: 10.5,
-    lineHeight: 14,
-  },
-  regionOptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.sm,
-  },
-  regionOptionName: {
-    fontSize: 13,
-  },
-  regionOptionStat: {
-    fontSize: 10.5,
-  },
-  regionLevelBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  regionLevelBadgeText: {
-    fontSize: 9,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.5,
-  },
-  territoryTierTag: {
-    fontSize: 8.5,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.5,
-    marginBottom: 1,
-  },
-  sectionHeadingText: {
-    fontSize: 10,
-    fontFamily: fonts.bold,
-    letterSpacing: 0.8,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
+  cardStatusAccent: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  cardTierBadge: { fontSize: 10, fontFamily: fonts.bold, letterSpacing: 0.4, textTransform: 'uppercase' },
+  cardTitleText: { fontSize: 13.5, fontFamily: fonts.bold, letterSpacing: -0.1 },
+  cardSubtitleText: { fontSize: 11, fontFamily: fonts.medium, marginTop: 1 },
+  cardActionContainer: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 6 },
+  cardActionText: { fontSize: 11.5, fontFamily: fonts.bold },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  drawerSheet: { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderTopWidth: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.xl, maxHeight: '82%' },
+  drawerHandle: { alignItems: 'center', paddingVertical: 10 },
+  drawerHandleBar: { width: 38, height: 4.5, borderRadius: radius.full },
+  drawerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.sm },
+  drawerTitle: { fontSize: 15, fontFamily: fonts.bold, flex: 1 },
+  optionRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm, marginBottom: spacing.xs },
+  optionTitle: { fontSize: 13 },
+  optionDesc: { fontSize: 10.5 },
+  optionValue: { fontSize: 12, fontFamily: fonts.bold },
+  tierDot: { width: 10, height: 10, borderRadius: 5 },
+  kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.md },
+  kpiCard: { flex: 1, minWidth: '46%', borderRadius: radius.md, borderWidth: 1, borderLeftWidth: 3, padding: spacing.sm, gap: 3 },
+  kpiValue: { fontFamily: fonts.bold, fontSize: 18 },
+  kpiLabel: { fontFamily: fonts.medium, fontSize: 10.5 },
+
+  sectionSubtitle: { fontFamily: fonts.bold, fontSize: 13, marginTop: spacing.sm, marginBottom: spacing.xs },
+  regencyCard: { borderRadius: radius.md, borderWidth: 1, padding: spacing.sm, marginBottom: spacing.xs, gap: 6 },
+  regencyName: { fontFamily: fonts.semiBold, fontSize: 12.5 },
+  regencyMetricsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  regencyMetricItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  regencyMetricValue: { fontFamily: fonts.bold, fontSize: 12.5 },
 });

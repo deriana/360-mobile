@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { Card, Pill, PrimaryButton } from '../components/ui';
+import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
@@ -76,12 +76,32 @@ const LIFECYCLE_HISTORY: LifecycleEvent[] = [
 export default function StatusPeranSayaScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
-  const { currentUser, role } = useApp();
+  const { currentUser, role, applyWitnessCandidate } = useApp();
 
   const user = currentUser?.identity;
   const officialMembership = currentUser?.memberships?.find((m) => m.type === 'member');
   const volunteerMembership = currentUser?.memberships?.find((m) => m.type === 'volunteer');
   const isOfficialMember = Boolean(officialMembership);
+
+  // Pengajuan naik status Relawan -> calon Saksi TPS. Fungsinya sudah ada
+  // di AppContext (applyWitnessCandidate) tapi sebelumnya belum punya
+  // pemicu UI — dipasang di sini karena ini layar "Status & Peran Saya".
+  const [showApplyWitnessDialog, setShowApplyWitnessDialog] = useState(false);
+
+  // Tiap kartu DIMENSI sebelumnya selalu menampilkan 4 baris data sekaligus
+  // (16+ baris teks kalau 4 kartu ditumpuk). Sekarang cuma baris paling
+  // penting yang tampil default, sisanya di balik toggle "Lihat Detail".
+  const [expandedDim, setExpandedDim] = useState<string | null>(null);
+  const toggleDim = (key: string) => setExpandedDim((prev) => (prev === key ? null : key));
+
+  // Riwayat sebelumnya selalu tampil semua sekaligus (4 item x 5 baris teks
+  // tiap item). Sekarang default 2 item terbaru + tombol "Lihat Semua Riwayat".
+  const [showFullTimeline, setShowFullTimeline] = useState(false);
+  const isVolunteerRole = role === 'VOLUNTEER' || role === 'RELAWAN';
+  const hasAppliedAsWitness =
+    currentUser?.candidateStatus === 'APPLIED' ||
+    currentUser?.candidateStatus === 'VERIFIED' ||
+    currentUser?.candidateStatus === 'MANDATED';
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -318,22 +338,34 @@ export default function StatusPeranSayaScreen() {
                   {officialMembership?.ktaNumber || '32.73.01.2024.08912'}
                 </Text>
               </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tanggal Registrasi Sah</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>
-                  {officialMembership?.registeredAt || '15 Januari 2024'}
+
+              {expandedDim === 'D1' && (
+                <>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Tanggal Registrasi Sah</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>
+                      {officialMembership?.registeredAt || '15 Januari 2024'}
+                    </Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Asal Teritorial</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>
+                      {officialMembership?.dpc || 'DPC Coblong'} | {officialMembership?.dpd || 'DPD Kota Bandung'}
+                    </Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Otoritas Verifikasi</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>Sekretariat Jenderal DPP PAN</Text>
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity onPress={() => toggleDim('D1')} style={styles.detailToggleRow} activeOpacity={0.7}>
+                <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                  {expandedDim === 'D1' ? 'Sembunyikan Detail' : 'Lihat Detail Lengkap'}
                 </Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Asal Teritorial</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>
-                  {officialMembership?.dpc || 'DPC Coblong'} | {officialMembership?.dpd || 'DPD Kota Bandung'}
-                </Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Otoritas Verifikasi</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>Sekretariat Jenderal DPP PAN</Text>
-              </View>
+                <Feather name={expandedDim === 'D1' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => navigation.navigate('SimpanKta')}
@@ -382,21 +414,33 @@ export default function StatusPeranSayaScreen() {
                     : 'Belum Mengikuti Diklat Formal'}
                 </Text>
               </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jalur Kaderisasi</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>Kader Murni LKKPAN Jawa Barat</Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>No. Sertifikat Kelulusan</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>LKK-PAN-JB-2024-441</Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kepatuhan Iuran Kader</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="check-circle" size={12} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>Taat & Terverifikasi</Text>
-                </View>
-              </View>
+
+              {expandedDim === 'D2' && (
+                <>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jalur Kaderisasi</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>Kader Murni LKKPAN Jawa Barat</Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>No. Sertifikat Kelulusan</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>LKK-PAN-JB-2024-441</Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kepatuhan Iuran Kader</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="check-circle" size={12} color={colors.success} />
+                      <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>Taat & Terverifikasi</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity onPress={() => toggleDim('D2')} style={styles.detailToggleRow} activeOpacity={0.7}>
+                <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                  {expandedDim === 'D2' ? 'Sembunyikan Detail' : 'Lihat Detail Lengkap'}
+                </Text>
+                <Feather name={expandedDim === 'D2' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+              </TouchableOpacity>
             </View>
           </Card>
 
@@ -433,22 +477,34 @@ export default function StatusPeranSayaScreen() {
                   {dims.position?.roleTitle || (dims.position?.position !== 'NONE' ? dims.position?.position : 'Anggota Biasa (Non-Pengurus)')}
                 </Text>
               </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Masa Khidmat</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>Periode 2020 – 2025</Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>SK Keputusan DPP</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>
-                  {dims.position?.skNumber || 'PAN/A/Kpts/KU-SJ/082/2020'}
+
+              {expandedDim === 'D3' && (
+                <>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Masa Khidmat</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>Periode 2020 – 2025</Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>SK Keputusan DPP</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>
+                      {dims.position?.skNumber || 'PAN/A/Kpts/KU-SJ/082/2020'}
+                    </Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kluster Penugasan</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>
+                      {dims.position?.region || 'Dapil Jabar I (Bandung & Cimahi)'}
+                    </Text>
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity onPress={() => toggleDim('D3')} style={styles.detailToggleRow} activeOpacity={0.7}>
+                <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                  {expandedDim === 'D3' ? 'Sembunyikan Detail' : 'Lihat Detail Lengkap'}
                 </Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Kluster Penugasan</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>
-                  {dims.position?.region || 'Dapil Jabar I (Bandung & Cimahi)'}
-                </Text>
-              </View>
+                <Feather name={expandedDim === 'D3' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+              </TouchableOpacity>
             </View>
           </Card>
 
@@ -483,25 +539,37 @@ export default function StatusPeranSayaScreen() {
                   {dims.electoral?.legislativeLevel?.replace('_', ' ') || (dims.electoral?.status !== 'NONE' ? 'DPRD Provinsi Jawa Barat' : 'Non-Calon Legislatif')}
                 </Text>
               </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Daerah Pemilihan (Dapil)</Text>
-                <Text style={[styles.propValue, { color: colors.text }]}>
-                  {dims.electoral?.dapil || 'Dapil Jabar I (Kota Bandung - Kota Cimahi)'}
+
+              {expandedDim === 'D4' && (
+                <>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Daerah Pemilihan (Dapil)</Text>
+                    <Text style={[styles.propValue, { color: colors.text }]}>
+                      {dims.electoral?.dapil || 'Dapil Jabar I (Kota Bandung - Kota Cimahi)'}
+                    </Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor Rekomendasi Urut</Text>
+                    <Text style={[styles.propValue, { color: '#E60012', fontFamily: fonts.bold }]}>
+                      {dims.electoral?.ballotNumber ? `#${dims.electoral.ballotNumber} (Prioritas Pemenangan)` : 'Dalam Proses DCS'}
+                    </Text>
+                  </View>
+                  <View style={styles.propRow}>
+                    <Text style={[styles.propLabel, { color: colors.textMuted }]}>Audit Berkas KPPN</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Feather name="check-circle" size={12} color={colors.success} />
+                      <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>7/7 Dokumen Lengkap</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              <TouchableOpacity onPress={() => toggleDim('D4')} style={styles.detailToggleRow} activeOpacity={0.7}>
+                <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                  {expandedDim === 'D4' ? 'Sembunyikan Detail' : 'Lihat Detail Lengkap'}
                 </Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Nomor Rekomendasi Urut</Text>
-                <Text style={[styles.propValue, { color: '#E60012', fontFamily: fonts.bold }]}>
-                  {dims.electoral?.ballotNumber ? `#${dims.electoral.ballotNumber} (Prioritas Pemenangan)` : 'Dalam Proses DCS'}
-                </Text>
-              </View>
-              <View style={styles.propRow}>
-                <Text style={[styles.propLabel, { color: colors.textMuted }]}>Audit Berkas KPPN</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="check-circle" size={12} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.success }}>7/7 Dokumen Lengkap</Text>
-                </View>
-              </View>
+                <Feather name={expandedDim === 'D4' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => navigation.navigate('SimpanBacaleg')}
@@ -559,24 +627,46 @@ export default function StatusPeranSayaScreen() {
                 {currentUser?.volunteerStats?.tasksCompleted || 15} Kegiatan Selesai
               </Text>
             </View>
-            <View style={styles.propRow}>
-              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jam Pelatihan / Bimtek</Text>
-              <Text style={[styles.propValue, { color: colors.text }]}>
-                {currentUser?.volunteerStats?.trainingHours || 12} Jam Terverifikasi
+
+            {expandedDim === 'D5' && (
+              <>
+                <View style={styles.propRow}>
+                  <Text style={[styles.propLabel, { color: colors.textMuted }]}>Jam Pelatihan / Bimtek</Text>
+                  <Text style={[styles.propValue, { color: colors.text }]}>
+                    {currentUser?.volunteerStats?.trainingHours || 12} Jam Terverifikasi
+                  </Text>
+                </View>
+                <View style={styles.propRow}>
+                  <Text style={[styles.propLabel, { color: colors.textMuted }]}>Koordinator Pendamping</Text>
+                  <Text style={[styles.propValue, { color: colors.text }]}>
+                    {currentUser?.coordinatorContact?.name || (isOfficialMember ? 'Asep Ridwan' : 'Hendra Gunawan')} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || (isOfficialMember ? 'Coblong' : 'Sumur Bandung')})
+                  </Text>
+                </View>
+                <View style={styles.propRow}>
+                  <Text style={[styles.propLabel, { color: colors.textMuted }]}>Hak Portofolio</Text>
+                  <Text style={[styles.propValue, { color: colors.success, fontFamily: fonts.medium }]}>
+                    Tersimpan Permanen di Database
+                  </Text>
+                </View>
+              </>
+            )}
+
+            <TouchableOpacity onPress={() => toggleDim('D5')} style={styles.detailToggleRow} activeOpacity={0.7}>
+              <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                {expandedDim === 'D5' ? 'Sembunyikan Detail' : 'Lihat Detail Lengkap'}
               </Text>
-            </View>
-            <View style={styles.propRow}>
-              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Koordinator Pendamping</Text>
-              <Text style={[styles.propValue, { color: colors.text }]}>
-                {currentUser?.coordinatorContact?.name || (isOfficialMember ? 'Asep Ridwan' : 'Hendra Gunawan')} ({currentUser?.coordinatorContact?.region || currentUser?.coordinatorContact?.posko || (isOfficialMember ? 'Coblong' : 'Sumur Bandung')})
-              </Text>
-            </View>
-            <View style={styles.propRow}>
-              <Text style={[styles.propLabel, { color: colors.textMuted }]}>Hak Portofolio</Text>
-              <Text style={[styles.propValue, { color: colors.success, fontFamily: fonts.medium }]}>
-                Tersimpan Permanen di Database
-              </Text>
-            </View>
+              <Feather name={expandedDim === 'D5' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+            </TouchableOpacity>
+
+            {dims.volunteer === 'active' ? (
+              <PrimaryButton
+                label="Daftarkan Relawan Baru"
+                icon="user-plus"
+                variant="secondary"
+                onPress={() => navigation.navigate('NominateVolunteer')}
+                style={{ marginTop: spacing.sm }}
+              />
+            ) : null}
           </View>
         </Card>
       )}
@@ -653,13 +743,40 @@ export default function StatusPeranSayaScreen() {
                   ? `Tersertifikasi Saksi TPS • SK Mandat No. ${dims.programs?.skMandatNumber || '042/SM-DPP/2026'}`
                   : dims.programs?.programSaksi === 'TRAINING'
                   ? `Pelatihan Saksi TPS BSN (Progres ${dims.programs?.saksiProgress ?? 80}%) • Belum Ber-SK Mandat`
+                  : hasAppliedAsWitness
+                  ? 'Pengajuan Terkirim • Menunggu Verifikasi Tim BSN DPD'
                   : 'Belum Terdaftar Program Mandat Saksi BSN'}
               </Text>
             </View>
             <Feather name="chevron-right" size={16} color={colors.textMuted} />
           </TouchableOpacity>
+
+          {/* CTA naik status: hanya untuk Relawan yang belum sama sekali
+              mengikuti/mengajukan program Saksi TPS */}
+          {isVolunteerRole && dims.programs?.programSaksi === 'NONE' && !hasAppliedAsWitness ? (
+            <PrimaryButton
+              label="Ajukan Sebagai Saksi TPS"
+              icon="award"
+              onPress={() => setShowApplyWitnessDialog(true)}
+              style={{ marginTop: spacing.xs }}
+            />
+          ) : null}
         </View>
       </Card>
+
+      <ConfirmDialog
+        visible={showApplyWitnessDialog}
+        title="Ajukan Diri Sebagai Calon Saksi TPS?"
+        message="Data keaktifan relawan Anda akan dikirimkan ke Tim Badan Saksi Nasional (BSN) DPD untuk verifikasi administrasi sebelum penugasan dan pelatihan Amanat Academy."
+        confirmLabel="Ya, Kirim Pengajuan"
+        cancelLabel="Batal"
+        tone="primary"
+        onConfirm={() => {
+          setShowApplyWitnessDialog(false);
+          applyWitnessCandidate();
+        }}
+        onCancel={() => setShowApplyWitnessDialog(false)}
+      />
 
       {/* DIMENSI 7: TIMELINE RIWAYAT STATUS */}
       <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
@@ -681,13 +798,13 @@ export default function StatusPeranSayaScreen() {
         </View>
 
         <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
-          {userTimeline.map((item, idx) => (
+          {(showFullTimeline ? userTimeline : userTimeline.slice(0, 2)).map((item, idx, arr) => (
             <View key={item.id} style={styles.timelineItem}>
               <View style={styles.timelineLeftCol}>
                 <View style={[styles.timelineDot, { backgroundColor: colors.primary }]}>
                   <Feather name={item.icon} size={11} color="#FFFFFF" />
                 </View>
-                {idx < userTimeline.length - 1 && (
+                {idx < arr.length - 1 && (
                   <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
                 )}
               </View>
@@ -708,6 +825,19 @@ export default function StatusPeranSayaScreen() {
               </View>
             </View>
           ))}
+
+          {userTimeline.length > 2 && (
+            <TouchableOpacity
+              onPress={() => setShowFullTimeline((v) => !v)}
+              style={styles.detailToggleRow}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.detailToggleText, { color: colors.primary }]}>
+                {showFullTimeline ? 'Sembunyikan' : `Lihat Semua Riwayat (${userTimeline.length})`}
+              </Text>
+              <Feather name={showFullTimeline ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       </Card>
 
@@ -866,6 +996,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: fonts.semiBold,
     textAlign: 'right',
+  },
+  detailToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+  },
+  detailToggleText: {
+    fontSize: 10.5,
+    fontFamily: fonts.semiBold,
   },
   dimActionBtn: {
     flexDirection: 'row',

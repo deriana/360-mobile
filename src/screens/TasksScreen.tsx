@@ -150,8 +150,8 @@ export default function TasksScreen({ navigation, route }: any) {
                 </View>
 
                 <View style={{ gap: 3 }}>
-                  <Text style={[styles.taskTitle, { color: colors.text }]}>{item.title}</Text>
-                  <Text style={[styles.taskDesc, { color: colors.textMuted }]}>{item.description}</Text>
+                  <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+                  <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={2}>{item.description}</Text>
                 </View>
 
                 <View style={{ gap: 4, marginTop: 4 }}>
@@ -210,16 +210,10 @@ export default function TasksScreen({ navigation, route }: any) {
               />
             </View>
 
-            {/* Progress Bar */}
+            {/* Progress Bar — label & angka % dipangkas, sudah terwakili
+                oleh pill "X dari Y Selesai" di atas; bar cukup jadi
+                representasi visualnya saja. */}
             <View style={{ gap: 4, marginTop: spacing.xs }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted }}>
-                  Kelengkapan Checklist
-                </Text>
-                <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary }}>
-                  {progressPct}%
-                </Text>
-              </View>
               <View style={[styles.progressBarTrack, { backgroundColor: colors.border }]}>
                 <View
                   style={[
@@ -323,7 +317,7 @@ export default function TasksScreen({ navigation, route }: any) {
                         >
                           {item.title}
                         </Text>
-                        <Text style={[styles.taskDesc, { color: colors.textMuted }]}>{item.desc}</Text>
+                        <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={2}>{item.desc}</Text>
                       </View>
                     </View>
 

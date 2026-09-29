@@ -408,3 +408,20 @@ export type VolunteerCandidateStatus =
   | 'VERIFIED'
   | 'MANDATED';
 
+// Pendaftaran calon relawan baru oleh relawan aktif (nominasi, calon belum
+// perlu membuat akun sendiri — verifikasi sepenuhnya dilakukan tim pusat
+// via Web Command Center).
+export type NominatedVolunteerStatus = 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+
+export interface NominatedVolunteerCandidate {
+  id: string;
+  fullName: string;
+  phone: string;
+  region: string;
+  interest?: string;
+  note?: string;
+  nominatedByName: string;
+  nominatedAt: string;
+  status: NominatedVolunteerStatus;
+}
+

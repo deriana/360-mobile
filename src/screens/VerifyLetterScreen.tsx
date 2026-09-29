@@ -26,7 +26,6 @@ export default function VerifyLetterScreen({ route }: any) {
   const token = route?.params?.token || `MNDT-PAN-${witnessId}-2024-BSN`;
   const isSigned = route?.params?.isSigned ?? true;
   const signedBy = route?.params?.signedBy ?? 'Ketua DPP / BSN PAN';
-  const signatureHash = route?.params?.signatureHash ?? `SHA256:${witnessId}:DPP-PAN`;
   const signedAt = route?.params?.signedAt ?? '18 Sep 2026, 08:00 WIB';
 
   const [checking, setChecking] = useState(false);
@@ -124,21 +123,15 @@ export default function VerifyLetterScreen({ route }: any) {
               <Text style={{ fontSize: 10, color: colors.textMuted }}>
                 Penandatangan: {signedBy} ({signedAt})
               </Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted }}>
-                Hash Kriptografis: {signatureHash}
-              </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Feather name="check" size={12} color={colors.success} />
                 <Text style={{ fontSize: 10, color: colors.success, fontWeight: '700' }}>
                   {isSigned ? 'Tanda Tangan Digital Pimpinan Sah & Terverifikasi' : 'Stempel Mandat Resmi Terdaftar'}
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Feather name="shield" size={11} color={colors.primary} />
-                <Text style={{ fontSize: 10, color: colors.primary }}>
-                  Sinkronisasi Offline Cache & Server Pusat Valid
-                </Text>
-              </View>
+              {/* Baris hash kriptografis mentah & "sinkronisasi cache" dipangkas
+                  — istilah teknis yang tidak menambah kepercayaan bagi
+                  pengguna awam; pill hijau di atas sudah menyatakan sah. */}
             </View>
           </View>
         ) : (

@@ -61,6 +61,17 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
 
   // States for Program Tab
   const [programFilter, setProgramFilter] = useState<'SEMUA' | 'SELESAI' | 'BERLANGSUNG'>('SEMUA');
+  // Kartu program sebelumnya selalu menampilkan target/output/PIC/periode
+  // sekaligus (9 elemen teks per kartu). Sekarang default cuma progress bar,
+  // detail lengkap di balik toggle per-kartu.
+  const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
+  const toggleProgram = (id: string) =>
+    setExpandedPrograms((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // States for Dokumen Tab
   const [documentSearch, setDocumentSearch] = useState('');
@@ -525,9 +536,10 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                     </View>
                   </View>
 
-                  <Text style={[styles.programTitle, { color: colors.text }]}>{prog.title}</Text>
+                  <Text style={[styles.programTitle, { color: colors.text }]} numberOfLines={2}>{prog.title}</Text>
 
-                  {/* Progress Bar Visualizer */}
+                  {/* Progress Bar Visualizer — angka % dipangkas di sini
+                      karena sudah tertulis di badge status atas ("X% Progres") */}
                   <View style={styles.progressTrackWrapper}>
                     <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
                       <View
@@ -541,47 +553,59 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                       />
                     </View>
                     <View style={styles.progressLabelRow}>
-                      <Text style={[styles.progressLabel, { color: colors.textMuted }]}>
-                        Realisasi Dana: {formatRupiah(prog.budgetRealized)} / {formatRupiah(prog.budgetAllocated)}
-                      </Text>
-                      <Text style={[styles.progressValue, { color: colors.text }]}>
-                        {prog.progressPercentage}%
+                      <Text style={[styles.progressLabel, { color: colors.textMuted }]} numberOfLines={1}>
+                        Realisasi: {formatRupiah(prog.budgetRealized)} / {formatRupiah(prog.budgetAllocated)}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Target & Realized Box */}
-                  <View
-                    style={[
-                      styles.targetBox,
-                      {
-                        backgroundColor: isDark ? 'rgba(0, 43, 82, 0.2)' : '#F8FAFC',
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <View style={{ gap: 2 }}>
-                      <Text style={[styles.boxLabel, { color: colors.textMuted }]}>Target Capaian:</Text>
-                      <Text style={[styles.boxText, { color: colors.text }]}>{prog.targetOutput}</Text>
-                    </View>
-                    <View style={{ gap: 2, marginTop: 4 }}>
-                      <Text style={[styles.boxLabel, { color: colors.primary }]}>Output Terverifikasi:</Text>
-                      <Text style={[styles.boxText, { color: colors.text }]}>{prog.realizedOutput}</Text>
-                    </View>
-                  </View>
+                  {expandedPrograms.has(prog.id) && (
+                    <>
+                      {/* Target & Realized Box */}
+                      <View
+                        style={[
+                          styles.targetBox,
+                          {
+                            backgroundColor: isDark ? 'rgba(0, 43, 82, 0.2)' : '#F8FAFC',
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View style={{ gap: 2 }}>
+                          <Text style={[styles.boxLabel, { color: colors.textMuted }]}>Target Capaian:</Text>
+                          <Text style={[styles.boxText, { color: colors.text }]}>{prog.targetOutput}</Text>
+                        </View>
+                        <View style={{ gap: 2, marginTop: 4 }}>
+                          <Text style={[styles.boxLabel, { color: colors.primary }]}>Output Terverifikasi:</Text>
+                          <Text style={[styles.boxText, { color: colors.text }]}>{prog.realizedOutput}</Text>
+                        </View>
+                      </View>
 
-                  {/* Footer Info */}
-                  <View style={[styles.programFooterRow, { borderTopColor: colors.border }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Feather name="user-check" size={12} color={colors.textMuted} />
-                      <Text style={[styles.programPicText, { color: colors.textMuted }]} numberOfLines={1}>
-                        {prog.pic}
-                      </Text>
-                    </View>
-                    <Text style={[styles.programPeriodText, { color: colors.textMuted }]}>
-                      {prog.startDate} – {prog.endDate}
+                      {/* Footer Info */}
+                      <View style={[styles.programFooterRow, { borderTopColor: colors.border }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Feather name="user-check" size={12} color={colors.textMuted} />
+                          <Text style={[styles.programPicText, { color: colors.textMuted }]} numberOfLines={1}>
+                            {prog.pic}
+                          </Text>
+                        </View>
+                        <Text style={[styles.programPeriodText, { color: colors.textMuted }]}>
+                          {prog.startDate} – {prog.endDate}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+
+                  <Pressable onPress={() => toggleProgram(prog.id)} style={styles.programToggleRow}>
+                    <Text style={[styles.programToggleText, { color: colors.primary }]}>
+                      {expandedPrograms.has(prog.id) ? 'Sembunyikan Detail' : 'Lihat Target & Realisasi'}
                     </Text>
-                  </View>
+                    <Feather
+                      name={expandedPrograms.has(prog.id) ? 'chevron-up' : 'chevron-down'}
+                      size={13}
+                      color={colors.primary}
+                    />
+                  </Pressable>
                 </Card>
               );
             })}
@@ -727,7 +751,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Text style={[styles.breakdownTitle, { color: colors.text }]}>{item.title}</Text>
                         </View>
-                        <Text style={[styles.breakdownDesc, { color: colors.textMuted }]}>{item.description}</Text>
+                        <Text style={[styles.breakdownDesc, { color: colors.textMuted }]} numberOfLines={2}>{item.description}</Text>
                         {/* Bar Proporsi */}
                         <View style={[styles.miniTrack, { backgroundColor: colors.border }]}>
                           <View
@@ -759,7 +783,7 @@ export default function TransparencyHubScreen({ navigation, route }: any) {
                     <View key={item.id} style={styles.breakdownRow}>
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text style={[styles.breakdownTitle, { color: colors.text }]}>{item.title}</Text>
-                        <Text style={[styles.breakdownDesc, { color: colors.textMuted }]}>{item.description}</Text>
+                        <Text style={[styles.breakdownDesc, { color: colors.textMuted }]} numberOfLines={2}>{item.description}</Text>
                         {/* Bar Proporsi */}
                         <View style={[styles.miniTrack, { backgroundColor: colors.border }]}>
                           <View
@@ -1611,6 +1635,17 @@ const styles = StyleSheet.create({
   programPeriodText: {
     fontFamily: fonts.regular,
     fontSize: 10,
+  },
+  programToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingTop: 6,
+  },
+  programToggleText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10.5,
   },
   metricRow: {
     flexDirection: 'row',

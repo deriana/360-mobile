@@ -636,59 +636,47 @@ export default function ProfileScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Keahlian Relawan Chips (Subtle Pills) */}
-          <View style={{ gap: 6, marginTop: 4 }}>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 10.5, color: colors.textMuted, letterSpacing: 0.3 }}>
-              KEAHLIAN & KETERAMPILAN
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {(
-                currentUser.skills || [
-                  'Komunikasi Publik & Warga',
-                  'Administrasi Acara & Presensi',
-                  'Fotografi & Konten Medsos',
-                ]
-              ).map((skill, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.volunteerSkillChip,
-                    { backgroundColor: isDark ? 'rgba(0,102,179,0.18)' : '#F0F7FF' },
-                  ]}
-                >
-                  <Feather name="check" size={10} color={colors.primary} />
-                  <Text style={[styles.volunteerSkillChipText, { color: colors.primary }]}>{skill}</Text>
+          {/* Keahlian & Minat digabung jadi 1 baris chip campuran, dibatasi
+              2 item + "+N lainnya" (tap untuk lihat semua) — sebelumnya 2
+              blok terpisah (judul + 3 chip masing-masing) selalu tampil
+              penuh, jadi 2 baris judul + 6 chip sekaligus di layar utama. */}
+          {(() => {
+            const skills = currentUser.skills || ['Komunikasi Publik & Warga', 'Administrasi Acara & Presensi', 'Fotografi & Konten Medsos'];
+            const interests = currentUser.interests || ['Event & Sosialisasi', 'Advokasi Lansia/Pemilih', 'Logistik Posko & Dapur Umum'];
+            const visibleSkills = skills.slice(0, 2);
+            const hiddenCount = skills.length - visibleSkills.length + interests.length;
+            return (
+              <View style={{ gap: 6, marginTop: 4 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 10.5, color: colors.textMuted, letterSpacing: 0.3 }}>
+                  KEAHLIAN & MINAT
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {visibleSkills.map((skill, idx) => (
+                    <View
+                      key={idx}
+                      style={[styles.volunteerSkillChip, { backgroundColor: isDark ? 'rgba(0,102,179,0.18)' : '#F0F7FF' }]}
+                    >
+                      <Feather name="check" size={10} color={colors.primary} />
+                      <Text style={[styles.volunteerSkillChipText, { color: colors.primary }]}>{skill}</Text>
+                    </View>
+                  ))}
+                  {hiddenCount > 0 && (
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert(
+                          'Keahlian & Minat',
+                          `Keahlian:\n${skills.map((s) => `• ${s}`).join('\n')}\n\nMinat & Fokus:\n${interests.map((i) => `• ${i}`).join('\n')}`,
+                        )
+                      }
+                      style={[styles.volunteerInterestChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}
+                    >
+                      <Text style={[styles.volunteerInterestChipText, { color: colors.text }]}>+{hiddenCount} lainnya</Text>
+                    </Pressable>
+                  )}
                 </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Minat & Fokus Gerakan Chips */}
-          <View style={{ gap: 6, marginTop: 4 }}>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 10.5, color: colors.textMuted, letterSpacing: 0.3 }}>
-              MINAT & FOKUS PENGABDIAN
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {(
-                currentUser.interests || [
-                  'Event & Sosialisasi',
-                  'Advokasi Lansia/Pemilih',
-                  'Logistik Posko & Dapur Umum',
-                ]
-              ).map((interest, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.volunteerInterestChip,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' },
-                  ]}
-                >
-                  <Feather name="tag" size={10} color={colors.textMuted} />
-                  <Text style={[styles.volunteerInterestChipText, { color: colors.text }]}>{interest}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+              </View>
+            );
+          })()}
 
           {/* Koordinator Pendamping Wilayah */}
           <View
@@ -972,6 +960,30 @@ export default function ProfileScreen({ navigation }: any) {
             <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           </>
         )}
+
+        {/* Command Center Mobile */}
+        <Pressable
+          onPress={() => navigation.navigate('CommandCenter')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }]}>
+            <Feather name="activity" size={15} color="#EF4444" />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Command Center Mobile</Text>
+              <View style={{ backgroundColor: '#EF4444', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                <Text style={{ fontFamily: fonts.bold, fontSize: 8.5, color: '#FFFFFF' }}>LIVE</Text>
+              </View>
+            </View>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
+              Pusat kendali operasional, peta teritorial & SLA insiden
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
         {/* Transparansi & Akuntabilitas */}
         <Pressable

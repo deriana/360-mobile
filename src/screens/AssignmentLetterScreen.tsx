@@ -217,9 +217,8 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
             <Text style={[styles.qrCode, { color: colors.text }]} numberOfLines={1}>
               {cachedData?.verificationToken ?? `${witness.id}-${letterNo.slice(-4)}`}
             </Text>
-            <Text style={{ fontSize: 9, color: colors.textMuted }} numberOfLines={1}>
-              {cachedData?.verifyUrl ?? `https://saksi360.pan.or.id/verify/${witness.id}`}
-            </Text>
+            {/* URL verifikasi mentah dipangkas — sudah terkodekan di QR
+                di sebelahnya, tidak ada yang mengetik URL ini manual. */}
             <Pill label="Terverifikasi Resmi" tone="success" icon="check-circle" />
           </View>
         </View>
