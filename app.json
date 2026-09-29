@@ -48,7 +48,20 @@
           "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk memotret dokumen."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/pan_emblem.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0066B3",
+          "dark": {
+            "image": "./assets/brand/pan_emblem.png",
+            "backgroundColor": "#0066B3"
+          }
+        }
+      ]
     ]
   }
 }
