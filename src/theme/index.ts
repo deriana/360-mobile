@@ -111,6 +111,9 @@ export const fonts = {
   extraBold: 'Poppins-ExtraBold',
 } as const;
 
+/** Batas pembesaran huruf dari setelan HP agar teks tidak terpotong / badge tidak meluber. */
+export const MAX_FONT_SCALE = 1.3;
+
 export function getFontFamily(weight?: string | number): string {
   if (!weight) return fonts.regular;
   const w = String(weight).toLowerCase();

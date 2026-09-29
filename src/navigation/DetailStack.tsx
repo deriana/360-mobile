@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { fonts } from '../theme';
 import { BRAND_ASSETS } from '../data/images';
 import { withRoleGuard } from '../components/RoleGuardWrapper';
+import { filterNotificationsForUser } from '../utils/notificationAudience';
 
 import TpsDetailScreen from '../screens/TpsDetailScreen';
 import SupervisionScreen from '../screens/SupervisionScreen';
@@ -55,17 +56,19 @@ import PandawaProgramScreen from '../screens/PandawaProgramScreen';
 import MapSebaranRelawanAnggotaScreen from '../screens/MapSebaranRelawanAnggotaScreen';
 import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
 import KelolaStatusScreen from '../screens/KelolaStatusScreen';
-import { DaftarSaksiScreen, SaksiScreen } from '../features/witness';
+import { DaftarSaksiScreen, SaksiScreen, useWitnessApplication } from '../features/witness';
+import { DataDiriScreen } from '../features/account';
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string; headerShown?: boolean }> = [
   { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
   { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status' },
+  { name: 'DataDiri', component: DataDiriScreen, title: 'Data Diri' },
   { name: 'Saksi', component: SaksiScreen, title: 'Saksi TPS' },
   { name: 'DaftarSaksi', component: DaftarSaksiScreen, title: 'Daftar Saksi TPS' },
   { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
   { name: 'Tasks', component: TasksScreen, title: 'Tugas Lapangan' },
   { name: 'Notifications', component: NotificationsScreen, title: 'Notifikasi' },
-  { name: 'CheckIn', component: CheckInScreen, title: 'Presensi Kehadiran GPS' },
+  { name: 'CheckIn', component: CheckInScreen, title: 'Presensi' },
   { name: 'Profile', component: ProfileScreen, title: 'Kartu Petugas' },
   { name: 'Supervision', component: SupervisionScreen, title: 'Pengawasan TPS' },
   { name: 'TpsDetail', component: TpsDetailScreen, title: 'Detail TPS' },
@@ -82,7 +85,7 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'ReportForm', component: ReportFormScreen, title: 'Formulir Laporan' },
   { name: 'C1Ocr', component: C1OcrScreen, title: 'Pemindaian C1 Plano' },
   { name: 'KtpOcr', component: KtpOcrScreen, title: 'Pemindaian KTP Saksi' },
-  { name: 'Documentation', component: DocumentationScreen, title: 'Dokumentasi Kegiatan TPS' },
+  { name: 'Documentation', component: DocumentationScreen, title: 'Dokumentasi TPS' },
   { name: 'EmergencyList', component: EmergencyListScreen, title: 'Laporan Darurat' },
   { name: 'EmergencyForm', component: EmergencyFormScreen, title: 'Lapor Kejadian' },
   { name: 'Broadcast', component: BroadcastScreen, title: 'Broadcast' },
@@ -91,19 +94,19 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'Security', component: SecurityScreen, title: 'Keamanan' },
   { name: 'HelpCenter', component: HelpCenterScreen, title: 'Pusat Bantuan' },
   { name: 'QuickCountGame', component: QuickCountGameScreen, title: 'Hitung Cepat Suara' },
-  { name: 'SimpanKta', component: SimpanKtaScreen, title: 'e-KTA Digital simPAN' },
-  { name: 'SimpanStructure', component: SimpanStructureScreen, title: 'Struktur Pengurus simPAN' },
-  { name: 'SimpanOffices', component: SimpanOfficesScreen, title: 'Kantor Sekretariat simPAN' },
+  { name: 'SimpanKta', component: SimpanKtaScreen, title: 'e-KTA Digital' },
+  { name: 'SimpanStructure', component: SimpanStructureScreen, title: 'Struktur Pengurus' },
+  { name: 'SimpanOffices', component: SimpanOfficesScreen, title: 'Kantor Sekretariat' },
   { name: 'SimpanOfficeDetail', component: SimpanOfficeDetailScreen, title: 'Detail Sekretariat' },
   { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
-  { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Warta & Instruksi simPAN' },
-  { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Registrasi Kader (AI Scan KTP)' },
-  { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Registrasi Relawan PAN' },
-  { name: 'NominateVolunteer', component: NominateVolunteerScreen, title: 'Daftarkan Relawan Baru' },
-  { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Akademi Saksi BSN PAN' },
-  { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan Saksi' },
+  { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Berita & Instruksi' },
+  { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Daftar Anggota' },
+  { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Daftar Relawan' },
+  { name: 'NominateVolunteer', component: NominateVolunteerScreen, title: 'Ajak Relawan' },
+  { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Pelatihan Saksi' },
+  { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan' },
   { name: 'TransparencyHub', component: TransparencyHubScreen, title: 'Transparansi & Akuntabilitas' },
-  { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy Hub' },
+  { name: 'AmanatAcademy', component: AmanatAcademyScreen, title: 'Amanat Academy' },
   { name: 'PandawaProgram', component: PandawaProgramScreen, title: 'Satgas Muda PANdawa' },
   // Peta Sebaran & Command Center digabung menjadi satu layar (2026-09-28):
   // semua nama route lama tetap didaftarkan agar tidak ada call site yang
@@ -175,13 +178,15 @@ export function buildDetailStack(homeName: string, HomeComponent: React.Componen
   return function Navigator() {
     const { colors, isDark, toggleTheme } = useTheme();
     const { notifications } = useApp();
+    const { access: witnessAccess } = useWitnessApplication();
 
-    const unreadCount = notifications.filter((n) => !n.read).length;
+    const unreadCount = filterNotificationsForUser(notifications, witnessAccess.isUnlocked).filter((n) => !n.read).length;
 
     const screenOptions = {
       headerStyle: { backgroundColor: colors.surface },
       headerTintColor: colors.text,
-      headerTitleStyle: { fontFamily: fonts.bold, fontWeight: '700' as const, color: colors.text },
+      // Ukuran 16 agar judul muat di samping ikon header pada HP ±360dp.
+      headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16, color: colors.text },
       headerShadowVisible: false,
       contentStyle: { backgroundColor: colors.background },
       headerRight: () => (

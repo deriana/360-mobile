@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
-import { fonts, iconStrokeWidth } from '../theme';
+import { fonts, iconStrokeWidth, MAX_FONT_SCALE } from '../theme';
 import { buildDetailStack } from './DetailStack';
 import { useWitnessRoleSync } from '../features/witness';
 
@@ -121,6 +121,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 },
               ]}
               numberOfLines={1}
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
             >
               {label}
             </Text>

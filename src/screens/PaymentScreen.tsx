@@ -6,20 +6,38 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Modal, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, radius, spacing, iconStrokeWidth } from '../theme';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 
 export default function PaymentScreen() {
   const { payments, currentUser, witnesses, tps } = useApp();
   const { colors } = useTheme();
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
-  const myPayment = payments.find((p) => p.witnessId === activeScope.witnessId) || {
-    witnessId: activeScope.witnessId,
-    amount: 350000,
-    status: 'paid' as const,
-    proofRef: 'TRX-82910482',
-  };
+  const activeScope = useActiveWitnessScope();
+  // Tanpa catatan pembayaran → "belum ada data honor" (bukan dianggap lunas).
+  const myPayment = payments.find((p) => p.witnessId === activeScope.witnessId);
+
+  if (!myPayment) {
+    return (
+      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+        <Card style={{ gap: spacing.md }}>
+          <View style={styles.statusRow}>
+            <View style={[styles.iconWrap, { backgroundColor: colors.warningBg }]}>
+              <Feather name="clock" size={24} color={colors.warning} strokeWidth={iconStrokeWidth} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.statusLabelText, { color: colors.textMuted }]}>Status Pembayaran</Text>
+              <Text style={[styles.statusTitle, { color: colors.warning }]}>Belum Ada Data Honor</Text>
+            </View>
+            <Pill label="Menunggu" tone="warning" />
+          </View>
+          <Text style={{ fontSize: fontSize.xs, color: colors.textMuted }}>
+            Honor saksi dibayar setelah laporan hasil TPS Anda diverifikasi tim pusat. Status pembayaran akan muncul di sini.
+          </Text>
+        </Card>
+      </ScrollView>
+    );
+  }
 
   const isPaid = myPayment.status === 'paid';
 

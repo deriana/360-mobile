@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
@@ -107,6 +108,7 @@ function getConciseJabatan(jabatan: string): string {
 
 export default function SimpanStructureScreen() {
   const { colors, isDark } = useTheme();
+  const navigation = useNavigation<any>();
 
   // Filter & Search states
   const [activeLevelFilter, setActiveLevelFilter] = useState<PengurusOrg['tingkat'] | 'SEMUA'>('SEMUA');
@@ -332,6 +334,27 @@ export default function SimpanStructureScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Pintu masuk Kantor Sekretariat (menu Anggota "Struktur & Kantor"). */}
+        <Pressable
+          onPress={() => navigation.navigate('SimpanOffices')}
+          style={({ pressed }) => [
+            styles.officeEntry,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <View style={[styles.officeEntryIcon, { backgroundColor: isDark ? 'rgba(0,102,179,0.2)' : '#EFF6FF' }]}>
+            <Feather name="home" size={16} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.text }}>Kantor Sekretariat</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: fontSize.xs, color: colors.textMuted }}>
+              Alamat, jam buka, dan kontak kantor PAN terdekat
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
         {viewMode === 'diagram' ? (
           /* ========================================================
              DIAGRAM VIEW (Bagan Alur Ringkas)
@@ -761,6 +784,22 @@ export default function SimpanStructureScreen() {
 }
 
 const styles = StyleSheet.create({
+  officeEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  officeEntryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
   },

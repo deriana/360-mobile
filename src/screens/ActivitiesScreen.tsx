@@ -249,6 +249,8 @@ export default function ActivitiesScreen({ route, navigation }: any) {
     : `Semua Agenda ${currentMonthTitle}`;
 
   const handleToggleRsvp = (event: EventItem) => {
+    // Kegiatan yang sudah dihadiri tidak boleh ikut terbatalkan pendaftarannya.
+    if (event.attended) return;
     rsvpEvent(event.id);
     const willRegister = !event.isRegistered;
     setSelectedDetailEvent((prev) =>
@@ -256,7 +258,7 @@ export default function ActivitiesScreen({ route, navigation }: any) {
     );
     setDialogConfig({
       visible: true,
-      title: willRegister ? 'Pendaftaran Berhasil' : 'RSVP Dibatalkan',
+      title: willRegister ? 'Pendaftaran Berhasil' : 'Pendaftaran Dibatalkan',
       message: willRegister
         ? `Kehadiran Anda pada "${event.title}" telah tercatat di basis data sekretariat PAN.`
         : `Pendaftaran Anda pada "${event.title}" telah dibatalkan.`,
@@ -1007,6 +1009,7 @@ export default function ActivitiesScreen({ route, navigation }: any) {
               {/* Tombol Pendaftaran RSVP */}
               <Pressable
                 onPress={() => handleToggleRsvp(selectedDetailEvent)}
+                disabled={selectedDetailEvent.attended}
                 style={({ pressed }) => [
                   styles.detailRsvpBtn,
                   {
@@ -1062,10 +1065,10 @@ export default function ActivitiesScreen({ route, navigation }: any) {
                   ]}
                 >
                   {selectedDetailEvent.attended
-                    ? 'Telah Hadir di Lokasi'
+                    ? 'Sudah Hadir'
                     : selectedDetailEvent.isRegistered
-                    ? 'Batalkan Pendaftaran (Batal RSVP)'
-                    : 'Daftar Ikut Agenda Ini (RSVP)'}
+                    ? 'Batalkan Pendaftaran'
+                    : 'Daftar Ikut Kegiatan'}
                 </Text>
               </Pressable>
 

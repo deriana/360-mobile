@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useApp } from '../../../../context/AppContext';
 import { AccountSnapshot, VolunteerActivityStatus } from '../../domain/account';
 import { buildAccountSnapshot } from '../../application/buildAccountSnapshot';
@@ -10,6 +10,9 @@ import { accountDependencies } from '../../dependencies';
  */
 export function useAccountSnapshot(): AccountSnapshot {
   const { currentUser } = useApp();
+  const { volunteerActivityRepository: repository } = accountDependencies;
+  // Ikut ter-update saat catatan verifikasi berubah (mis. KTP diverifikasi).
+  const record = useSyncExternalStore(repository.subscribe, () => repository.getRecord(currentUser.id));
 
   return useMemo(() => {
     const volunteerMembership = currentUser.memberships.find((m) => m.type === 'volunteer');
@@ -41,7 +44,7 @@ export function useAccountSnapshot(): AccountSnapshot {
             ? 'terverifikasi'
             : 'belum_verifikasi',
       },
-      accountDependencies.volunteerActivityRepository,
+      repository,
     );
-  }, [currentUser]);
+  }, [currentUser, record, repository]);
 }

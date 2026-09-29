@@ -13,12 +13,18 @@ import { fonts, fontSize, radius, spacing } from '../theme';
 import { AcademyModule, AcademyLesson } from '../data/witnessAcademy';
 import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';
+import { useApp } from '../context/AppContext';
+import { BSN_PAN_ACADEMY_DATA } from '../data/witnessAcademy';
+import { canTakeWitnessQuiz, QUIZ_MIN_PROGRESS_PERCENT, useTrainingProgress, useWitnessApplication } from '../features/witness';
 
 const { width } = Dimensions.get('window');
 
 export default function WitnessLessonScreen({ route, navigation }: any) {
   const { colors, isDark } = useTheme();
   const passedModule: AcademyModule = route?.params?.module;
+  const { currentUser } = useApp();
+  const { access: witnessAccess, completeTraining } = useWitnessApplication();
+  const { completedLessonIds, markLessonCompleted } = useTrainingProgress();
 
   // Local state for module lessons to track completions
   const [currentModule, setCurrentModule] = useState<AcademyModule>(passedModule);
@@ -44,7 +50,28 @@ export default function WitnessLessonScreen({ route, navigation }: any) {
 
   const activeLesson: AcademyLesson = currentModule.lessons[activeLessonIdx];
 
+  // Kuis memakai progres seluruh materi (semua modul), sama dengan layar Pelatihan Saksi.
+  const allLessons = BSN_PAN_ACADEMY_DATA.syllabus_modules.flatMap((mod) => mod.lessons);
+  const allCompletedCount = allLessons.filter(
+    (l) => l.is_completed || completedLessonIds.includes(l.lesson_id),
+  ).length;
+  const quizUnlocked = canTakeWitnessQuiz(allCompletedCount, allLessons.length);
+
+  const handleOpenQuiz = () => {
+    if (!quizUnlocked) {
+      setDialogConfig({
+        visible: true,
+        title: 'Selesaikan Materi Dulu',
+        message: `Uji akreditasi terbuka setelah minimal ${QUIZ_MIN_PROGRESS_PERCENT}% materi pelatihan selesai.`,
+        tone: 'info',
+      });
+      return;
+    }
+    setShowQuizModal(true);
+  };
+
   const handleMarkCompleted = () => {
+    markLessonCompleted(activeLesson.lesson_id);
     const updated = [...currentModule.lessons];
     updated[activeLessonIdx] = {
       ...updated[activeLessonIdx],
@@ -270,17 +297,23 @@ export default function WitnessLessonScreen({ route, navigation }: any) {
         label="Mulai Kuis Sertifikasi Akreditasi Saksi"
         icon="award"
         variant="secondary"
-        onPress={() => setShowQuizModal(true)}
+        onPress={handleOpenQuiz}
       />
 
       <WitnessQuizModal
         visible={showQuizModal}
+        witnessName={currentUser.identity.name}
+        witnessNik={currentUser.identity.nikMasked}
         onClose={() => setShowQuizModal(false)}
-        onPassQuiz={() => {
+        onPassQuiz={(cert) => {
+          // Sama dengan layar Pelatihan Saksi: lulus saat "Wajib pelatihan" → status "Siaga".
+          const advancedToStandby = witnessAccess.status === 'TRAINING' && completeTraining().ok;
           setDialogConfig({
             visible: true,
-            title: 'Sertifikat Diterbitkan!',
-            message: 'Selamat, Anda telah lulus uji pemahaman dan tersertifikasi resmi sebagai Saksi Mandat BSN PAN.',
+            title: 'Lulus Pelatihan Saksi',
+            message: advancedToStandby
+              ? `Selamat, Anda lulus dengan nilai ${cert.score}%. Status Anda kini Siaga — tim pusat akan menempatkan Anda di TPS.`
+              : `Selamat, Anda lulus dengan nilai ${cert.score}% (sertifikat ${cert.certificateNo}).`,
             tone: 'success',
           });
         }}

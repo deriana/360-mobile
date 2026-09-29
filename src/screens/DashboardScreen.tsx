@@ -16,14 +16,13 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, fonts, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, getUserProfile, ROLE_ICON, ROLE_LABEL, scopeTps, scopeWitnesses } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { PORTAL_NEWS_LIST } from '../data/portalNews';
 import { maskNik } from '../utils/masking';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { MobileRole } from '../types';
 import { FEATURE_FLAGS } from '../core/config/featureFlags';
-import { useWitnessApplication, WitnessProgressCard } from '../features/witness';
+import { useWitnessApplication, WitnessProgressCard, useActiveWitnessScope } from '../features/witness';
 import { useNominations } from '../features/recruitment';
 import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
 
@@ -91,6 +90,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     title: string;
     message: string;
     tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+    /** Langkah berikutnya (opsional): bila ada, dialog punya tombol aksi selain "Tutup". */
+    next?: { label: string; screen: string };
   }>({ visible: false, title: '', message: '' });
 
   // Data aspirasi warga wilayah dampingan Dago dengan riwayat timeline penanganan Web Command Center
@@ -220,13 +221,19 @@ export default function DashboardScreen({ navigation: propNav }: any) {
 
   const profile = getUserProfile(role);
   const user = currentUser.identity;
-  const isOfficialMember = currentUser.memberships.some((m) => m.type === 'member' && m.status === 'verified');
+  // Sama dengan guard e-KTA & useAccountSnapshot: anggota resmi = verified atau active.
+  const isOfficialMember = currentUser.memberships.some(
+    (m) => m.type === 'member' && (m.status === 'verified' || m.status === 'active'),
+  );
+  // Aspirasi dicatat atas nama pengguna yang login (bukan persona demo tetap).
+  const myName = currentUser.identity.name;
+  const myRoleLabel = isOfficialMember ? 'Anggota' : 'Relawan';
   const officialMembership = currentUser.memberships.find((m) => m.type === 'member');
   const volunteerMembership = currentUser.memberships.find((m) => m.type === 'volunteer');
   const scopedTps = scopeTps(role, tps, witnesses);
   const scopedWitnesses = scopeWitnesses(role, witnesses, scopedTps);
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const currentWitness = activeScope.witness;
   const currentTps = activeScope.tps;
   const currentPayment = payments?.find((p) => p.witnessId === currentWitness?.id);
@@ -235,6 +242,14 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   const presentCount = activeScope.tps?.votersPresent || 184;
   const participationPct = Math.min(100, Math.round((presentCount / targetDpt) * 100));
   const isWitnessCheckedIn = activeScope.witness?.status === 'checked_in' || Boolean(activeScope.witness?.checkInTime);
+  const isWitnessReportSent = activeScope.tps?.status === 'done';
+  // Kartu penugasan saksi: satu aksi utama sesuai tahap hari-H (absen → laporan → selesai).
+  const witnessPrimaryAction: { label: string; icon: keyof typeof Feather.glyphMap; onPress: () => void } =
+    !isWitnessCheckedIn
+      ? { label: 'Absen Masuk TPS', icon: 'map-pin', onPress: () => navigation.navigate('CheckIn', { targetType: 'tps' }) }
+      : !isWitnessReportSent
+      ? { label: 'Isi Laporan Hasil', icon: 'camera', onPress: () => navigation.navigate('C1Ocr', { tpsId: activeScope.assignedTpsId }) }
+      : { label: 'Lihat Status Tugas', icon: 'check-circle', onPress: () => navigation.navigate('Saksi') };
 
   const checkedInCount = scopedWitnesses.filter((w) => w.status === 'checked_in').length;
   const totalWitnessInScope = scopedWitnesses.length;
@@ -284,7 +299,9 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   const hasOfficialWitnessAssignment = witnessAccess.isUnlocked;
 
   // Deteksi Satgas Kader Penggerak (Level 1) vs Anggota Pemula (Level 0)
+  // Satgas PANdawa termasuk fitur lanjutan: tidak ditampilkan di mode 2 role.
   const isSatgasMember =
+    !isSimpleMode &&
     role === 'MEMBER' &&
     (currentUser.dimensions?.programs?.pandawa === 'ACTIVE' || currentUser.dimensions?.kader === 'kader_aktif') &&
     !isCaleg;
@@ -356,6 +373,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             title: 'Ajak Relawan Belum Tersedia',
             message: recruitAccess.reason ?? 'Fitur ini khusus relawan aktif yang sudah terverifikasi.',
             tone: 'warning',
+            // Langkah berikutnya sesuai syarat yang belum terpenuhi (batas harian: tidak ada langkah lain).
+            next: witnessAccess.unmetRequirements.some((req) => req.id === 'ACTIVE_STATUS')
+              ? { label: 'Aktifkan Status', screen: 'KelolaStatus' }
+              : witnessAccess.unmetRequirements.length > 0
+              ? { label: 'Lihat Data Diri', screen: 'DataDiri' }
+              : undefined,
           });
         },
       },
@@ -889,7 +912,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
 
           {/* Profile Avatar */}
           <Pressable
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => navigation.navigate('ProfileTab')}
             style={({ pressed }) => [styles.avatarTouch, pressed && { opacity: 0.8 }]}
           >
             <Image source={getWitnessAvatar(user.avatarIndex ?? profile.avatarIndex)} style={styles.avatarPhoto} />
@@ -909,11 +932,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               <View style={[styles.roleBadgeDot, { backgroundColor: colors.primary }]} />
               <Text style={[styles.swRoleName, { color: colors.primary }]}>
                 {hasOfficialWitnessAssignment || isWitnessRole
-                  ? 'Saksi Resmi TPS — PAN 360'
+                  ? ROLE_LABEL.WITNESS
                   : isSatgasMember
                   ? 'Satgas Kader Penggerak PANdawa'
                   : isVolunteer && !isOfficialMember
-                  ? 'Relawan Simpatisan — PAN 360'
+                  ? ROLE_LABEL.VOLUNTEER
                   : (ROLE_LABEL[role] || profile.roleLabel)}
               </Text>
             </View>
@@ -998,25 +1021,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         <WitnessProgressCard onPress={() => navigation.navigate('Saksi')} />
       )}
 
-      {/* Peta Sebaran untuk semua role (mode Relawan); pengurus melihat semua mode. */}
-      {isSimpleMode && (
-        <Card
-          onPress={() => navigation.navigate('PetaSebaran')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}
-        >
-          <View style={{ width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryLight }}>
-            <Feather name="map" size={18} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text }}>Peta Sebaran</Text>
-            <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted }} numberOfLines={1}>
-              {canSeeAllMapModes ? 'Relawan, saksi TPS & perolehan suara' : 'Sebaran relawan & posko per wilayah'}
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={18} color={colors.textMuted} />
-        </Card>
-      )}
-
       {/* ========================================================================= */}
       {/* 3. KARTU PERAN UTAMA (CONTEXTUAL ROLE CARD) - BAB 10 & 31                 */}
       {/* ========================================================================= */}
@@ -1090,29 +1094,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 </View>
               </View>
 
-              <Pressable
-                onPress={() =>
-                  navigation.navigate('AssignmentLetter', {
-                    witnessId: activeScope.witnessId,
-                    tpsId: activeScope.assignedTpsId,
-                  })
-                }
-                style={({ pressed }) => [
-                  styles.mandatChipBtn,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-                    borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#CBD5E1',
-                  },
-                  pressed && { opacity: 0.75 },
-                ]}
-              >
-                <Feather name="file-text" size={12} color={colors.primary} />
-                <Text style={[styles.mandatChipText, { color: colors.primary }]}>E-Mandat</Text>
-              </Pressable>
             </View>
-            {/* Baris "SK BSN: ..." dipangkas — nomor SK lengkap sudah
-                tampil begitu tombol "E-Mandat" di atas ditekan, tidak perlu
-                diulang lagi sebagai teks statis di sini. */}
+            {/* Nomor & surat mandat ada di layar Saksi ("Detail tugas"), tidak diulang di sini. */}
           </View>
 
           {/* C. Metrics Strip: Clean 3-Column Statistical Summary */}
@@ -1180,10 +1163,10 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             </View>
           </View>
 
-          {/* E. Action Row (Responsive & Touch Target >= 44pt, Zero Collision) */}
+          {/* E. Satu aksi utama sesuai tahap tugas hari-H + tautan ke detail tugas (layar Saksi). */}
           <View style={[styles.cardActionRow, { borderTopColor: colors.border }]}>
             <Pressable
-              onPress={() => navigation.navigate('TpsDetail', { tpsId: activeScope.assignedTpsId })}
+              onPress={() => navigation.navigate('Saksi')}
               style={({ pressed }) => [
                 styles.actionBtnOutline,
                 {
@@ -1194,22 +1177,41 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               ]}
             >
               <Feather name="info" size={14} color={colors.text} />
-              <Text style={[styles.actionBtnOutlineText, { color: colors.text }]}>Detail TPS</Text>
+              <Text style={[styles.actionBtnOutlineText, { color: colors.text }]}>Detail tugas</Text>
             </Pressable>
 
             <Pressable
-              onPress={() => navigation.navigate('ReportForm', { tpsId: activeScope.assignedTpsId })}
+              onPress={witnessPrimaryAction.onPress}
               style={({ pressed }) => [
                 styles.actionBtnSolid,
                 { backgroundColor: colors.primary },
                 pressed && { opacity: 0.85 },
               ]}
             >
-              <Feather name="file-text" size={14} color="#FFFFFF" />
-              <Text style={styles.actionBtnSolidText}>Form C1 Plano</Text>
+              <Feather name={witnessPrimaryAction.icon} size={14} color="#FFFFFF" />
+              <Text style={styles.actionBtnSolidText}>{witnessPrimaryAction.label}</Text>
               <Feather name="arrow-right" size={14} color="#FFFFFF" />
             </Pressable>
           </View>
+        </Card>
+      )}
+
+      {/* Peta Sebaran untuk semua role (mode Relawan); pengurus melihat semua mode. */}
+      {isSimpleMode && (
+        <Card
+          onPress={() => navigation.navigate('PetaSebaran')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}
+        >
+          <View style={{ width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryLight }}>
+            <Feather name="map" size={18} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text }}>Peta Sebaran</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted }} numberOfLines={1}>
+              {canSeeAllMapModes ? 'Relawan, saksi TPS & perolehan suara' : 'Sebaran relawan & posko per wilayah'}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.textMuted} />
         </Card>
       )}
 
@@ -1309,7 +1311,49 @@ export default function DashboardScreen({ navigation: propNav }: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. BERITA TERBARU                                                 */}
+      {/* 4. AGENDA & KEGIATAN TERDEKAT (sebelum berita)                            */}
+      {/* ========================================================================= */}
+      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
+        <View style={styles.sectionHeaderBetween}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Feather name="calendar" size={15} color={colors.primary} />
+            <Text style={[styles.sectionHeadingTitle, { color: colors.text, marginTop: 8 }]}>Agenda Kegiatan Terdekat</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Activities')} hitSlop={8}>
+            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
+          </Pressable>
+        </View>
+
+        <View style={{ gap: spacing.xs }}>
+          {events.slice(0, 2).map((ev) => (
+            <Pressable
+              key={ev.id}
+              onPress={() => navigation.navigate('Activities', { eventId: ev.id })}
+              style={({ pressed }) => [
+                styles.miniAgendaRow,
+                { borderColor: colors.border },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
+                  {ev.title}
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
+                  {ev.dateLabel} • {ev.location}
+                </Text>
+              </View>
+              <Pill
+                label={ev.attended ? 'Sudah hadir' : ev.isRegistered ? 'Terdaftar' : 'Belum daftar'}
+                tone={ev.attended || ev.isRegistered ? 'success' : 'neutral'}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      {/* ========================================================================= */}
+      {/* 5. BERITA TERBARU                                                 */}
       {/* ========================================================================= */}
       <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
         <View style={styles.sectionHeaderBetween}>
@@ -1368,45 +1412,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                 />
               </Pressable>
             </React.Fragment>
-          ))}
-        </View>
-      </Card>
-
-      {/* ========================================================================= */}
-      {/* 5. AGENDA & KEGIATAN TERDEKAT                                             */}
-      {/* ========================================================================= */}
-      <Card style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
-        <View style={styles.sectionHeaderBetween}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Feather name="calendar" size={15} color={colors.primary} />
-            <Text style={[styles.sectionHeadingTitle, { color: colors.text, marginTop: 8 }]}>Agenda Kegiatan Terdekat</Text>
-          </View>
-          <Pressable onPress={() => navigation.navigate('Activities')} hitSlop={8}>
-            <Text style={[styles.unifiedActionLink, { color: colors.primary }]}>Lihat Semua</Text>
-          </Pressable>
-        </View>
-
-        <View style={{ gap: spacing.xs }}>
-          {events.slice(0, 2).map((ev) => (
-            <Pressable
-              key={ev.id}
-              onPress={() => navigation.navigate('Activities')}
-              style={({ pressed }) => [
-                styles.miniAgendaRow,
-                { borderColor: colors.border },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.miniAgendaTitle, { color: colors.text }]} numberOfLines={1}>
-                  {ev.title}
-                </Text>
-                <Text style={{ fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted }}>
-                  {ev.dateLabel} • {ev.location}
-                </Text>
-              </View>
-              <Pill label={isVolunteer ? 'Terdaftar' : (ev.isRegistered ? 'Terdaftar' : 'Buka')} tone={isVolunteer || ev.isRegistered ? 'success' : 'info'} />
-            </Pressable>
           ))}
         </View>
       </Card>
@@ -1527,7 +1532,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               if (isOfficialMember) {
                 navigation.navigate('SimpanKta');
               } else {
-                navigation.navigate('Profile');
+                navigation.navigate('ProfileTab');
               }
             }}
             style={{ width: '100%' }}
@@ -1615,9 +1620,15 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         title={dialogConfig.title}
         message={dialogConfig.message}
         tone={dialogConfig.tone}
-        singleButton
-        confirmLabel="Tutup"
-        onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+        singleButton={!dialogConfig.next}
+        confirmLabel={dialogConfig.next?.label ?? 'Tutup'}
+        cancelLabel="Tutup"
+        onCancel={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+        onConfirm={() => {
+          const next = dialogConfig.next;
+          setDialogConfig((prev) => ({ ...prev, visible: false }));
+          if (next) navigation.navigate(next.screen);
+        }}
       />
 
       {/* Aspirasi Warga Modal (List & Input Form) */}
@@ -1724,8 +1735,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                     desc: newAspirasiDesc.trim() || 'Aspirasi warga dicatat saat kunjungan relawan ke Dago.',
                     category: 'Aspirasi Langsung',
                     residentName: newAspirasiResident.trim() || 'Warga Binaan Dago',
-                    recordedBy: 'Siti Rahmawati',
-                    recordedRole: 'Relawan Dampingan Dago',
+                    recordedBy: myName,
+                    recordedRole: myRoleLabel,
                     location: 'Kelurahan Dago, Coblong',
                     date: '18 Sep 2026, Hari Ini',
                     status: 'Tercatat di Posko',
@@ -1735,7 +1746,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                     timeline: [
                       {
                         stage: 'Aspirasi Dihimpun di Lapangan',
-                        actor: 'Siti Rahmawati (Relawan)',
+                        actor: `${myName} (${myRoleLabel})`,
                         time: '18 Sep 2026, Baru saja',
                         desc: 'Dicatat melalui aplikasi Simpan 360.',
                         done: true,
@@ -1772,7 +1783,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               />
             </View>
 
-            {/* Segment Filter Tab: Catatan Siti vs Semua Posko Dago */}
+            {/* Segment Filter Tab: Catatan Saya vs Semua Posko Dago */}
             <View
               style={{
                 flexDirection: 'row',
@@ -1796,7 +1807,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                     color: aspirasiFilterTab === 'my_input' ? '#FFFFFF' : colors.textMuted,
                   }}
                 >
-                  Catatan Saya ({aspirasiItems.filter((i) => i.recordedBy.includes('Siti')).length})
+                  Catatan Saya ({aspirasiItems.filter((i) => i.recordedBy === myName).length})
                 </Text>
               </Pressable>
 
@@ -1822,7 +1833,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
             {/* List Aspirasi Cards (Clickable for Timeline Detail) */}
             <View style={{ gap: spacing.xs, marginTop: 4 }}>
               {aspirasiItems
-                .filter((item) => (aspirasiFilterTab === 'my_input' ? item.recordedBy.includes('Siti') : true))
+                .filter((item) => (aspirasiFilterTab === 'my_input' ? item.recordedBy === myName : true))
                 .map((item) => (
                   <Pressable
                     key={item.id}

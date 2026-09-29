@@ -54,6 +54,17 @@ export interface WitnessEligibilityAnswers {
   notCivilServantOrSecurity: boolean;
 }
 
+/** Lokasi TPS penugasan (dari Web Command Center), dipakai layar lama untuk menampilkan TPS. */
+export interface AssignedTpsLocation {
+  tpsNumber: number;
+  village: string;
+  district: string;
+  regency: string;
+  province: string;
+  lat: number;
+  lng: number;
+}
+
 export interface TpsPreference {
   kelurahan: string;
   tpsNumber?: string;
@@ -80,6 +91,7 @@ export interface WitnessApplication {
   trainingCompletedAt?: string;
   assignedTpsId?: string;
   assignedTpsLabel?: string;
+  assignedTpsLocation?: AssignedTpsLocation;
   mandateNumber?: string;
   mandateQrToken?: string;
   letterStatus?: AssignmentLetterStatus;

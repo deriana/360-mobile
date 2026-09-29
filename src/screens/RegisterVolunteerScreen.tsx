@@ -133,8 +133,10 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
     setStep('completed');
   };
 
+  // Pendaftar baru masuk sebagai relawan yang belum terverifikasi (akun demo Nadia),
+  // bukan relawan aktif yang sudah terverifikasi.
   const handleLoginAsVolunteer = () => {
-    login('VOLUNTEER', 'siti.rahmawati@relawanpan.id');
+    login('VOLUNTEER', 'relawan.baru@pan.go.id');
   };
 
   const handleBack = () => {
@@ -440,7 +442,7 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
                   <Feather name="grid" size={28} color="#0369A1" />
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end', gap: 1 }}>
-                  <Text style={styles.footerNote}>Terverifikasi Badan Relawan PAN</Text>
+                  <Text style={styles.footerNote}>Menunggu verifikasi tim pusat</Text>
                   <Text style={styles.footerDate}>Terdaftar: {new Date().toLocaleDateString('id-ID')}</Text>
                 </View>
               </View>

@@ -226,11 +226,26 @@ interface AppContextValue {
    * Menyelaraskan role WITNESS di `currentUser.roles` dengan status penugasan saksi
    * (`src/features/witness`) agar layar lama yang membaca `roles` tetap konsisten.
    */
-  syncWitnessAssignment: (assignment: { tpsId: string; tpsLabel: string } | null) => void;
+  syncWitnessAssignment: (assignment: WitnessAssignmentSync | null) => void;
   upgradeToMember: (ktaNumber: string, details?: { dpd?: string; dpc?: string; registeredAt?: string }) => void;
   checkInEvent: (eventId: string, details?: any) => void;
   poskoCheckIn: { checkedIn: boolean; time: string | null; poskoName: string };
   checkInPosko: (poskoName: string, details?: any) => void;
+}
+
+/** Penugasan saksi aktif dari fitur `witness`, disalin ke data lama (roles, tps, witnesses). */
+export interface WitnessAssignmentSync {
+  tpsId: string;
+  tpsLabel: string;
+  location?: {
+    tpsNumber: number;
+    village: string;
+    district: string;
+    regency: string;
+    province: string;
+    lat: number;
+    lng: number;
+  };
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -634,6 +649,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
       return { ...prev, roles: [...prev.roles.filter((r) => r.role !== 'WITNESS'), witnessRole] };
     });
+
+    // Pastikan TPS & catatan saksi penugasan ada di data lama, supaya presensi, laporan, dan
+    // Beranda (kode lama) memakai TPS yang sama dengan layar Saksi.
+    if (!assignment?.location) return;
+    const { tpsId, location } = assignment;
+    setTps((prev) =>
+      prev.some((t) => t.id === tpsId)
+        ? prev
+        : [
+            ...prev,
+            {
+              id: tpsId,
+              province: location.province,
+              regency: location.regency,
+              district: location.district,
+              village: location.village,
+              tpsNumber: location.tpsNumber,
+              dpt: 268,
+              status: 'not_reported',
+              lat: location.lat,
+              lng: location.lng,
+              votersPresent: 0,
+              votes: { partyVotes: {}, candidateVotes: {}, dprCandidateVotes: {}, invalidVotes: 0 },
+              coordinatorId: 'COORD-1',
+            },
+          ],
+    );
+    const witnessId = `SAKSI-${currentUser.id}`;
+    setWitnesses((prev) =>
+      prev.some((w) => w.id === witnessId && w.assignedTpsId === tpsId)
+        ? prev
+        : [
+            {
+              id: witnessId,
+              name: currentUser.identity.name,
+              nik: currentUser.identity.nikFull || currentUser.identity.nikMasked,
+              phone: currentUser.identity.phone,
+              address: `Kel. ${location.village}, Kec. ${location.district}, ${location.regency}`,
+              assignedTpsId: tpsId,
+              status: 'assigned',
+              checkInTime: null,
+              checkInLocation: null,
+              checkInLat: null,
+              checkInLng: null,
+            },
+            ...prev.filter((w) => w.id !== witnessId),
+          ],
+    );
   };
 
   const upgradeToMember = (

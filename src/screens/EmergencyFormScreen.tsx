@@ -16,8 +16,9 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { EmergencyCategory, EmergencySeverity } from '../types';
-import { CURRENT_WITNESS_ID } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { CURRENT_WITNESS_ID, ROLE_PERMISSIONS } from '../utils/scope';
+import { useActiveWitnessScope, useWitnessApplication } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { pickImage } from '../utils/pickImage';
 
 interface CategoryOption {
@@ -132,7 +133,7 @@ const QUICK_TEMPLATES: Record<EmergencyCategory, string[]> = {
 };
 
 export default function EmergencyFormScreen({ navigation }: any) {
-  const { addEmergencyReport, tps, witnesses, currentUser } = useApp();
+  const { addEmergencyReport, tps, witnesses, currentUser, role } = useApp();
   const { colors, isDark } = useTheme();
 
   const [category, setCategory] = useState<EmergencyCategory>('violation');
@@ -150,12 +151,14 @@ export default function EmergencyFormScreen({ navigation }: any) {
     onConfirm?: () => void;
   }>({ visible: false, title: '', message: '' });
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
-  const currentWitness = activeScope.witness;
-  const currentTps = activeScope.tps;
+  const activeScope = useActiveWitnessScope();
+  const { access: witnessAccess } = useWitnessApplication();
+  // Laporan hanya dikaitkan ke TPS bila pelapor sedang bertugas sebagai saksi.
+  const isOnDuty = FEATURE_FLAGS.advancedRoles || witnessAccess.isUnlocked;
+  const currentTps = isOnDuty ? activeScope.tps : null;
   const tpsName = currentTps
     ? `TPS ${String(currentTps.tpsNumber).padStart(3, '0')} Kel. ${currentTps.village || currentTps.district}`
-    : 'TPS 001 Kel. Braga';
+    : 'Lokasi Anda saat ini';
 
   const handlePickImage = async (source: 'camera' | 'library') => {
     if (attachments.length >= 4) {
@@ -200,7 +203,7 @@ export default function EmergencyFormScreen({ navigation }: any) {
       description: description.trim(),
       photos: attachments,
       tpsId: currentTps?.id || null,
-      reportedBy: currentWitness?.name || 'Saksi BSN PAN',
+      reportedBy: currentUser.identity.name,
     });
 
     setIsSubmitting(false);
@@ -213,7 +216,16 @@ export default function EmergencyFormScreen({ navigation }: any) {
       tone: 'success',
       onConfirm: () => {
         setResultDialog((prev) => ({ ...prev, visible: false }));
-        navigation.navigate('EmergencyList');
+        // Kosongkan form lalu ganti layar (bukan menumpuk), agar tombol Kembali
+        // tidak membuka form yang masih terisi dan laporan tidak terkirim ganda.
+        setDescription('');
+        setAttachments([]);
+        setSeverity('medium');
+        if (ROLE_PERMISSIONS[role]?.canAccessEmergencyList) {
+          navigation.replace('EmergencyList');
+        } else {
+          navigation.goBack();
+        }
       },
     });
   };

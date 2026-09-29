@@ -305,8 +305,7 @@ export const INITIAL_TASKS: TaskItem[] = [
     dueDate: '20 Sep 2026, 17:00 WIB',
     timeLabel: '12 Aspirasi Masuk',
     status: 'pending',
-    actionScreen: 'Tasks',
-    actionLabel: 'Checklist Tugas',
+    // Tanpa layar kerja: diselesaikan dengan "Tandai Selesai" di layar Tugas.
   },
   {
     id: 'TSK-07',
@@ -341,8 +340,6 @@ export const INITIAL_TASKS: TaskItem[] = [
     dueDate: '19 Sep 2026, 12:00 WIB',
     timeLabel: '35 / 50 Undangan Tersalurkan',
     status: 'completed',
-    actionScreen: 'Tasks',
-    actionLabel: 'Checklist Tugas',
   },
   {
     id: 'TSK-10',
@@ -353,7 +350,8 @@ export const INITIAL_TASKS: TaskItem[] = [
     dueDate: 'Sebelum 22 Sep 2026',
     timeLabel: 'Modul 4/5 • Skor Kuis 90%',
     status: 'in_progress',
-    actionScreen: 'WitnessAcademy',
+    // Materi relawan ada di Amanat Academy (Witness Academy khusus jalur saksi).
+    actionScreen: 'AmanatAcademy',
     actionLabel: 'Lanjut Belajar',
   },
 ];
@@ -371,6 +369,7 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'NOTIF-02',
+    audience: 'witness_on_duty',
     type: 'assignment',
     title: 'Surat Penugasan Resmi Saksi Terbit',
     body: 'Anda telah resmi ditugaskan sebagai Saksi Utama di TPS 001 Kel. Dago, Kec. Coblong. Surat mandat telah siap.',
@@ -381,6 +380,7 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'NOTIF-03',
+    audience: 'witness_on_duty',
     type: 'reminder',
     title: 'Pengingat Presensi Kehadiran TPS',
     body: 'Batas akhir presensi GPS dan swafoto di titik TPS adalah pukul 07:00 WIB. Pastikan izin lokasi aktif.',
@@ -401,6 +401,7 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: 'NOTIF-05',
+    audience: 'witness_on_duty',
     type: 'audit',
     title: 'Antrean Transaksi Laporan C1',
     body: 'Data formulir C1 plano tersimpan di antrean offline lokal. Sistem akan auto-sinkron begitu koneksi pulih.',

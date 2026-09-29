@@ -227,6 +227,8 @@ export interface NotificationItem {
   read: boolean;
   actionScreen?: string;
   actionParams?: any;
+  /** 'witness_on_duty' = hanya tampil untuk saksi yang sedang bertugas. Kosong = semua pengguna. */
+  audience?: 'witness_on_duty';
 }
 
 export type TpsStatus = 'not_reported' | 'in_progress' | 'done' | 'problem';

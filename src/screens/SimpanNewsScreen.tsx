@@ -681,12 +681,23 @@ export default function SimpanNewsScreen({ route, navigation }: any) {
                 <Text style={[styles.tagsLabel, { color: colors.textMuted }]}>Topik Terkait:</Text>
                 <View style={styles.tagChipsWrap}>
                   {selectedNews.tags.map((tag) => (
-                    <View
+                    <Pressable
                       key={tag}
-                      style={[styles.tagPill, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      // Ketuk topik → tutup artikel dan saring daftar berita dengan topik itu.
+                      onPress={() => {
+                        setSearchQuery(tag);
+                        handleCloseReader();
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Cari berita topik ${tag}`}
+                      style={({ pressed }) => [
+                        styles.tagPill,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        pressed && { opacity: 0.7 },
+                      ]}
                     >
                       <Text style={[styles.tagText, { color: colors.primary }]}>{tag}</Text>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
               </View>
@@ -732,7 +743,7 @@ export default function SimpanNewsScreen({ route, navigation }: any) {
               {/* Action Buttons */}
               <View style={styles.readerBottomActions}>
                 <PrimaryButton
-                  label="Bagikan Liputan Ini ke WhatsApp"
+                  label="Bagikan Liputan Ini"
                   icon="share-2"
                   variant="primary"
                   onPress={() => handleShare(selectedNews)}

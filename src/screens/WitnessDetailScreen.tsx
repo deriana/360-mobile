@@ -7,7 +7,7 @@ import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton, SectionTitle } fr
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { maskNik, maskPhone } from '../utils/masking';
 import { getStableAvatar } from '../data/images';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 
 export default function WitnessDetailScreen({ route, navigation }: any) {
   const { witnesses, tps, checkInWitness, currentUser } = useApp();
@@ -19,7 +19,7 @@ export default function WitnessDetailScreen({ route, navigation }: any) {
     message: '',
   });
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const witnessId = route?.params?.witnessId || activeScope.witnessId;
   const witness = witnesses.find((w) => w.id === witnessId) || (witnessId === activeScope.witnessId ? activeScope.witness : null);
 

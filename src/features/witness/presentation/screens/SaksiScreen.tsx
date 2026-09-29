@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import ContactActions from '../../../../core/components/ContactActions';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../../../../context/AppContext';
@@ -13,6 +14,8 @@ import { WitnessReviewDecision } from '../../application/simulateWitnessReview';
 import { WitnessApplicationStatus } from '../../domain/witnessApplication';
 import { WitnessUseCaseOutput } from '../../application/witnessUseCaseTypes';
 import { useWitnessApplication } from '../hooks/useWitnessApplication';
+import { useActiveWitnessScope } from '../hooks/useActiveWitnessScope';
+import { useVolunteerVerification } from '../../../account';
 import WitnessStatusTimeline from '../components/WitnessStatusTimeline';
 import HariHChecklist, { HariHChecklistItem } from '../components/HariHChecklist';
 
@@ -41,15 +44,28 @@ const formatDate = (iso?: string) =>
 export default function SaksiScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { witnesses, tps, payments, currentUser } = useApp();
+  const { payments, currentUser } = useApp();
   const { application, access, statusInfo, stepNumber, totalSteps, acceptLetter, completeTraining, simulateReview } =
     useWitnessApplication();
   const [dialog, setDialog] = useState<Dialog>(null);
+  // TPS & catatan saksi yang sama dengan Beranda, Presensi, dan layar laporan.
+  const activeScope = useActiveWitnessScope();
+  const { simulateKtpVerification } = useVolunteerVerification();
 
   const showResult = (result: Result<WitnessUseCaseOutput>) => {
     setDialog(
       result.ok
         ? { title: result.value.notice.title, message: result.value.notice.body, tone: 'success' }
+        : { title: 'Belum Bisa Diproses', message: result.error, tone: 'danger' },
+    );
+  };
+
+  const isKtpPending = access.unmetRequirements.some((req) => req.id === 'KTP_VERIFIED');
+  const handleKtpDemo = () => {
+    const result = simulateKtpVerification();
+    setDialog(
+      result.ok
+        ? { title: result.value.title, message: result.value.body, tone: 'success' }
         : { title: 'Belum Bisa Diproses', message: result.error, tone: 'danger' },
     );
   };
@@ -68,6 +84,32 @@ export default function SaksiScreen() {
     );
   }
 
+  // Daftar syarat yang belum terpenuhi + langkah berikutnya (dipakai kasus syarat & pengajuan ulang).
+  const renderRequirements = () => (
+    <>
+      {access.unmetRequirements.map((req) => (
+        <View key={req.id} style={styles.reqRow}>
+          <Feather name="x-circle" size={16} color={colors.danger} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.reqLabel, { color: colors.text }]}>{req.label}</Text>
+            <Text style={[styles.reqHint, { color: colors.textMuted }]}>{req.hint}</Text>
+          </View>
+        </View>
+      ))}
+      {/* Status nonaktif bisa diaktifkan sendiri; KTP diverifikasi tim pusat, jadi arahkan ke koordinator bila lama. */}
+      {access.unmetRequirements.some((req) => req.id === 'ACTIVE_STATUS') ? (
+        <PrimaryButton label="Aktifkan Status Relawan" icon="refresh-cw" onPress={() => navigation.navigate('KelolaStatus')} />
+      ) : isKtpPending && currentUser.coordinatorContact ? (
+        <PrimaryButton
+          label={`Hubungi ${currentUser.coordinatorContact.name}`}
+          icon="phone"
+          variant="secondary"
+          onPress={() => Linking.openURL(`tel:${currentUser.coordinatorContact?.phone.replace(/\D/g, '')}`)}
+        />
+      ) : null}
+    </>
+  );
+
   const renderStatusBody = () => {
     switch (access.nextAction) {
       case 'COMPLETE_REQUIREMENTS':
@@ -77,19 +119,7 @@ export default function SaksiScreen() {
             <Text style={[styles.body, { color: colors.textMuted }]}>
               Pendaftaran saksi terbuka untuk relawan yang sudah terverifikasi.
             </Text>
-            {access.unmetRequirements.map((req) => (
-              <View key={req.id} style={styles.reqRow}>
-                <Feather name="x-circle" size={16} color={colors.danger} style={{ marginTop: 1 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.reqLabel, { color: colors.text }]}>{req.label}</Text>
-                  <Text style={[styles.reqHint, { color: colors.textMuted }]}>{req.hint}</Text>
-                </View>
-              </View>
-            ))}
-            {/* KTP yang belum diverifikasi cukup ditunggu; status nonaktif bisa diaktifkan sendiri. */}
-            {access.unmetRequirements.some((req) => req.id === 'ACTIVE_STATUS') ? (
-              <PrimaryButton label="Aktifkan Status Relawan" icon="refresh-cw" onPress={() => navigation.navigate('KelolaStatus')} />
-            ) : null}
+            {renderRequirements()}
           </Card>
         );
 
@@ -130,9 +160,12 @@ export default function SaksiScreen() {
                 onPress={() => navigation.navigate('DaftarSaksi')}
               />
             ) : (
-              <Text style={[styles.body, { color: colors.textMuted }]}>
-                Pengajuan ulang terbuka setelah syarat relawan aktif terpenuhi kembali.
-              </Text>
+              <>
+                <Text style={[styles.body, { color: colors.textMuted }]}>
+                  Pengajuan ulang terbuka setelah syarat relawan aktif terpenuhi kembali.
+                </Text>
+                {renderRequirements()}
+              </>
             )}
           </Card>
         );
@@ -166,26 +199,47 @@ export default function SaksiScreen() {
           <Card style={styles.card}>
             <Text style={[styles.body, { color: colors.text }]}>{application?.revokedReason ?? statusInfo.description}</Text>
             {contact ? (
+              <>
+                <Text style={[styles.reqHint, { color: colors.textMuted }]}>
+                  {contact.name} · {contact.role}
+                </Text>
+                <ContactActions phone={contact.phone} />
+              </>
+            ) : (
               <PrimaryButton
-                label={`Hubungi ${contact.name}`}
-                icon="phone"
+                label="Buka Pusat Bantuan"
+                icon="help-circle"
                 variant="secondary"
-                onPress={() => Linking.openURL(`tel:${contact.phone.replace(/\D/g, '')}`)}
+                onPress={() => navigation.navigate('HelpCenter')}
               />
-            ) : null}
+            )}
           </Card>
         );
       }
 
       default:
+        if (access.status === 'COMPLETED') {
+          const doneParams = { witnessId: activeScope.witness?.id, tpsId: application?.assignedTpsId };
+          return (
+            <Card style={styles.card}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Tugas selesai. Terima kasih!</Text>
+              <Text style={[styles.body, { color: colors.textMuted }]}>
+                Tugas Anda sebagai saksi sudah selesai. Dokumen dan status honor tetap bisa dilihat.
+              </Text>
+              <PrimaryButton label="Surat Mandat" icon="file-text" variant="secondary" onPress={() => navigation.navigate('AssignmentLetter', doneParams)} />
+              <PrimaryButton label="Detail TPS" icon="map-pin" variant="secondary" onPress={() => navigation.navigate('TpsDetail', doneParams)} />
+              <PrimaryButton label="Cek Honor" icon="credit-card" variant="secondary" onPress={() => navigation.navigate('Payment')} />
+            </Card>
+          );
+        }
         return null;
     }
   };
 
   const renderAssignment = () => {
     const tpsId = application?.assignedTpsId;
-    const witness = witnesses.find((w) => w.assignedTpsId === tpsId);
-    const tpsRecord = tps.find((t) => t.id === tpsId);
+    const witness = activeScope.witness;
+    const tpsRecord = activeScope.tps;
     const checkedIn = witness?.status === 'checked_in';
     const reportDone = tpsRecord?.status === 'done';
     const honorPaid = payments.some((p) => p.witnessId === witness?.id && p.status === 'paid');
@@ -204,8 +258,15 @@ export default function SaksiScreen() {
     return (
       <>
         <Card style={styles.card}>
-          <InfoRow icon="map-pin" label="Lokasi" value={application?.assignedTpsLabel ?? '-'} />
+          <Pressable onPress={() => navigation.navigate('TpsDetail', { tpsId })} style={({ pressed }) => pressed && { opacity: 0.7 }}>
+            <InfoRow icon="map-pin" label="Lokasi" value={application?.assignedTpsLabel ?? '-'} />
+          </Pressable>
           <InfoRow icon="file-text" label="No. surat mandat" value={application?.mandateNumber ?? '-'} />
+          <View style={styles.letterRow}>
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Laporan hasil</Text>
+            {/* Status lengkap (diverifikasi/perlu perbaikan) menyusul saat terhubung ke Web Command Center. */}
+            <Pill label={reportDone ? 'Terkirim — menunggu verifikasi' : 'Belum dikirim'} tone={reportDone ? 'success' : 'warning'} />
+          </View>
           <View style={styles.letterRow}>
             <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Surat tugas</Text>
             <Pill label={letterAccepted ? 'Sudah diterima' : 'Belum diterima'} tone={letterAccepted ? 'success' : 'warning'} />
@@ -219,12 +280,15 @@ export default function SaksiScreen() {
 
         <HariHChecklist items={checklist} />
 
+        <PrimaryButton label="Cek Honor" icon="credit-card" variant="secondary" onPress={() => navigation.navigate('Payment')} />
+
         <PrimaryButton label="Lapor Kejadian" icon="alert-triangle" variant="outline" onPress={() => navigation.navigate('EmergencyForm')} />
       </>
     );
   };
 
   const demoButtons = FEATURE_FLAGS.demoControls ? DEMO_DECISIONS[access.status] : undefined;
+  const showKtpDemo = FEATURE_FLAGS.demoControls && isKtpPending;
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
@@ -246,6 +310,13 @@ export default function SaksiScreen() {
       </Card>
 
       {renderStatusBody()}
+
+      {showKtpDemo ? (
+        <View style={[styles.demoBox, { borderColor: colors.border }]}>
+          <Text style={[styles.demoTitle, { color: colors.textMuted }]}>Simulasi Web Command Center (demo)</Text>
+          <PrimaryButton label="Verifikasi KTP" variant="outline" onPress={handleKtpDemo} />
+        </View>
+      ) : null}
 
       {demoButtons ? (
         <View style={[styles.demoBox, { borderColor: colors.border }]}>

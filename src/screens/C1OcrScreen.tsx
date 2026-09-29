@@ -8,7 +8,7 @@ import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { pickImage } from '../utils/pickImage';
 import { scanC1PlanoWithVisionAi, C1OcrBoxDetection } from '../utils/ocrApi';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 import { UploadRow } from './ReportFormScreen';
 
 type ScanStage = 'before' | 'scanning' | 'review' | 'attachment' | 'done';
@@ -17,7 +17,7 @@ export default function C1OcrScreen({ route, navigation }: any) {
   const { tps, submitTpsReport, addDocumentationPhoto, currentUser, witnesses } = useApp();
   const { colors } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const targetTpsId = route?.params?.tpsId || activeScope.assignedTpsId || 'TPS-001';
   const record = tps.find((t) => t.id === targetTpsId) || (targetTpsId === activeScope.assignedTpsId ? activeScope.tps : tps[0]);
   const [stage, setStage] = useState<ScanStage>('before');
@@ -323,7 +323,7 @@ export default function C1OcrScreen({ route, navigation }: any) {
           <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center' }}>
             Data hasil suara telah dikirim ke pusat tabulasi dan dicadangkan ke antrean offline lokal.
           </Text>
-          <PrimaryButton label="Kembali ke Laporan" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
+          <PrimaryButton label="Kembali" variant="secondary" icon="arrow-left" onPress={() => navigation.goBack()} />
         </Card>
       )}
 

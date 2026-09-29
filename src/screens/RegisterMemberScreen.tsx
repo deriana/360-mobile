@@ -156,12 +156,10 @@ export default function RegisterMemberScreen({ route, navigation }: any) {
     setStep('completed');
   };
 
+  // Layar ini hanya dibuka dari dalam aplikasi (sudah login) → selalu kembali,
+  // jangan mengganti sesi ke akun demo lain.
   const handleLoginAsMember = () => {
-    if (isUpgradeFlow) {
-      navigation.goBack();
-    } else {
-      login('KADER_ANGGOTA');
-    }
+    navigation.goBack();
   };
 
   return (
@@ -484,7 +482,7 @@ export default function RegisterMemberScreen({ route, navigation }: any) {
               />
 
               <PrimaryButton
-                label={isUpgradeFlow ? "Kembali ke Profil Saya" : "Masuk ke Akun Kader simPAN"}
+                label={isUpgradeFlow ? "Kembali ke Profil Saya" : "Kembali"}
                 icon={isUpgradeFlow ? "arrow-left" : "log-in"}
                 variant="secondary"
                 onPress={handleLoginAsMember}

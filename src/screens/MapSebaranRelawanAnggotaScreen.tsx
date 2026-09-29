@@ -196,7 +196,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
         setDrillTier('REGENCY');
         setCamera({ lat, lng, zoom: 9.8, label: name });
       } else if (level === 'DISTRICT') {
-        Alert.alert('Data Tingkat Kecamatan', `Data agregat ${name} akan tersedia pada pengembangan berikutnya.`);
+        // Rincian tingkat kecamatan segera hadir; untuk sekarang ketukan cukup memperbesar peta.
         setCamera((prev) => ({ ...prev, lat, lng, zoom: 11 }));
       }
     } catch (err) {
@@ -549,7 +549,8 @@ export default function MapSebaranRelawanAnggotaScreen() {
                 })}
               </View>
 
-              {/* Rincian Kab/Kota — muncul begitu satu provinsi dipilih (Relawan/Saksi Mandat/Kemenangan sekaligus) */}
+              {/* Rincian Kab/Kota — muncul begitu satu provinsi dipilih. Saksi Mandat & Kemenangan
+                  hanya untuk pengurus/pejabat/caleg; pengguna lain melihat capaian relawan saja. */}
               {selectedProvince ? (
                 <>
                   <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
@@ -570,7 +571,10 @@ export default function MapSebaranRelawanAnggotaScreen() {
                         onPress={() =>
                           Alert.alert(
                             regency.name,
-                            `Relawan: ${formatPercent(regency.relawanPercent)}\nSaksi Mandat: ${formatPercent(regency.saksiPercent)}\nKemenangan: ${formatPercent(regency.kemenanganPercent)}`,
+                            // Angka saksi & kemenangan hanya untuk pengurus/pejabat/caleg (sama dengan akses mode peta).
+                            canSeeAllModes
+                              ? `Relawan: ${formatPercent(regency.relawanPercent)}\nSaksi Mandat: ${formatPercent(regency.saksiPercent)}\nKemenangan: ${formatPercent(regency.kemenanganPercent)}`
+                              : `Relawan: ${formatPercent(regency.relawanPercent)}`,
                           )
                         }
                         style={[styles.regencyCard, { backgroundColor: colors.background, borderColor: colors.border }]}
@@ -585,6 +589,8 @@ export default function MapSebaranRelawanAnggotaScreen() {
                               {formatPercent(regency.relawanPercent)}
                             </Text>
                           </View>
+                          {canSeeAllModes && (
+                          <>
                           <View style={styles.regencyMetricItem}>
                             <Feather name="shield" size={11} color={regency.saksiTier.color} />
                             <Text style={[styles.regencyMetricValue, { color: regency.saksiTier.color }]}>
@@ -597,6 +603,8 @@ export default function MapSebaranRelawanAnggotaScreen() {
                               {formatPercent(regency.kemenanganPercent)}
                             </Text>
                           </View>
+                          </>
+                          )}
                         </View>
                       </TouchableOpacity>
                     ))

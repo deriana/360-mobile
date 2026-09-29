@@ -12,10 +12,14 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { NotificationItem } from '../types';
+import { useWitnessApplication } from '../features/witness';
+import { filterNotificationsForUser } from '../utils/notificationAudience';
 
 export default function NotificationsScreen({ navigation }: any) {
-  const { notifications, markNotificationRead } = useApp();
+  const { notifications: allNotifications, markNotificationRead } = useApp();
   const { colors, isDark } = useTheme();
+  const { access: witnessAccess } = useWitnessApplication();
+  const notifications = filterNotificationsForUser(allNotifications, witnessAccess.isUnlocked);
 
   const [filterType, setFilterType] = useState<'all' | 'broadcast' | 'assignment' | 'reminder'>('all');
 

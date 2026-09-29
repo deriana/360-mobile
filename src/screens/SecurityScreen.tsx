@@ -136,10 +136,8 @@ export default function SecurityScreen({ navigation }: any) {
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Pressable
-          onPress={() => setNoticeMessage('Fitur Ubah PIN Pengamanan: PIN saat ini aktif. Masukkan 6 digit PIN lama Anda untuk memperbarui.')}
-          style={({ pressed }) => [styles.actionLinkRow, pressed && { opacity: 0.7 }]}
-        >
+        {/* Form ubah PIN belum tersedia → ditandai "Segera hadir", bukan tombol yang hanya membuka info. */}
+        <View style={styles.actionLinkRow}>
           <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }]}>
             <Feather name="key" size={16} color="#4F46E5" />
           </View>
@@ -147,8 +145,8 @@ export default function SecurityScreen({ navigation }: any) {
             <Text style={[styles.settingLabel, { color: colors.text }]}>Ubah 6-Digit PIN Petugas</Text>
             <Text style={[styles.settingSub, { color: colors.textMuted }]}>Terakhir diperbarui: 01 September 2026</Text>
           </View>
-          <Feather name="chevron-right" size={18} color={colors.textMuted} />
-        </Pressable>
+          <Pill label="Segera hadir" tone="neutral" />
+        </View>
       </Card>
 
       {/* 3. PRIVASI & MINIMALISASI DATA SENSITIF (BAB 24) */}

@@ -52,14 +52,14 @@ export const ROLE_LABEL: Record<Role, string> = {
   TPS_COORDINATOR: 'Koordinator TPS PAN (Kluster 6 TPS)',
   FIELD_COORDINATOR: 'Koordinator Lapangan (Kecamatan Coblong)',
   OPERATOR: 'Operator Lapangan PAN (Kota Bandung)',
-  TPS_WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
-  WITNESS: 'Saksi Resmi TPS — Partai Amanat Nasional',
-  RELAWAN: 'Relawan Simpatisan — PAN 360',
-  VOLUNTEER: 'Relawan Simpatisan — PAN 360',
+  TPS_WITNESS: 'Saksi TPS',
+  WITNESS: 'Saksi TPS',
+  RELAWAN: 'Relawan',
+  VOLUNTEER: 'Relawan',
   CALEG: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
   CALEG_OPS: 'Caleg DPR-RI Dapil Jabar I (No. Urut 1)',
-  KADER_ANGGOTA: 'Kader & Anggota Partai — simPAN',
-  MEMBER: 'Kader & Anggota Partai — simPAN',
+  KADER_ANGGOTA: 'Anggota',
+  MEMBER: 'Anggota',
 };
 
 export const ROLE_SCOPE_DESCRIPTION: Record<Role, string> = {
@@ -201,7 +201,7 @@ export function getUserProfile(role: Role): UserProfile {
         phone: '0812-8877-6655',
         email: 'relawan@pan.go.id',
         badgeId: 'REL-PAN-DGO-01',
-        roleLabel: 'Relawan Simpatisan — PAN 360',
+        roleLabel: 'Relawan',
         scopeLocation: 'Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 4,
       };
@@ -223,7 +223,7 @@ export function getUserProfile(role: Role): UserProfile {
         phone: '0813-2211-4433',
         email: 'kader@pan.go.id',
         badgeId: 'KTA-PAN-3273-08912',
-        roleLabel: 'Kader & Anggota Partai — simPAN',
+        roleLabel: 'Anggota',
         scopeLocation: 'Kota Bandung, Jawa Barat',
         avatarIndex: 1,
       };
@@ -236,7 +236,7 @@ export function getUserProfile(role: Role): UserProfile {
         phone: '0812-3456-7890',
         email: 'saksi@pan.go.id',
         badgeId: 'SAKSI-PAN-001',
-        roleLabel: 'Saksi Resmi TPS — Partai Amanat Nasional',
+        roleLabel: 'Saksi TPS',
         scopeLocation: 'TPS 001 Kel. Dago, Kec. Coblong, Kota Bandung',
         avatarIndex: 0,
       };

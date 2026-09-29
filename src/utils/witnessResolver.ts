@@ -15,11 +15,33 @@ export interface ActiveWitnessScope {
   isSitiR2: boolean;
 }
 
+/** Penugasan resmi dari fitur `witness` (dikirim oleh hook `useActiveWitnessScope`). */
+export interface WitnessAssignmentInput {
+  tpsId: string;
+  tpsLabel?: string;
+  mandateNumber?: string;
+  location?: {
+    tpsNumber: number;
+    village: string;
+    district: string;
+    regency: string;
+    province: string;
+    lat: number;
+    lng: number;
+  };
+}
+
 export function getActiveWitnessScope(
   currentUser: CurrentUser | null | undefined,
   witnesses: Witness[] = [],
   tpsList: Tps[] = [],
+  assignment?: WitnessAssignmentInput,
 ): ActiveWitnessScope {
+  // Mode 2 role: TPS & saksi diambil dari penugasan resmi, bukan persona demo di bawah.
+  if (assignment) {
+    return resolveFromAssignment(currentUser, witnesses, tpsList, assignment);
+  }
+
   const isSiti =
     currentUser?.identity?.email === 'siti.rahmawati@relawanpan.id' ||
     currentUser?.identity?.name?.toLowerCase().includes('siti');
@@ -181,6 +203,62 @@ export function getActiveWitnessScope(
     scopeLocation: `TPS 00${defaultTps.tpsNumber} Kel. ${defaultTps.village || 'Dago'}, Kec. ${defaultTps.district || 'Coblong'}, Kota Bandung`,
     tps: defaultTps,
     witness: resolvedDefaultWitness,
+    isSitiR2: false,
+  };
+}
+
+function resolveFromAssignment(
+  currentUser: CurrentUser | null | undefined,
+  witnesses: Witness[],
+  tpsList: Tps[],
+  assignment: WitnessAssignmentInput,
+): ActiveWitnessScope {
+  const loc = assignment.location;
+  // Record TPS & saksi disalin ke state lama oleh `syncWitnessAssignment`; sebelum itu selesai
+  // (render pertama), dibentuk sementara dari data penugasan.
+  const tps: Tps = tpsList.find((t) => t.id === assignment.tpsId) ?? {
+    id: assignment.tpsId,
+    province: loc?.province ?? 'Jawa Barat',
+    regency: loc?.regency ?? 'Kota Bandung',
+    district: loc?.district ?? '',
+    village: loc?.village,
+    tpsNumber: loc?.tpsNumber ?? 0,
+    dpt: 268,
+    status: 'not_reported',
+    lat: loc?.lat ?? -6.9147,
+    lng: loc?.lng ?? 107.6098,
+    votersPresent: 0,
+    votes: { partyVotes: {}, candidateVotes: {}, dprCandidateVotes: {}, invalidVotes: 0 },
+    coordinatorId: 'COORD-1',
+  };
+
+  const witnessId = `SAKSI-${currentUser?.id ?? 'USER'}`;
+  const witness: Witness = witnesses.find((w) => w.id === witnessId && w.assignedTpsId === tps.id) ?? {
+    id: witnessId,
+    name: currentUser?.identity?.name ?? '',
+    nik: currentUser?.identity?.nikFull || currentUser?.identity?.nikMasked || '',
+    phone: currentUser?.identity?.phone ?? '',
+    address: `Kel. ${tps.village ?? tps.district}, Kec. ${tps.district}, ${tps.regency}`,
+    assignedTpsId: tps.id,
+    status: 'assigned',
+    checkInTime: null,
+    checkInLocation: null,
+    checkInLat: null,
+    checkInLng: null,
+  };
+
+  const tpsNumberLabel = String(tps.tpsNumber).padStart(3, '0');
+  return {
+    witnessId: witness.id,
+    witnessName: witness.name,
+    witnessNik: witness.nik,
+    witnessPhone: witness.phone,
+    assignedTpsId: tps.id,
+    assignedTpsLabel: assignment.tpsLabel ?? `TPS ${tpsNumberLabel} Kel. ${tps.village ?? tps.district}`,
+    skMandatNumber: assignment.mandateNumber ?? '-',
+    scopeLocation: `TPS ${tpsNumberLabel} Kel. ${tps.village ?? tps.district}, Kec. ${tps.district}, ${tps.regency}`,
+    tps,
+    witness,
     isSitiR2: false,
   };
 }

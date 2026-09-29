@@ -7,7 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, DropdownPicker, EmptyState, IconButton, Modal, Pill, PrimaryButton, SectionTitle, Input, StatusBadge } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, scopeTps } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope, useWitnessApplication } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { partyNames, candidateNames, dprCandidates } from '../data/regions';
 import { IMAGES, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
@@ -30,9 +31,14 @@ export default function ReportFormScreen({ route, navigation }: any) {
   const { witnesses, tps, submitTpsReport, addDocumentationPhoto, role, currentUser } = useApp();
   const { colors, isDark } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const currentWitness = activeScope.witness;
-  const scopedTps = scopeTps(role, tps, witnesses);
+  const { access: witnessAccess } = useWitnessApplication();
+  // Saksi hanya boleh melapor untuk TPS penugasannya sendiri (least privilege, AGENTS §37).
+  const ownTps = tps.find((t) => t.id === activeScope.assignedTpsId) ?? activeScope.tps;
+  const scopedTps = !FEATURE_FLAGS.advancedRoles && witnessAccess.isUnlocked
+    ? [ownTps]
+    : scopeTps(role, tps, witnesses);
 
   // Initial TPS from route params or the witness's own assignment — otherwise
   // leave unselected so ambiguous "new report" entry forces an explicit pick.

@@ -15,17 +15,23 @@ import {
   getCachedAssignmentLetter,
   saveAssignmentLetterToCache,
 } from '../utils/letterCache';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope, useWitnessApplication } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 
 export default function AssignmentLetterScreen({ route, navigation }: any) {
   const { witnesses, tps, currentUser } = useApp();
   const { colors } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const targetWitnessId = route?.params?.witnessId || activeScope.witnessId;
   const witness = witnesses.find((w) => w.id === targetWitnessId) || (targetWitnessId === activeScope.witnessId ? activeScope.witness : null);
   const assignedTps = tps.find((t) => t.id === witness?.assignedTpsId) || (targetWitnessId === activeScope.witnessId ? activeScope.tps : null);
-  const letterNo = activeScope.isSitiR2 && targetWitnessId === activeScope.witnessId
+  const { application } = useWitnessApplication();
+  const isOwnLetter = targetWitnessId === activeScope.witnessId;
+  // Nomor surat mengikuti penugasan resmi (sama dengan layar Saksi); pola lama hanya cadangan.
+  const letterNo = isOwnLetter && application?.mandateNumber
+    ? application.mandateNumber
+    : activeScope.isSitiR2 && isOwnLetter
     ? activeScope.skMandatNumber
     : `ST/${witness?.id || 'SAKSI-001'}/PAN/2026`;
 
@@ -39,6 +45,38 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
     message: string;
     tone?: 'success' | 'danger';
   }>({ visible: false, title: '', message: '' });
+
+  // Semua hook harus dipanggil sebelum return lebih awal (rules of hooks).
+  useEffect(() => {
+    async function initOfflineCache() {
+      if (!witness) return;
+      const existing = await getCachedAssignmentLetter(witness.id);
+      if (existing) {
+        setCachedData(existing);
+        setIsCached(true);
+      } else {
+        const token = `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`;
+        const snapshot: CachedAssignmentLetter = {
+          witnessId: witness.id,
+          letterNo,
+          witnessName: witness.name,
+          nik: witness.nik,
+          assignedTpsId: witness.assignedTpsId,
+          tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : '-',
+          province: assignedTps?.province ?? 'Jawa Barat',
+          verificationToken: token,
+          verifyUrl: `https://saksi360.pan.or.id/verify/${token}`,
+          digitalSealHash: `SHA256:${witness.id}:${witness.nik.slice(-4)}:DPP-PAN`,
+          cachedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+          isOfflineReady: true,
+        };
+        await saveAssignmentLetterToCache(snapshot);
+        setCachedData(snapshot);
+        setIsCached(true);
+      }
+    }
+    initOfflineCache();
+  }, [witness?.id]);
 
   if (!witness) {
     return <EmptyState title="Surat Tidak Ditemukan" body="Data penugasan ini tidak tersedia." icon="file-text" />;
@@ -152,36 +190,6 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
     }
   };
 
-  useEffect(() => {
-    async function initOfflineCache() {
-      if (!witness) return;
-      const existing = await getCachedAssignmentLetter(witness.id);
-      if (existing) {
-        setCachedData(existing);
-        setIsCached(true);
-      } else {
-        const token = `MNDT-PAN-${witness.id}-${Date.now().toString(36).toUpperCase()}`;
-        const snapshot: CachedAssignmentLetter = {
-          witnessId: witness.id,
-          letterNo,
-          witnessName: witness.name,
-          nik: witness.nik,
-          assignedTpsId: witness.assignedTpsId,
-          tpsInfo: assignedTps ? `TPS ${assignedTps.tpsNumber}, ${assignedTps.district}, ${assignedTps.regency}` : '-',
-          province: assignedTps?.province ?? 'Jawa Barat',
-          verificationToken: token,
-          verifyUrl: `https://saksi360.pan.or.id/verify/${token}`,
-          digitalSealHash: `SHA256:${witness.id}:${witness.nik.slice(-4)}:DPP-PAN`,
-          cachedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-          isOfflineReady: true,
-        };
-        await saveAssignmentLetterToCache(snapshot);
-        setCachedData(snapshot);
-        setIsCached(true);
-      }
-    }
-    initOfflineCache();
-  }, [witness?.id]);
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -259,28 +267,34 @@ export default function AssignmentLetterScreen({ route, navigation }: any) {
       </Card>
 
       <View style={{ gap: spacing.sm }}>
-        <PrimaryButton
-          label={cachedData?.isSigned ? 'Tanda Tangani Ulang Mandat' : 'Bubuhi TTD Digital Pimpinan'}
-          icon="edit-3"
-          variant="secondary"
-          onPress={() => setShowSignModal(true)}
-        />
+        {/* Tanda tangan pimpinan dibubuhkan dari Web Command Center, bukan oleh saksi. */}
+        {FEATURE_FLAGS.advancedRoles && (
+          <PrimaryButton
+            label={cachedData?.isSigned ? 'Tanda Tangani Ulang Mandat' : 'Bubuhi TTD Digital Pimpinan'}
+            icon="edit-3"
+            variant="secondary"
+            onPress={() => setShowSignModal(true)}
+          />
+        )}
         <PrimaryButton label="Unduh PDF Surat Tugas" icon="download" onPress={handleDownload} loading={downloading} />
-        <PrimaryButton
-          label="Verifikasi Keaslian Surat"
-          icon="shield"
-          variant="secondary"
-          onPress={() =>
-            navigation.navigate('VerifyLetter', {
-              witnessId: witness.id,
-              token: cachedData?.verificationToken,
-              isSigned: cachedData?.isSigned,
-              signedBy: cachedData?.signedBy,
-              signatureHash: cachedData?.signatureHash,
-              signedAt: cachedData?.signedAt,
-            })
-          }
-        />
+        {/* Verifikasi surat (pindai QR) dilakukan koordinator/KPPS; saksi cukup menunjukkan QR di atas. */}
+        {FEATURE_FLAGS.advancedRoles && (
+          <PrimaryButton
+            label="Verifikasi Keaslian Surat"
+            icon="shield"
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate('VerifyLetter', {
+                witnessId: witness.id,
+                token: cachedData?.verificationToken,
+                isSigned: cachedData?.isSigned,
+                signedBy: cachedData?.signedBy,
+                signatureHash: cachedData?.signatureHash,
+                signedAt: cachedData?.signedAt,
+              })
+            }
+          />
+        )}
       </View>
 
       <DigitalSignatureModal

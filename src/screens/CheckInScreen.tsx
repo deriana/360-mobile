@@ -22,7 +22,8 @@ import { Card, KpiCard, Modal, Pill, PrimaryButton } from '../components/ui';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { CURRENT_WITNESS_ID, ROLE_LABEL } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope, useWitnessApplication } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { getWitnessAvatar } from '../data/images';
 import { addToOfflineQueue } from '../utils/offlineQueue';
 import { CheckInPayload } from '../types';
@@ -149,11 +150,15 @@ function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | n
 export default function CheckInScreen({ route, navigation }: any) {
   const { role, currentUser, witnesses, tps, events, checkInWitness, checkInEvent, poskoCheckIn, checkInPosko } = useApp();
   const { colors, isDark } = useTheme();
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const witness = activeScope.witness;
   const assignedTps = activeScope.tps;
 
-  const isWitnessUser = role === 'WITNESS' || role === 'TPS_WITNESS' || currentUser.roles.some((r) => r.role === 'WITNESS') || currentUser.dimensions?.programs?.programSaksi === 'MANDATED';
+  const { access: witnessAccess } = useWitnessApplication();
+  // Mode 2 role: saksi hanya relawan yang sudah ditugaskan (jalur saksi). Aturan lama untuk mode lanjutan.
+  const isWitnessUser = FEATURE_FLAGS.advancedRoles
+    ? role === 'WITNESS' || role === 'TPS_WITNESS' || currentUser.roles.some((r) => r.role === 'WITNESS') || currentUser.dimensions?.programs?.programSaksi === 'MANDATED'
+    : witnessAccess.isUnlocked;
   const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !isWitnessUser;
 
   // Filter agenda yang didaftarkan relawan (sesuai state di ActivitiesScreen)
@@ -233,6 +238,15 @@ export default function CheckInScreen({ route, navigation }: any) {
   const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [justConfirmed, setJustConfirmed] = useState(false);
+  // Hasil lokasi saat presensi kegiatan/posko dikirim, per target (presensi TPS tersimpan di data saksi).
+  const [savedLocationResults, setSavedLocationResults] = useState<Record<string, { inside: boolean; distance: number }>>({});
+  const targetKey = targetType === 'event' ? `event:${selectedEventId}` : targetType;
+  const savedLocationResult =
+    targetType === 'tps'
+      ? witness?.insideGeofence == null
+        ? null
+        : { inside: witness.insideGeofence, distance: witness.distanceMeters ?? null }
+      : savedLocationResults[targetKey] ?? null;
 
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -421,6 +435,10 @@ export default function CheckInScreen({ route, navigation }: any) {
       timestamp: new Date().toISOString(),
       locationLabel: currentTargetLocationLabel,
     };
+    setSavedLocationResults((prev) => ({
+      ...prev,
+      [targetKey]: { inside: !isOutside, distance: Math.round(distanceToTarget ?? 0) },
+    }));
 
     if (targetType === 'tps') {
       addToOfflineQueue('check_in', payload);
@@ -806,10 +824,24 @@ export default function CheckInScreen({ route, navigation }: any) {
             <View style={[styles.compactMetaRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]}>
               <View style={[styles.compactMetaCol, { flex: 1 }]}>
                 <Text style={[styles.compactMetaLabel, { color: colors.textMuted }]}>Status Lokasi</Text>
+                {/* Memakai hasil saat presensi dikirim, bukan jarak GPS saat ini. */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="navigation" size={11} color={colors.success} />
-                  <Text style={[styles.compactMetaValue, { color: colors.success }]}>
-                    Dalam Radius ({Math.round(distanceToTarget ?? 24)}m)
+                  <Feather
+                    name="navigation"
+                    size={11}
+                    color={!savedLocationResult ? colors.textMuted : savedLocationResult.inside ? colors.success : colors.warning}
+                  />
+                  <Text
+                    style={[
+                      styles.compactMetaValue,
+                      { flexShrink: 1, color: !savedLocationResult ? colors.text : savedLocationResult.inside ? colors.success : colors.warning },
+                    ]}
+                  >
+                    {!savedLocationResult
+                      ? 'Lokasi tercatat'
+                      : savedLocationResult.inside
+                      ? `Dalam radius${savedLocationResult.distance !== null ? ` (${Math.round(savedLocationResult.distance)}m)` : ''}`
+                      : 'Di luar radius · ada catatan'}
                   </Text>
                 </View>
               </View>
@@ -845,7 +877,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                   ]}
                 >
                   <Feather name="file-text" size={13} color={colors.primary} />
-                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>E-Mandat KPU</Text>
+                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>Surat Mandat</Text>
                 </Pressable>
 
                 <Pressable
@@ -860,7 +892,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                   ]}
                 >
                   <Feather name="info" size={13} color={colors.primary} />
-                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>Data DPT</Text>
+                  <Text style={[styles.verifiedActionBtnText, { color: colors.text }]}>Detail TPS</Text>
                 </Pressable>
 
                 <Pressable

@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { fonts, getFontFamily, statusBg, statusColors, statusLabel } from '../theme';
+import { fonts, getFontFamily, MAX_FONT_SCALE, statusBg, statusColors, statusLabel } from '../theme';
 import { TpsStatus } from '../types';
 
 // ==========================================
@@ -41,7 +41,11 @@ export function AppText({ style, weight, children, ...props }: AppTextProps) {
   }
 
   return (
-    <Text {...props} style={[{ fontFamily: fonts.regular }, style, { fontFamily: targetFamily }]}>
+    <Text
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
+      {...props}
+      style={[{ fontFamily: fonts.regular }, style, { fontFamily: targetFamily }]}
+    >
       {children}
     </Text>
   );
@@ -200,7 +204,11 @@ export function StatusBadge({ status, style }: StatusBadgeProps) {
   return (
     <View style={[styles.badge, { backgroundColor: bg, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }, style]}>
       <View style={[styles.dot, { backgroundColor: dotColor }]} />
-      <Text style={[styles.badgeText, { color: colors.text, fontSize: fontSize.xs }]}>
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
+        style={[styles.badgeText, { color: colors.text, fontSize: fontSize.xs }]}
+      >
         {labelText}
       </Text>
     </View>
@@ -234,13 +242,19 @@ export function Pill({ label, tone = 'info', icon, dot, onPress, style }: PillPr
     <View style={[styles.badge, { backgroundColor: t.bg, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }, style]}>
       {dot && <View style={[styles.dot, { backgroundColor: t.dot }]} />}
       {icon && <Feather name={icon} size={13} color={t.fg} strokeWidth={iconStrokeWidth} />}
-      <Text style={[styles.badgeText, { color: colors.text, fontSize: fontSize.xs }]}>{label}</Text>
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={MAX_FONT_SCALE}
+        style={[styles.badgeText, { color: colors.text, fontSize: fontSize.xs }]}
+      >
+        {label}
+      </Text>
     </View>
   );
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [pressed && { opacity: 0.75 }]}>
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.badgePressable, pressed && { opacity: 0.75 }]}>
         {content}
       </Pressable>
     );
@@ -343,7 +357,11 @@ export function PrimaryButton({
           {icon && (
             <Feather name={icon} size={iconSize.md} color={v.text} strokeWidth={iconStrokeWidth} />
           )}
-          <Text style={[styles.buttonText, { color: v.text, fontSize: fontSize.md }, textStyle]}>
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
+            style={[styles.buttonText, { color: v.text, fontSize: fontSize.md }, textStyle]}
+          >
             {label || title}
           </Text>
           {iconRight && (
@@ -950,20 +968,29 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontWeight: '700',
   },
+  // Badge boleh mengecil (label panjang jadi "…") agar tidak keluar dari garis kartu.
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
+  badgePressable: {
+    flexShrink: 1,
+    maxWidth: '100%',
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
+  // Tanpa fontWeight: family Poppins sudah menentukan ketebalan (fontWeight tambahan bisa
+  // memicu tebal tiruan yang lebih lebar di Android).
   badgeText: {
     fontFamily: fonts.semiBold,
-    fontWeight: '700',
+    flexShrink: 1,
   },
   button: {
     minHeight: 48,
@@ -976,13 +1003,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    maxWidth: '100%',
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
     fontFamily: fonts.bold,
-    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center',
   },
   iconButton: {
     width: 44,

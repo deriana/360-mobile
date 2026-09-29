@@ -5,13 +5,13 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, EmptyState, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, spacing, radius, iconStrokeWidth } from '../theme';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 
 export default function VerifyLetterScreen({ route }: any) {
   const { witnesses, tps, currentUser, role } = useApp();
   const { colors, isDark } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const [selectedWitnessId, setSelectedWitnessId] = useState<string>(
     route?.params?.witnessId || activeScope.witnessId || witnesses[0]?.id || 'SAKSI-001'
   );

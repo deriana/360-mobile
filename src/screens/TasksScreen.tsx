@@ -12,6 +12,14 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, EmptyState, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { TaskCategory, TaskItem, VolunteerOpportunity } from '../types';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
+import { useWitnessApplication } from '../features/witness';
+
+/** Tugas tanpa layar kerja sendiri: diselesaikan dengan menandainya di layar ini. */
+const isSelfReportTask = (task: TaskItem) => !task.actionScreen || task.actionScreen === 'Tasks';
+
+/** Kategori tugas lapangan relawan (dikelompokkan jadi satu filter "Aksi Lapangan"). */
+const FIELD_CATEGORIES: TaskCategory[] = ['gotv', 'logistics', 'advocacy'];
 
 export default function TasksScreen({ navigation, route }: any) {
   const {
@@ -34,17 +42,27 @@ export default function TasksScreen({ navigation, route }: any) {
     tone?: 'success' | 'info' | 'warning';
   }>({ visible: false, title: '', message: '' });
 
+  const isSimpleMode = !FEATURE_FLAGS.advancedRoles;
+  const { access: witnessAccess } = useWitnessApplication();
   const isVolunteerOnly = (role === 'VOLUNTEER' || role === 'RELAWAN') && !currentUser.roles.some((r) => r.role === 'WITNESS');
+  // Relawan yang sedang bertugas sebagai saksi: tugas hari-H ada di Checklist layar Saksi (tidak diulang di sini).
+  const showWitnessDutyCard = isSimpleMode && witnessAccess.isUnlocked;
+  // Bursa Peluang Aksi khusus Relawan (tugas yang diambil tercatat sebagai tugas relawan).
+  const showBursa = !isSimpleMode || witnessAccess.accountType !== 'ANGGOTA';
 
-  // Saring tugas berdasarkan wewenang: Relawan murni tidak memiliki hak/kewajiban C1 & saksi bilik TPS
+  // Mode 2 role: hanya tugas milik peran sendiri (tugas koordinator/saksi tidak ikut tampil).
+  // Mode lanjutan: perilaku lama.
   const availableTasks = tasks.filter((t) => {
+    if (isSimpleMode) {
+      return t.assignedToRole === (witnessAccess.accountType === 'ANGGOTA' ? 'MEMBER' : 'VOLUNTEER');
+    }
     if (isVolunteerOnly) {
       return t.assignedToRole !== 'WITNESS';
     }
     return true;
   });
 
-  const [categoryFilter, setCategoryFilter] = useState<'all' | TaskCategory>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'field' | TaskCategory>('all');
 
   const completedCount = availableTasks.filter((t) => t.status === 'completed').length;
   const totalCount = availableTasks.length;
@@ -52,15 +70,25 @@ export default function TasksScreen({ navigation, route }: any) {
 
   const filteredTasks = availableTasks.filter((t) => {
     if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'field') return FIELD_CATEGORIES.includes(t.category);
     return t.category === categoryFilter;
   });
 
   const handleActionPress = (task: TaskItem) => {
-    if (task.actionScreen) {
+    if (!isSelfReportTask(task)) {
       navigation.navigate(task.actionScreen, task.actionParams);
-    } else {
-      toggleTaskCompleted(task.id);
+      return;
     }
+    const willComplete = task.status !== 'completed';
+    toggleTaskCompleted(task.id);
+    setDialogConfig({
+      visible: true,
+      title: willComplete ? 'Tugas Ditandai Selesai' : 'Tandai Selesai Dibatalkan',
+      message: willComplete
+        ? `"${task.title}" tercatat selesai. Koordinator Anda dapat melihatnya di riwayat tugas.`
+        : `"${task.title}" kembali ke daftar tugas yang belum selesai.`,
+      tone: willComplete ? 'success' : 'info',
+    });
   };
 
   const handleJoinOpportunity = (opp: VolunteerOpportunity) => {
@@ -103,6 +131,7 @@ export default function TasksScreen({ navigation, route }: any) {
           </Text>
         </Pressable>
 
+        {showBursa && (
         <Pressable
           onPress={() => setTopTab('bursa')}
           style={[
@@ -118,9 +147,10 @@ export default function TasksScreen({ navigation, route }: any) {
             Bursa Peluang Aksi ({volunteerOpportunities?.length || 0})
           </Text>
         </Pressable>
+        )}
       </View>
 
-      {topTab === 'bursa' ? (
+      {topTab === 'bursa' && showBursa ? (
         /* Bursa Peluang Aksi Relawan */
         <FlatList
           data={volunteerOpportunities}
@@ -196,10 +226,12 @@ export default function TasksScreen({ navigation, route }: any) {
             <View style={styles.summaryTopRow}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={[styles.summaryHeading, { color: colors.text }]}>
-                  {isVolunteerOnly ? 'Tugas Aksi Relawan Posko' : 'Tugas & Penugasan Lapangan'}
+                  {isSimpleMode ? 'Tugas Relawan' : isVolunteerOnly ? 'Tugas Aksi Relawan Posko' : 'Tugas & Penugasan Lapangan'}
                 </Text>
                 <Text style={[styles.summarySub, { color: colors.textMuted }]}>
-                  {isVolunteerOnly
+                  {isSimpleMode
+                    ? 'Tandai tugas yang sudah dikerjakan, atau buka layar kerjanya.'
+                    : isVolunteerOnly
                     ? 'Checklist mobilisasi warga, aduan posko, & pelatihan PAN'
                     : 'Checklist aksi prioritas saksi TPS, relawan, & kader partai'}
                 </Text>
@@ -225,9 +257,31 @@ export default function TasksScreen({ navigation, route }: any) {
             </View>
           </View>
 
+          {/* Relawan yang bertugas sebagai saksi: satu pintu ke Checklist Hari-H (tidak diulang per tugas). */}
+          {showWitnessDutyCard && (
+            <Card style={[styles.witnessDutyCard, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Feather name="shield" size={18} color={colors.primary} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.taskTitle, { color: colors.text }]}>Tugas Saksi Hari-H</Text>
+                  <Text style={[styles.taskDesc, { color: colors.textMuted }]}>
+                    Absen, surat mandat, hitung suara, foto C1, dan dokumentasi.
+                  </Text>
+                </View>
+              </View>
+              <PrimaryButton label="Buka Checklist Saksi" icon="check-square" onPress={() => navigation.navigate('Saksi')} />
+            </Card>
+          )}
+
           {/* Category Pills */}
           <View style={styles.filterTrack}>
-            {(isVolunteerOnly
+            {(isSimpleMode
+              ? [
+                  { key: 'all' as const, label: 'Semua' },
+                  { key: 'field' as const, label: 'Aksi Lapangan' },
+                  { key: 'training' as const, label: 'Pelatihan' },
+                ]
+              : isVolunteerOnly
               ? [
                   { key: 'all' as const, label: 'Semua Tugas' },
                   { key: 'gotv' as const, label: 'Aksi Relawan' },
@@ -358,7 +412,11 @@ export default function TasksScreen({ navigation, route }: any) {
                             { color: isDone ? colors.text : '#FFFFFF' },
                           ]}
                         >
-                          {item.actionLabel || (isDone ? 'Buka Ulang' : 'Kerjakan')}
+                          {isSelfReportTask(item)
+                            ? isDone
+                              ? 'Batalkan'
+                              : 'Tandai Selesai'
+                            : item.actionLabel || (isDone ? 'Buka Ulang' : 'Kerjakan')}
                         </Text>
                         <Feather
                           name="chevron-right"
@@ -389,6 +447,12 @@ export default function TasksScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  witnessDutyCard: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+    borderWidth: 1.5,
+  },
   screen: { flex: 1 },
   segmentBtn: {
     flex: 1,

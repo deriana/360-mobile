@@ -19,7 +19,7 @@ import { maskNik, maskPhone } from '../utils/masking';
 import { ROLE_LABEL } from '../utils/scope';
 import { ROLE_ACTIVITY_TIMELINE } from '../utils/userContext';
 import { FEATURE_FLAGS } from '../core/config/featureFlags';
-import { useWitnessApplication } from '../features/witness';
+import { useActiveWitnessScope, useWitnessApplication } from '../features/witness';
 
 interface LifecycleEvent {
   id: string;
@@ -116,6 +116,12 @@ export default function StatusPeranSayaScreen() {
     operationalRole: 'MEMBER',
   };
 
+  // Mode 2 role: "sedang bertugas" hanya dari jalur saksi; mode lanjutan memakai data lama.
+  const isWitnessOnDuty = FEATURE_FLAGS.advancedRoles
+    ? dims.programs?.programSaksi === 'MANDATED'
+    : witnessAccess.isUnlocked;
+  const activeWitnessScope = useActiveWitnessScope();
+
   // Dynamic Subtitle Elements
   const kaderSub = isOfficialMember
     ? (dims.kader === 'kader_aktif'
@@ -130,8 +136,8 @@ export default function StatusPeranSayaScreen() {
     ? 'Dalam Proses Pengunduran Diri (DPD)'
     : isOfficialMember
     ? [kaderSub, posSub, elecSub].filter(Boolean).join(' | ') || 'Anggota Resmi simPAN'
-    : role === 'WITNESS'
-    ? 'Relawan Mandat BSN • TPS 018 Kel. Braga'
+    : isWitnessOnDuty
+    ? `Relawan · Saksi ${activeWitnessScope.assignedTpsLabel}`
     : `Relawan Simpatisan simPAN • ${volunteerBasePosko}`;
 
   // Personalized Audit / Lifecycle Timeline
@@ -145,7 +151,9 @@ export default function StatusPeranSayaScreen() {
         skNumber: undefined,
         icon: item.icon,
       }))
-    : LIFECYCLE_HISTORY;
+    : FEATURE_FLAGS.advancedRoles
+    ? LIFECYCLE_HISTORY
+    : []; // mode 2 role: tanpa data sendiri → kosong, bukan riwayat kader contoh
 
   return (
     <ScrollView
@@ -441,6 +449,9 @@ export default function StatusPeranSayaScreen() {
             </View>
           </Card>
 
+          {/* Kepengurusan & Pencalegan: fitur lanjutan, disembunyikan di mode 2 role. */}
+          {FEATURE_FLAGS.advancedRoles && (
+          <>
           {/* DIMENSI 3: KARTU ORGANISASI (KEPENGURUSAN) */}
           <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
             <View style={styles.dimensionHeader}>
@@ -579,6 +590,8 @@ export default function StatusPeranSayaScreen() {
               </TouchableOpacity>
             </View>
           </Card>
+          </>
+          )}
         </>
       )}
 
@@ -679,7 +692,7 @@ export default function StatusPeranSayaScreen() {
               <Text style={[styles.dimNumber, { color: colors.primary }]}>
                 PELATIHAN
               </Text>
-              <Pill label={isOfficialMember ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="primary" />
+              <Pill label={isOfficialMember && FEATURE_FLAGS.advancedRoles ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="primary" />
             </View>
             <Text style={[styles.dimTitle, { color: colors.text }]}>
               {isOfficialMember ? 'Ekosistem Program Pembinaan' : 'Program Pelatihan & Diklat'}
@@ -706,7 +719,8 @@ export default function StatusPeranSayaScreen() {
             <Feather name="chevron-right" size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* Sub program 2: PANdawa */}
+          {/* Sub program 2: PANdawa — fitur lanjutan, disembunyikan di mode 2 role. */}
+          {FEATURE_FLAGS.advancedRoles && (
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => navigation.navigate('PandawaProgram')}
@@ -721,6 +735,7 @@ export default function StatusPeranSayaScreen() {
             </View>
             <Feather name="chevron-right" size={16} color={colors.textMuted} />
           </TouchableOpacity>
+          )}
 
           {/* Sub program 3: Saksi BSN PAN */}
           <TouchableOpacity
@@ -729,9 +744,9 @@ export default function StatusPeranSayaScreen() {
             style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}
           >
             <Feather
-              name={dims.programs?.programSaksi === 'MANDATED' ? 'check-square' : 'award'}
+              name={isWitnessOnDuty ? 'check-square' : 'award'}
               size={16}
-              color={dims.programs?.programSaksi === 'MANDATED' ? '#15803D' : colors.primary}
+              color={isWitnessOnDuty ? '#15803D' : colors.primary}
             />
             <View style={{ flex: 1 }}>
               <Text style={[styles.subProgTitle, { color: colors.text }]}>Saksi TPS</Text>
@@ -785,6 +800,11 @@ export default function StatusPeranSayaScreen() {
         </View>
 
         <View style={[styles.dimBody, { borderTopColor: colors.border }]}>
+          {userTimeline.length === 0 && (
+            <Text style={[styles.timelineDesc, { color: colors.textMuted }]}>
+              Belum ada riwayat aktivitas. Riwayat muncul setelah Anda mengikuti kegiatan atau menyelesaikan tugas.
+            </Text>
+          )}
           {(showFullTimeline ? userTimeline : userTimeline.slice(0, 2)).map((item, idx, arr) => (
             <View key={item.id} style={styles.timelineItem}>
               <View style={styles.timelineLeftCol}>

@@ -88,9 +88,21 @@ export default function DaftarSaksiScreen() {
       (access.unmetRequirements.length > 0
         ? `Lengkapi syarat dulu: ${access.unmetRequirements.map((r) => r.label).join(', ')}.`
         : 'Pengajuan Anda sedang diproses.');
+    // Langkah berikutnya sesuai penyebab: status nonaktif → aktifkan; KTP/pengajuan berjalan → lihat status; lainnya → kembali.
+    const next = access.unmetRequirements.some((r) => r.id === 'ACTIVE_STATUS')
+      ? { label: 'Aktifkan Status Relawan', onPress: () => navigation.navigate('KelolaStatus') }
+      : access.unmetRequirements.length > 0 || application
+      ? { label: 'Lihat Status Saksi', onPress: () => navigation.navigate('Saksi') }
+      : { label: 'Kembali', onPress: () => navigation.goBack() };
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <EmptyState icon="lock" title="Belum Bisa Mendaftar" body={reason} actionLabel="Kembali" onAction={() => navigation.goBack()} />
+        <EmptyState
+          icon="lock"
+          title="Belum Bisa Mendaftar"
+          body={reason}
+          actionLabel={next.label}
+          onAction={next.onPress}
+        />
       </View>
     );
   }

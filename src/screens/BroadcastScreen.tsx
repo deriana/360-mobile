@@ -602,8 +602,8 @@ export default function BroadcastScreen() {
                 </View>
 
                 <PrimaryButton
-                  label="Buka Menu Profil & Unlock Mandat Saksi"
-                  onPress={() => navigation.navigate('Profile')}
+                  label="Lihat Status Saksi Saya"
+                  onPress={() => navigation.navigate('Saksi')}
                   style={{ width: '100%', marginTop: 8 }}
                 />
               </Card>

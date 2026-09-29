@@ -147,7 +147,7 @@ export default function EmergencyListScreen({ navigation }: any) {
                 <View style={styles.photosGrid}>
                   {selectedReport.photos.map((photo, photoIdx) => (
                     <Pressable key={photoIdx} onPress={() => setPreviewSource(photo)} style={styles.photoThumbWrap}>
-                      <Image source={photo} style={styles.photoThumb} resizeMode="cover" />
+                      <Image source={toImageSource(photo)} style={styles.photoThumb} resizeMode="cover" />
                     </Pressable>
                   ))}
                 </View>
@@ -160,7 +160,7 @@ export default function EmergencyListScreen({ navigation }: any) {
       <Modal visible={!!previewSource} onClose={() => setPreviewSource(null)} variant="floating" title="Pratinjau Foto">
         {previewSource && (
           <View style={styles.previewImageWrap}>
-            <Image source={previewSource} style={styles.previewImage} resizeMode="contain" />
+            <Image source={toImageSource(previewSource)} style={styles.previewImage} resizeMode="contain" />
           </View>
         )}
       </Modal>
@@ -201,3 +201,8 @@ const styles = StyleSheet.create({
   previewImageWrap: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
   previewImage: { width: '100%', height: '100%' },
 });
+
+// Foto dari form berupa URI string, foto contoh berupa `require()`; keduanya harus bisa tampil.
+function toImageSource(photo: any) {
+  return typeof photo === 'string' ? { uri: photo } : photo;
+}

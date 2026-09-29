@@ -13,8 +13,22 @@ const SEED: VolunteerActivityRecord[] = [
   { userId: 'USR-RELAWAN-BARU', volunteerVerification: 'belum_verifikasi' },
 ];
 
+/** Store in-memory; referensi objek hanya berganti saat `save`, aman untuk `useSyncExternalStore`. */
 export class MockVolunteerActivityRepository implements VolunteerActivityRepository {
   private readonly records = new Map(SEED.map((record) => [record.userId, record]));
+  private readonly listeners = new Set<() => void>();
 
   getRecord = (userId: string): VolunteerActivityRecord | null => this.records.get(userId) ?? null;
+
+  save = (record: VolunteerActivityRecord): void => {
+    this.records.set(record.userId, record);
+    this.listeners.forEach((listener) => listener());
+  };
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
 }

@@ -27,8 +27,9 @@ const seedForm = (nama: string, nik: string, noHp: string, kelurahan: string): W
  * Data demo per tahap (ID mengikuti `USER_PROFILES_BY_EMAIL` di `src/utils/userContext.ts`):
  * - USR-002 (relawan@pan.go.id)          → menunggu verifikasi
  * - USR-RELAWAN-LATIH (akun baru Tahap B) → wajib pelatihan
- * - USR-001 (saksi@pan.go.id)             → ditugaskan di TPS 001, surat tugas terkirim
+ * - USR-001 (saksi@pan.go.id)             → ditugaskan di TPS 001 Dago, surat tugas terkirim
  * Pengguna lain belum punya pengajuan (status NOT_APPLIED).
+ * ID TPS demo memakai awalan `TPS-BDG-` agar tidak bentrok dengan data TPS nasional (`src/data/tps.ts`).
  */
 const SEED: WitnessApplication[] = [
   {
@@ -52,8 +53,9 @@ const SEED: WitnessApplication[] = [
     updatedAt: daysAgo(10),
     trainingCompletedAt: daysAgo(14),
     form: seedForm('Rudi Saputra', '3273011204920001', '081234567890', 'Dago'),
-    assignedTpsId: 'TPS-001',
+    assignedTpsId: 'TPS-BDG-001',
     assignedTpsLabel: 'TPS 001 · Kel. Dago, Kec. Coblong',
+    assignedTpsLocation: { tpsNumber: 1, village: 'Dago', district: 'Coblong', regency: 'Kota Bandung', province: 'Jawa Barat', lat: -6.8833, lng: 107.6167 },
     mandateNumber: '042/MND/PAN-BDG/2026',
     mandateQrToken: 'MANDAT-USR-001-042',
     letterStatus: 'terkirim',

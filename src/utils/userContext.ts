@@ -552,6 +552,13 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
     ],
     currentRole: 'WITNESS',
     permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.WITNESS,
+    coordinatorContact: {
+      name: 'Asep Ridwan',
+      phone: '0812-7788-3344',
+      role: 'Koordinator Lapangan Dago',
+      posko: 'Posko Pemenangan Dago',
+      region: 'Coblong',
+    },
   },
 
   'relawan@pan.go.id': {

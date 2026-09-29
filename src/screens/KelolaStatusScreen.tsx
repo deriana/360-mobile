@@ -396,6 +396,27 @@ export default function KelolaStatusScreen() {
             <Card style={{ gap: spacing.md }}>
               <SectionTitle style={{ marginBottom: 0 }}>Pilihan Pengaturan Partisipasi</SectionTitle>
 
+              {/* Alasan (dipakai untuk cuti maupun berhenti) */}
+              <View style={{ gap: 6 }}>
+                <Text style={[styles.formLabel, { color: colors.text }]}>Alasan (untuk cuti atau berhenti):</Text>
+                {VOLUNTEER_REASONS.map((r) => (
+                  <Pressable
+                    key={r}
+                    onPress={() => setSelectedVolReason(r)}
+                    style={[
+                      styles.reasonOption,
+                      { borderColor: selectedVolReason === r ? colors.primary : colors.border },
+                      selectedVolReason === r && { backgroundColor: isDark ? 'rgba(0,102,179,0.15)' : '#EFF6FF' },
+                    ]}
+                  >
+                    <View style={[styles.radioCircle, { borderColor: selectedVolReason === r ? colors.primary : colors.border }]}>
+                      {selectedVolReason === r && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
+                    </View>
+                    <Text style={[styles.reasonText, { color: colors.text }]}>{r}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
               {/* Cuti Relawan Sementara */}
               <View style={[styles.optionCard, { borderColor: colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -593,7 +614,10 @@ export default function KelolaStatusScreen() {
                 label="Selesaikan Tugas Dahulu"
                 variant="secondary"
                 icon="check-square"
-                onPress={() => setShowTaskGuardModal(false)}
+                onPress={() => {
+                  setShowTaskGuardModal(false);
+                  navigation.navigate('Tasks');
+                }}
               />
               <PrimaryButton
                 label="Lanjutkan & Alihkan ke Korlap"

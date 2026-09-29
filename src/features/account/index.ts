@@ -12,3 +12,5 @@ export {
   getAccountType,
 } from './domain/volunteerActivityRules';
 export { useAccountSnapshot } from './presentation/hooks/useAccountSnapshot';
+export { useVolunteerVerification } from './presentation/hooks/useVolunteerVerification';
+export { default as DataDiriScreen } from './presentation/screens/DataDiriScreen';

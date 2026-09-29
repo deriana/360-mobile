@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ContactActions from '../core/components/ContactActions';
 import {
   Alert,
   Image,
@@ -26,9 +27,8 @@ import {
   VOLUNTEER_PRESETS,
 } from '../utils/userContext';
 import { checkRoleEligibility } from '../utils/roleUnlockRules';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
 import { FEATURE_FLAGS } from '../core/config/featureFlags';
-import { useWitnessApplication } from '../features/witness';
+import { useWitnessApplication, useActiveWitnessScope } from '../features/witness';
 import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
 
 export default function ProfileScreen({ navigation }: any) {
@@ -199,9 +199,10 @@ export default function ProfileScreen({ navigation }: any) {
 
   const alertConfig = getAlertConfig();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const activeAssignment = currentUser.roles.find((r) => r.role === role) ?? currentUser.roles[0];
-  const activityTimeline = ROLE_ACTIVITY_TIMELINE[user.email] || ROLE_ACTIVITY_TIMELINE['saksi@pan.go.id'] || [];
+  // Tanpa data riwayat sendiri → kosong (bukan meminjam riwayat akun saksi lain).
+  const activityTimeline = ROLE_ACTIVITY_TIMELINE[user.email] ?? [];
   const hasWitnessRole = currentUser.roles.some((r) => r.role === 'WITNESS') || currentUser.dimensions?.programs?.programSaksi === 'MANDATED';
 
   // Guard: Opsi role yang boleh diakses hanya yang memang legal
@@ -650,6 +651,8 @@ export default function ProfileScreen({ navigation }: any) {
               blok terpisah (judul + 3 chip masing-masing) selalu tampil
               penuh, jadi 2 baris judul + 6 chip sekaligus di layar utama. */}
           {(() => {
+            // Mode 2 role: keahlian & minat dipindah ke layar Data Diri (tidak tampil di halaman utama).
+            if (!FEATURE_FLAGS.advancedRoles) return null;
             const skills = currentUser.skills || ['Komunikasi Publik & Warga', 'Administrasi Acara & Presensi', 'Fotografi & Konten Medsos'];
             const interests = currentUser.interests || ['Event & Sosialisasi', 'Advokasi Lansia/Pemilih', 'Logistik Posko & Dapur Umum'];
             const visibleSkills = skills.slice(0, 2);
@@ -719,6 +722,7 @@ export default function ProfileScreen({ navigation }: any) {
                 </Text>
               </View>
             </View>
+            <ContactActions phone={currentUser.coordinatorContact?.phone || '0812-3456-7890'} />
           </View>
           {/* Tombol Lihat Riwayat Aktivitas Relawan */}
           <Pressable
@@ -798,6 +802,23 @@ export default function ProfileScreen({ navigation }: any) {
       {/* 3. LAYANAN & PENGATURAN */}
       <Card style={[styles.menuCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={[styles.cardSectionHeading, { color: colors.text }]}>Layanan & Pengaturan</Text>
+
+        {/* Data Diri (baca-saja; perubahan lewat koordinator/tim pusat) */}
+        <Pressable
+          onPress={() => navigation.navigate('DataDiri')}
+          style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
+        >
+          <View style={[styles.actionIconWrap, { backgroundColor: colors.primaryLight }]}>
+            <Feather name="user" size={15} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>Data Diri</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>Identitas, wilayah, keahlian & minat</Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
         {/* Status & Peran Terpadu (Status, Portofolio & Tata Kelola) */}
         <Pressable
@@ -1104,6 +1125,11 @@ export default function ProfileScreen({ navigation }: any) {
 
             <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
               <View style={{ paddingVertical: spacing.xs }}>
+                {activityTimeline.length === 0 && (
+                  <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.md }}>
+                    Belum ada riwayat aktivitas. Riwayat muncul setelah Anda mengikuti kegiatan atau menyelesaikan tugas.
+                  </Text>
+                )}
                 {activityTimeline.map((item, index) => (
                   <View key={item.id} style={styles.timelineRow}>
                     <View style={styles.timelineIndicatorCol}>
@@ -1987,6 +2013,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     marginTop: spacing.xs,
+    gap: spacing.sm,
   },
   viewTimelineBtn: {
     flexDirection: 'row',

@@ -17,7 +17,7 @@ import { Card, ConfirmDialog, Pill, PrimaryButton, SectionTitle } from '../compo
 import { fonts, fontSize, iconStrokeWidth, radius, spacing } from '../theme';
 import { PASLON_AVATARS } from '../data/images';
 import { CURRENT_WITNESS_ID } from '../utils/scope';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 import { addToOfflineQueue } from '../utils/offlineQueue';
 
 const PASLON_KEYS = [
@@ -79,7 +79,7 @@ function Billboard({ votes, colors }: { votes: Record<string, number>; colors: a
 export default function QuickCountGameScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { witnesses, tps, currentUser } = useApp();
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const witness = activeScope.witness;
   const [votes, setVotes] = useState<Record<string, number>>(
     Object.fromEntries(PASLON_KEYS.map((k) => [k, 0])),

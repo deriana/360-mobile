@@ -8,7 +8,8 @@ import { fonts, fontSize, radius, shadow, spacing } from '../theme';
 import { IMAGES, getWitnessAvatar, getTpsPhoto, getCandidateAvatar } from '../data/images';
 import { CandidateDetailModal } from '../components/CandidateDetailModal';
 import { PartyBadge } from '../components/PartyBadge';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { CATEGORY_LABEL } from './EmergencyListScreen';
 
 type CategoryTab = 'pilpres' | 'dpr' | 'partai';
@@ -23,7 +24,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
   const { tps, witnesses, emergencyReports, getDocumentation, currentUser } = useApp();
   const { colors, isDark } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const tpsId = route?.params?.tpsId || activeScope.assignedTpsId || 'TPS-001';
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('pilpres');
@@ -34,6 +35,22 @@ export default function TpsDetailScreen({ route, navigation }: any) {
   const assignedWitnesses = witnesses.filter((w) => w.assignedTpsId === tpsId || (tpsId === activeScope.assignedTpsId && w.id === activeScope.witnessId));
   const checkedInWitnessCount = assignedWitnesses.filter((w) => w.status === 'checked_in').length;
 
+  // Semua hook dipanggil sebelum return lebih awal (rules of hooks).
+  const pilpresRanking = useMemo(
+    () => Object.entries(record?.votes.candidateVotes ?? {}).sort((a, b) => b[1] - a[1]),
+    [record?.votes.candidateVotes],
+  );
+
+  const dprRanking = useMemo(
+    () => Object.entries(record?.votes.dprCandidateVotes || {}).sort((a, b) => b[1] - a[1]),
+    [record?.votes.dprCandidateVotes],
+  );
+
+  const partyRanking = useMemo(
+    () => Object.entries(record?.votes.partyVotes ?? {}).sort((a, b) => b[1] - a[1]),
+    [record?.votes.partyVotes],
+  );
+
   if (!record) {
     return <EmptyState title="TPS Tidak Ditemukan" body="Data TPS ini tidak tersedia." icon="map-pin" />;
   }
@@ -43,21 +60,6 @@ export default function TpsDetailScreen({ route, navigation }: any) {
     ? Object.values(record.votes.dprCandidateVotes).reduce((a, b) => a + b, 0)
     : 0;
   const totalParty = Object.values(record.votes.partyVotes).reduce((a, b) => a + b, 0);
-
-  const pilpresRanking = useMemo(
-    () => Object.entries(record.votes.candidateVotes).sort((a, b) => b[1] - a[1]),
-    [record.votes.candidateVotes],
-  );
-
-  const dprRanking = useMemo(
-    () => Object.entries(record.votes.dprCandidateVotes || {}).sort((a, b) => b[1] - a[1]),
-    [record.votes.dprCandidateVotes],
-  );
-
-  const partyRanking = useMemo(
-    () => Object.entries(record.votes.partyVotes).sort((a, b) => b[1] - a[1]),
-    [record.votes.partyVotes],
-  );
 
   const documentation = getDocumentation(record.id);
 
@@ -392,6 +394,8 @@ export default function TpsDetailScreen({ route, navigation }: any) {
           assignedWitnesses.map((w, idx) => (
             <Pressable
               key={w.id}
+              // Detail saksi adalah tampilan koordinator; di mode 2 role saksi hanya melihat daftar.
+              disabled={!FEATURE_FLAGS.advancedRoles}
               onPress={() => navigation.navigate('WitnessDetail', { witnessId: w.id })}
               style={({ pressed }) => [
                 styles.witnessRow,
@@ -408,7 +412,7 @@ export default function TpsDetailScreen({ route, navigation }: any) {
                 label={w.status === 'checked_in' ? 'Check-in' : w.status === 'assigned' ? 'Ditugaskan' : 'Tidak Hadir'}
                 tone={w.status === 'checked_in' ? 'success' : w.status === 'assigned' ? 'warning' : 'danger'}
               />
-              <Feather name="chevron-right" size={14} color={colors.textMuted} />
+              {FEATURE_FLAGS.advancedRoles && <Feather name="chevron-right" size={14} color={colors.textMuted} />}
             </Pressable>
           ))
         )}

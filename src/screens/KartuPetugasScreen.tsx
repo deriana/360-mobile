@@ -7,7 +7,7 @@ import { PersonnelIdCard } from '../components/PersonnelIdCard';
 import { spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
-import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { useActiveWitnessScope } from '../features/witness';
 
 type PersonType = 'witness' | 'coordinator';
 
@@ -15,7 +15,7 @@ export default function KartuPetugasScreen({ route }: any) {
   const { witnesses, coordinators, tps, currentUser, role } = useApp();
   const { colors } = useTheme();
 
-  const activeScope = getActiveWitnessScope(currentUser, witnesses, tps);
+  const activeScope = useActiveWitnessScope();
   const { personType = 'witness', personId = activeScope.witnessId }: { personType?: PersonType; personId?: string } = route?.params || {};
 
   if (personType === 'coordinator') {

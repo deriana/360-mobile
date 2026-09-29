@@ -18,6 +18,7 @@ import { Card, Pill, PrimaryButton, ConfirmDialog } from '../components/ui';
 import { BSN_PAN_ACADEMY_DATA, AcademyModule, WitnessCertificate } from '../data/witnessAcademy';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';
 import { useWitnessApplication } from '../features/witness';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import QrPlaceholder from '../components/QrPlaceholder';
 
 export interface AmanatCourse {
@@ -134,7 +135,12 @@ export default function AmanatAcademyScreen() {
     tone?: 'success' | 'info' | 'warning';
   }>({ visible: false, title: '', message: '' });
 
+  // Mode 2 role: pelatihan saksi hanya untuk Relawan (Anggota tidak punya jalur saksi).
+  const showWitnessTraining = FEATURE_FLAGS.advancedRoles || witnessAccess.accountType !== 'ANGGOTA';
+  const isWitnessTrainee = witnessAccess.status === 'TRAINING';
+
   const activeCourses = COURSES_DATA.filter((c) => {
+    if (c.category === 'bsn' && !showWitnessTraining) return false;
     if (selectedCategory === 'all') return true;
     return c.category === selectedCategory;
   });
@@ -214,14 +220,11 @@ export default function AmanatAcademyScreen() {
               Bab 4: Teknik Menghadapi Pertanyaan Kritis Warga (80% selesai)
             </Text>
           </View>
-          <TouchableOpacity
-            style={[styles.resumeBtn, { backgroundColor: colors.primary }]}
-            onPress={() => handleOpenCourse(COURSES_DATA[1])}
-            activeOpacity={0.85}
-          >
-            <Feather name="play" size={14} color="#FFFFFF" />
-            <Text style={styles.resumeBtnText}>Lanjutkan</Text>
-          </TouchableOpacity>
+          {/* Materi kursus non-saksi belum tersedia di aplikasi → jujur "Segera hadir". */}
+          <View style={[styles.resumeBtn, { backgroundColor: colors.textMuted }]}>
+            <Feather name="clock" size={14} color="#FFFFFF" />
+            <Text style={styles.resumeBtnText}>Segera hadir</Text>
+          </View>
         </View>
 
         {/* Global Progress Track */}
@@ -241,13 +244,15 @@ export default function AmanatAcademyScreen() {
       </Card>
 
       {/* 3. Program Khusus / Special Pathways (PANdawa & BSN PAN) */}
+      {(FEATURE_FLAGS.advancedRoles || showWitnessTraining) && (
       <View style={{ gap: spacing.xs }}>
         <Text style={[styles.sectionHeading, { color: colors.text, paddingHorizontal: 4 }]}>
           Jalur Program Unggulan
         </Text>
 
         <View style={styles.specialProgramsRow}>
-          {/* Card PANdawa */}
+          {/* Card PANdawa (fitur lanjutan, disembunyikan di mode 2 role) */}
+          {FEATURE_FLAGS.advancedRoles && (
           <Pressable
             onPress={() => navigation.navigate('PandawaProgram')}
             style={({ pressed }) => [
@@ -274,8 +279,10 @@ export default function AmanatAcademyScreen() {
               <Feather name="arrow-right" size={13} color="#FBBF24" />
             </View>
           </Pressable>
+          )}
 
           {/* Card Saksi BSN */}
+          {showWitnessTraining && (
           <Pressable
             onPress={() => navigation.navigate('WitnessAcademy')}
             style={({ pressed }) => [
@@ -302,8 +309,10 @@ export default function AmanatAcademyScreen() {
               <Feather name="arrow-right" size={13} color="#60A5FA" />
             </View>
           </Pressable>
+          )}
         </View>
       </View>
+      )}
 
       {/* 4. Filter Kategori Kursus */}
       <View style={{ gap: spacing.xs }}>
@@ -317,7 +326,7 @@ export default function AmanatAcademyScreen() {
             { key: 'kaderisasi' as const, label: 'Kaderisasi LKK' },
             { key: 'kampanye' as const, label: 'Kampanye & Caleg' },
             { key: 'advokasi' as const, label: 'Advokasi Posko' },
-            { key: 'bsn' as const, label: 'Kawal Suara BSN' },
+            ...(showWitnessTraining ? [{ key: 'bsn' as const, label: 'Kawal Suara BSN' }] : []),
           ].map((tab) => {
             const active = selectedCategory === tab.key;
             return (
@@ -352,6 +361,8 @@ export default function AmanatAcademyScreen() {
         {activeCourses.map((course) => {
           const isDone = course.completedLessons === course.lessonsCount;
           const pct = Math.round((course.completedLessons / course.lessonsCount) * 100);
+          // Hanya kursus saksi (BSN) yang materinya sudah ada di aplikasi.
+          const isComingSoon = course.category !== 'bsn';
 
           return (
             <Card key={course.id} style={{ gap: spacing.sm, backgroundColor: colors.surface, borderColor: colors.border }}>
@@ -400,6 +411,12 @@ export default function AmanatAcademyScreen() {
               </View>
 
               <View style={styles.courseActionRow}>
+                {isComingSoon ? (
+                  <View style={[styles.btnCourseAction, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+                    <Feather name="clock" size={13} color={colors.textMuted} />
+                    <Text style={[styles.btnCourseActionText, { color: colors.textMuted }]}>Segera hadir · materi disiapkan</Text>
+                  </View>
+                ) : (
                 <TouchableOpacity
                   style={[
                     styles.btnCourseAction,
@@ -417,15 +434,26 @@ export default function AmanatAcademyScreen() {
                     {isDone ? 'Ulas Kembali' : 'Buka Materi'}
                   </Text>
                 </TouchableOpacity>
+                )}
 
                 {course.category === 'bsn' && (
                   <TouchableOpacity
                     style={[styles.btnQuizBadge, { borderColor: colors.primary }]}
-                    onPress={() => setShowQuizModal(true)}
+                    onPress={() => {
+                      if (FEATURE_FLAGS.advancedRoles) {
+                        setShowQuizModal(true);
+                        return;
+                      }
+                      // Mode 2 role: uji hanya saat "Wajib pelatihan" (lewat Pelatihan Saksi, ada syarat materi).
+                      // Status lain diarahkan ke layar Saksi untuk melihat langkah berikutnya.
+                      navigation.navigate(isWitnessTrainee ? 'WitnessAcademy' : 'Saksi');
+                    }}
                     activeOpacity={0.85}
                   >
                     <Feather name="award" size={13} color={colors.primary} />
-                    <Text style={[styles.btnQuizBadgeText, { color: colors.primary }]}>Uji Akreditasi</Text>
+                    <Text style={[styles.btnQuizBadgeText, { color: colors.primary }]}>
+                      {FEATURE_FLAGS.advancedRoles || isWitnessTrainee ? 'Uji Akreditasi' : 'Status Saksi'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>

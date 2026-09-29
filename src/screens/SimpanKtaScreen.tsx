@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, ConfirmDialog, Modal, Pill, PrimaryButton, SectionTitle } from '../components/ui';
 import { fontSize, fonts, radius, shadow, spacing } from '../theme';
@@ -10,7 +11,20 @@ import QrPlaceholder from '../components/QrPlaceholder';
 
 export default function SimpanKtaScreen() {
   const { colors } = useTheme();
-  const kta = CURRENT_KADER_KTA;
+  const { currentUser } = useApp();
+  const membership = currentUser.memberships.find((m) => m.type === 'member');
+  // Kartu dibangun dari data pengguna yang login. Bidang yang belum ada di profil
+  // (tempat lahir, alamat, ranting) tidak ditampilkan, bukan diisi data orang lain.
+  const kta = {
+    noKta: membership?.ktaNumber ?? 'Nomor KTA sedang diterbitkan',
+    nama: currentUser.identity.name,
+    nik: currentUser.identity.nikMasked,
+    dpd: membership?.dpd ?? '-',
+    dpc: membership?.dpc ?? '-',
+    tglBergabung: formatJoinDate(membership?.registeredAt),
+    masaBerlaku: CURRENT_KADER_KTA.masaBerlaku,
+    tandaTanganKetum: CURRENT_KADER_KTA.tandaTanganKetum,
+  };
   const [downloading, setDownloading] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [downloadSuccessVisible, setDownloadSuccessVisible] = useState(false);
@@ -47,7 +61,7 @@ export default function SimpanKtaScreen() {
         {/* Card Body */}
         <View style={styles.cardBody}>
           <View style={styles.photoContainer}>
-            <Image source={getWitnessAvatar(1)} style={styles.memberPhoto} />
+            <Image source={getWitnessAvatar(currentUser.identity.avatarIndex)} style={styles.memberPhoto} />
             <View style={styles.statusBadge}>
               <Text style={styles.statusBadgeText}>TERVERIFIKASI</Text>
             </View>
@@ -109,37 +123,21 @@ export default function SimpanKtaScreen() {
 
       {/* Supplementary Administrative Details (Non-redundant) */}
       <Card style={{ gap: spacing.sm }}>
-        <SectionTitle style={{ marginBottom: 2 }}>Data Administrasi & Wilayah</SectionTitle>
+        <SectionTitle style={{ marginBottom: 2 }}>Keanggotaan & Wilayah</SectionTitle>
 
-        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Tempat, Tanggal Lahir</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.tempatTglLahir}</Text>
-        </View>
-
-        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Jenis Kelamin</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.jenisKelamin}</Text>
-        </View>
-
-        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Alamat Domisili</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.alamat}</Text>
-        </View>
-
-        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Struktur Induk (DPW)</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.dpw}</Text>
-        </View>
-
-        <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Tingkat Ranting (DPRt)</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.dprt}</Text>
-        </View>
-
-        <View style={[styles.infoRow, { borderBottomColor: 'transparent' }]}>
-          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Tanggal Terdaftar</Text>
-          <Text style={[styles.infoValue, { color: colors.text }]}>{kta.tglBergabung}</Text>
-        </View>
+        {[
+          { label: 'Kepengurusan Kota (DPD)', value: kta.dpd },
+          { label: 'Kepengurusan Kecamatan (DPC)', value: kta.dpc },
+          { label: 'Tanggal Terdaftar', value: kta.tglBergabung },
+        ].map((row, index, list) => (
+          <View
+            key={row.label}
+            style={[styles.infoRow, { borderBottomColor: index === list.length - 1 ? 'transparent' : colors.border }]}
+          >
+            <Text style={[styles.infoLabel, { color: colors.textMuted }]}>{row.label}</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{row.value}</Text>
+          </View>
+        ))}
       </Card>
 
       {/* Hak & Fasilitas Kader Aktif */}
@@ -289,3 +287,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function formatJoinDate(iso?: string) {
+  if (!iso) return '-';
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}

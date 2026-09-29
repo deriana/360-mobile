@@ -8,10 +8,11 @@ import { WitnessUseCaseDeps, WitnessUseCaseOutput } from './witnessUseCaseTypes'
  */
 export type WitnessReviewDecision = 'APPROVE' | 'REQUEST_REVISION' | 'REJECT' | 'ASSIGN_TPS' | 'REVOKE';
 
-/** Sama dengan TPS persona demo Siti di `witnessResolver` (kode lama) agar Beranda & layar Saksi konsisten. */
-const DEMO_ASSIGNMENT = {
-  assignedTpsId: 'TPS-018',
+/** Penempatan demo. Layar lama membaca TPS ini lewat `useActiveWitnessScope`, jadi semua layar sama. */
+const DEMO_ASSIGNMENT: Pick<WitnessApplication, 'assignedTpsId' | 'assignedTpsLabel' | 'assignedTpsLocation' | 'mandateNumber'> = {
+  assignedTpsId: 'TPS-BDG-018',
   assignedTpsLabel: 'TPS 018 · Kel. Braga, Kec. Sumur Bandung',
+  assignedTpsLocation: { tpsNumber: 18, village: 'Braga', district: 'Sumur Bandung', regency: 'Kota Bandung', province: 'Jawa Barat', lat: -6.9175, lng: 107.6098 },
   mandateNumber: '018/MND/PAN-BDG/2026',
 };
 

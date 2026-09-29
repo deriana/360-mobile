@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,13 +16,25 @@ import {
 } from '../data/witnessAcademy';
 import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';
-import { useWitnessApplication } from '../features/witness';
+import { useApp } from '../context/AppContext';
+import { canTakeWitnessQuiz, QUIZ_MIN_PROGRESS_PERCENT, useTrainingProgress, useWitnessApplication } from '../features/witness';
 
 export default function WitnessAcademyScreen({ navigation }: any) {
   const { colors, isDark } = useTheme();
   const { access: witnessAccess, completeTraining } = useWitnessApplication();
-  const [modules, setModules] = useState<AcademyModule[]>(
-    BSN_PAN_ACADEMY_DATA.syllabus_modules
+  const { currentUser } = useApp();
+  const { completedLessonIds } = useTrainingProgress();
+  // Materi selesai = data awal + materi yang ditandai selesai di layar Materi Pelatihan.
+  const modules = useMemo<AcademyModule[]>(
+    () =>
+      BSN_PAN_ACADEMY_DATA.syllabus_modules.map((mod) => ({
+        ...mod,
+        lessons: mod.lessons.map((lesson) => ({
+          ...lesson,
+          is_completed: lesson.is_completed || completedLessonIds.includes(lesson.lesson_id),
+        })),
+      })),
+    [completedLessonIds],
   );
   const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
   const [certificate, setCertificate] = useState<WitnessCertificate | null>(null);
@@ -41,6 +53,20 @@ export default function WitnessAcademyScreen({ navigation }: any) {
     completedLessons += mod.lessons.filter((l) => l.is_completed).length;
   });
   const globalPercent = Math.round((completedLessons / totalLessons) * 100);
+  const quizUnlocked = canTakeWitnessQuiz(completedLessons, totalLessons);
+
+  const handleOpenQuiz = () => {
+    if (!certificate && !quizUnlocked) {
+      setDialogConfig({
+        visible: true,
+        title: 'Selesaikan Materi Dulu',
+        message: `Uji akreditasi terbuka setelah minimal ${QUIZ_MIN_PROGRESS_PERCENT}% materi selesai. Buka materi di bawah, pelajari, lalu tekan "Tandai Materi Ini Selesai".`,
+        tone: 'info',
+      });
+      return;
+    }
+    setShowQuizModal(true);
+  };
 
   const handleOpenModule = (mod: AcademyModule, lessonIdx = 0) => {
     navigation.navigate('WitnessLesson', {
@@ -111,14 +137,14 @@ export default function WitnessAcademyScreen({ navigation }: any) {
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Pill
-            label={certificate ? 'Sertifikat Aktif' : globalPercent >= 50 ? 'Siap Uji Sertifikasi' : 'Tahap Pelatihan'}
-            tone={certificate ? 'success' : globalPercent >= 50 ? 'warning' : 'info'}
+            label={certificate ? 'Sertifikat Aktif' : quizUnlocked ? 'Siap Uji Sertifikasi' : 'Tahap Pelatihan'}
+            tone={certificate ? 'success' : quizUnlocked ? 'warning' : 'info'}
             icon={certificate ? 'award' : 'clock'}
           />
 
           <TouchableOpacity
-            style={[styles.btnQuizQuick, { backgroundColor: colors.primary }]}
-            onPress={() => setShowQuizModal(true)}
+            style={[styles.btnQuizQuick, { backgroundColor: quizUnlocked || certificate ? colors.primary : colors.textMuted }]}
+            onPress={handleOpenQuiz}
             activeOpacity={0.85}
           >
             <Feather name="award" size={14} color="#FFFFFF" />
@@ -255,6 +281,8 @@ export default function WitnessAcademyScreen({ navigation }: any) {
 
       <WitnessQuizModal
         visible={showQuizModal}
+        witnessName={currentUser.identity.name}
+        witnessNik={currentUser.identity.nikMasked}
         onClose={() => setShowQuizModal(false)}
         onPassQuiz={handlePassQuiz}
       />
