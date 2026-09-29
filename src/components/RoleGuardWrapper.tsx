@@ -7,6 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, AppText } from './ui';
 import { fonts, spacing, radius } from '../theme';
 import { MobileRole } from '../types';
+import { useWitnessApplication } from '../features/witness';
+import { useNominations } from '../features/recruitment';
+import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
 
 interface GuardRule {
   isAllowed: (params: {
@@ -15,6 +18,7 @@ interface GuardRule {
     isWitnessMandated: boolean;
     isCoordinator: boolean;
     isPengurusOrPejabat: boolean;
+    canRecruit: boolean;
   }) => boolean;
   title: string;
   badge: string;
@@ -24,43 +28,39 @@ interface GuardRule {
 }
 
 const GUARD_RULES: Record<string, GuardRule> = {
+  // Fitur saksi terbuka hanya saat status penugasan ASSIGNED (`src/features/witness`).
   C1Ocr: {
-    isAllowed: ({ role, isWitnessMandated }) =>
-      role === 'WITNESS' || isWitnessMandated,
-    title: 'Akses Khusus Saksi TPS BSN',
-    badge: 'Akreditasi BSN',
-    message:
-      'Fitur Pemindaian C1 Plano (AI OCR) memerlukan SK Mandat resmi dan kelulusan 4 syarat akreditasi BSN. Selesaikan kurikulum saksi di Amanat Academy untuk membuka akses.',
-    actionLabel: 'Buka Amanat Academy',
-    actionScreen: 'AmanatAcademy',
+    isAllowed: ({ isWitnessMandated }) => isWitnessMandated,
+    title: 'Khusus Saksi TPS yang Bertugas',
+    badge: 'Foto C1 Plano',
+    message: 'Fitur ini terbuka setelah Anda terverifikasi dan ditugaskan sebagai saksi TPS. Cek langkah Anda berikutnya di menu Saksi TPS.',
+    actionLabel: 'Lihat Status Saksi',
+    actionScreen: 'Saksi',
   },
   ReportForm: {
-    isAllowed: ({ role, isWitnessMandated }) =>
-      role === 'WITNESS' || isWitnessMandated,
-    title: 'Akses Khusus Entri C1 TPS',
-    badge: 'Mandat Saksi',
-    message:
-      'Formulir Pelaporan dan Tabulasi Suara C1 Plano hanya dapat diakses oleh Saksi TPS resmi yang telah terverifikasi KPU/BSN.',
-    actionLabel: 'Buka Amanat Academy',
-    actionScreen: 'AmanatAcademy',
+    isAllowed: ({ isWitnessMandated }) => isWitnessMandated,
+    title: 'Khusus Saksi TPS yang Bertugas',
+    badge: 'Laporan Hasil TPS',
+    message: 'Fitur ini terbuka setelah Anda terverifikasi dan ditugaskan sebagai saksi TPS. Cek langkah Anda berikutnya di menu Saksi TPS.',
+    actionLabel: 'Lihat Status Saksi',
+    actionScreen: 'Saksi',
   },
   AssignmentLetter: {
-    isAllowed: ({ role, isWitnessMandated }) =>
-      role === 'WITNESS' || isWitnessMandated,
-    title: 'Surat Tugas Mandat Belum Terbit',
-    badge: 'SK Mandat BSN',
+    isAllowed: ({ isWitnessMandated }) => isWitnessMandated,
+    title: 'Surat Mandat Belum Terbit',
+    badge: 'Surat Mandat',
     message:
-      'Surat Mandat Digital (e-Mandat) hanya diterbitkan untuk saksi yang telah menyelesaikan 4 syarat verifikasi BSN DPD PAN.',
-    actionLabel: 'Kembali ke Beranda',
+      'Surat mandat terbit setelah Anda lulus pelatihan dan ditempatkan di TPS oleh tim pusat.',
+    actionLabel: 'Lihat Status Saksi',
+    actionScreen: 'Saksi',
   },
   TpsDetail: {
-    isAllowed: ({ role, isWitnessMandated, isCoordinator }) =>
-      role === 'WITNESS' || isWitnessMandated || isCoordinator,
-    title: 'Detail TPS & Bilik Suara',
-    badge: 'Penugasan TPS',
-    message:
-      'Informasi data DPT dan lokasi TPS binaan hanya terbuka bagi personil Saksi TPS atau Koordinator Lapangan yang bertugas.',
-    actionLabel: 'Kembali ke Beranda',
+    isAllowed: ({ isWitnessMandated, isCoordinator }) => isWitnessMandated || isCoordinator,
+    title: 'Khusus Saksi TPS yang Bertugas',
+    badge: 'Detail TPS',
+    message: 'Fitur ini terbuka setelah Anda terverifikasi dan ditugaskan sebagai saksi TPS. Cek langkah Anda berikutnya di menu Saksi TPS.',
+    actionLabel: 'Lihat Status Saksi',
+    actionScreen: 'Saksi',
   },
   Supervision: {
     isAllowed: ({ isCoordinator }) => isCoordinator,
@@ -116,21 +116,18 @@ const GUARD_RULES: Record<string, GuardRule> = {
     actionLabel: 'Kembali ke Beranda',
   },
   NominateVolunteer: {
-    isAllowed: ({ role, isCoordinator }) =>
-      role === 'VOLUNTEER' || role === 'WITNESS' || isCoordinator || role === 'CALEG_OPS',
-    title: 'Khusus Relawan Terdaftar',
-    badge: 'Nominasi Relawan',
-    message:
-      'Pendaftaran calon relawan baru hanya dapat dilakukan oleh relawan yang sudah terdaftar dan aktif di PAN 360.',
+    // Aturan dari `src/features/recruitment` (canRecruit): relawan aktif & terverifikasi, maks. 10/hari.
+    isAllowed: ({ canRecruit }) => canRecruit,
+    title: 'Ajak Relawan Belum Tersedia',
+    badge: 'Ajak Relawan',
+    message: 'Fitur Ajak Relawan khusus untuk relawan aktif yang sudah terverifikasi.',
     actionLabel: 'Kembali ke Beranda',
   },
 };
 
-// Peta Sebaran & Command Center kini satu layar (2026-09-28) — setiap nama
-// route yang menunjuk ke layar gabungan itu memakai aturan akses yang sama.
-GUARD_RULES.MapSebaranRelawanAnggota = GUARD_RULES.CommandCenter;
-GUARD_RULES.MapSebaran = GUARD_RULES.CommandCenter;
-GUARD_RULES.PetaSebaran = GUARD_RULES.CommandCenter;
+// Peta Sebaran & Command Center satu layar (2026-09-28). Revisi 2026-09-29: route peta
+// (MapSebaranRelawanAnggota / MapSebaran / PetaSebaran) terbuka untuk semua role — di dalam
+// layar, non-pengurus hanya melihat mode "Peta Relawan". Route `CommandCenter` tetap dijaga.
 
 export function withRoleGuard(
   ScreenComponent: React.ComponentType<any>,
@@ -152,21 +149,18 @@ export function withRoleGuard(
         (officialMembership.status === 'verified' || officialMembership.status === 'active'),
     );
 
-    const hasWitnessRole = currentUser.roles.some((r: any) => r.role === 'WITNESS');
-    const isWitnessMandated =
-      hasWitnessRole ||
-      currentUser.dimensions?.programs?.programSaksi === 'MANDATED' ||
-      currentUser.dimensions?.programs?.programSaksi === 'CERTIFIED';
+    // Satu sumber aturan: saksi terbuka hanya bila penugasan aktif (bukan dari role/preset lama).
+    const { access: witnessAccess } = useWitnessApplication();
+    const isWitnessMandated = witnessAccess.isUnlocked;
+    const { recruitAccess } = useNominations();
 
     const isCoordinator = role === 'TPS_COORDINATOR' || role === 'FIELD_COORDINATOR';
 
     // "Anggota Resmi" eksklusif per catatan produk = pengurus partai, caleg,
-    // atau pejabat daerah — bukan sekadar kader ber-KTA biasa. Dicek dari
-    // posisi struktural (bukan NONE) atau status elektoral (bukan NONE).
-    const position = currentUser.dimensions?.position?.position;
-    const electoralStatus = currentUser.dimensions?.electoral?.status;
-    const isPengurusOrPejabat =
-      Boolean(position && position !== 'NONE') || Boolean(electoralStatus && electoralStatus !== 'NONE');
+    // atau pejabat daerah — bukan sekadar kader ber-KTA biasa. Aturannya kini
+    // terpusat di `src/features/account` (dipakai juga Profil & layar peta).
+    const account = useAccountSnapshot();
+    const isPengurusOrPejabat = canSeeCommandCenterModes(account);
 
     const allowed = rule.isAllowed({
       role: role as MobileRole,
@@ -174,7 +168,10 @@ export function withRoleGuard(
       isWitnessMandated,
       isCoordinator,
       isPengurusOrPejabat,
+      canRecruit: recruitAccess.allowed,
     });
+    const message =
+      screenName === 'NominateVolunteer' && recruitAccess.reason ? recruitAccess.reason : rule.message;
 
     if (allowed) {
       return <ScreenComponent {...props} />;
@@ -198,7 +195,7 @@ export function withRoleGuard(
           </AppText>
 
           <AppText style={[styles.guardMessage, { color: colors.textMuted }]}>
-            {rule.message}
+            {message}
           </AppText>
 
           <View style={styles.actionGroup}>

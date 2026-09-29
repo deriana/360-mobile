@@ -10,14 +10,23 @@ import { QuickLoginPicker, QuickLoginCategory } from '../components/QuickLoginPi
 import { fontSize, fonts, iconStrokeWidth, radius, spacing } from '../theme';
 import {
   COORDINATOR_ACCOUNTS,
+  DEMO_ANGGOTA_ACCOUNTS,
+  DEMO_RELAWAN_ACCOUNTS,
   MEMBER_ACCOUNTS,
   VOLUNTEER_ACCOUNTS,
   WITNESS_ACCOUNTS,
   findAccount,
 } from '../data/accounts';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { Role } from '../types';
 import { BRAND_ASSETS } from '../data/images';
 import RegisterVolunteerScreen from './RegisterVolunteerScreen';
+
+// Mode 2 role (default): cukup 2 kategori — Relawan (per tahap jalur saksi) & Anggota.
+const SIMPLE_LOGIN_CATEGORIES: QuickLoginCategory[] = [
+  { key: 'relawan', label: 'Relawan', fullLabel: 'Relawan (per tahap jalur saksi)', icon: 'heart', accounts: DEMO_RELAWAN_ACCOUNTS },
+  { key: 'anggota', label: 'Anggota', fullLabel: 'Anggota Partai (ber-e-KTA)', icon: 'user-check', accounts: DEMO_ANGGOTA_ACCOUNTS },
+];
 
 const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
   { key: 'saksi', label: 'Saksi', fullLabel: 'Saksi TPS Resmi (Bilik Suara)', icon: 'eye', accounts: WITNESS_ACCOUNTS },
@@ -164,7 +173,17 @@ export default function LoginScreen() {
             <Feather name="arrow-right" size={16} color="#0284C7" />
           </Pressable>
 
-          {/* Persona Demo DPP PAN: 1-Tap Login Presentasi */}
+          {!FEATURE_FLAGS.advancedRoles ? (
+            <QuickLoginPicker
+              title="Akun Demo"
+              subtitle="Pilih relawan atau anggota untuk langsung masuk"
+              categories={SIMPLE_LOGIN_CATEGORIES}
+              onSelectRole={handleQuickLogin}
+              defaultExpanded
+              style={{ marginTop: 4 }}
+            />
+          ) : (
+          /* Persona Demo DPP PAN: 1-Tap Login Presentasi (mode lanjutan) */
           <View style={{ gap: 8, marginTop: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.primary, letterSpacing: 0.5 }}>
@@ -225,10 +244,11 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* <QuickLoginPicker
-            categories={QUICK_LOGIN_CATEGORIES}
-            onSelectRole={handleQuickLogin}
-          /> */}
+          )}
+
+          {FEATURE_FLAGS.advancedRoles ? (
+            <QuickLoginPicker categories={QUICK_LOGIN_CATEGORIES} onSelectRole={handleQuickLogin} />
+          ) : null}
         </View>
 
         <Text style={[styles.footnote, { color: colors.textMuted }]}>

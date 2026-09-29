@@ -55,10 +55,13 @@ import PandawaProgramScreen from '../screens/PandawaProgramScreen';
 import MapSebaranRelawanAnggotaScreen from '../screens/MapSebaranRelawanAnggotaScreen';
 import StatusPeranSayaScreen from '../screens/StatusPeranSayaScreen';
 import KelolaStatusScreen from '../screens/KelolaStatusScreen';
+import { DaftarSaksiScreen, SaksiScreen } from '../features/witness';
 
 const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>; title: string; headerShown?: boolean }> = [
   { name: 'StatusPeranSaya', component: StatusPeranSayaScreen, title: 'Status & Peran Saya' },
   { name: 'KelolaStatus', component: KelolaStatusScreen, title: 'Kelola Status' },
+  { name: 'Saksi', component: SaksiScreen, title: 'Saksi TPS' },
+  { name: 'DaftarSaksi', component: DaftarSaksiScreen, title: 'Daftar Saksi TPS' },
   { name: 'Activities', component: ActivitiesScreen, title: 'Agenda Kegiatan' },
   { name: 'Tasks', component: TasksScreen, title: 'Tugas Lapangan' },
   { name: 'Notifications', component: NotificationsScreen, title: 'Notifikasi' },

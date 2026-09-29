@@ -27,6 +27,9 @@ import {
 } from '../utils/userContext';
 import { checkRoleEligibility } from '../utils/roleUnlockRules';
 import { getActiveWitnessScope } from '../utils/witnessResolver';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
+import { useWitnessApplication } from '../features/witness';
+import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
 
 export default function ProfileScreen({ navigation }: any) {
   const {
@@ -43,6 +46,8 @@ export default function ProfileScreen({ navigation }: any) {
     logout,
   } = useApp();
   const { colors, isDark } = useTheme();
+  const { access: witnessAccess } = useWitnessApplication();
+  const account = useAccountSnapshot();
 
   const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
   const [roleSwitchNotice, setRoleSwitchNotice] = useState<string | null>(null);
@@ -208,7 +213,10 @@ export default function ProfileScreen({ navigation }: any) {
     return true;
   });
 
-  const isMultiRole = true; // Always enable role/mode switching for presentation demo
+  // Ganti mode/preset hanya untuk mode lanjutan; mode 2 role tidak memakai pemilih mode.
+  const isMultiRole = FEATURE_FLAGS.advancedRoles;
+  // Command Center Mobile khusus pengurus partai, pejabat, atau caleg (hanya melihat).
+  const isPengurusOrPejabat = canSeeCommandCenterModes(account);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
 
   const handleSwitchRoleWithGuard = (targetRole: MobileRole) => {
@@ -249,12 +257,13 @@ export default function ProfileScreen({ navigation }: any) {
       case 'FIELD_COORDINATOR':
         return 'Koordinator Lapangan';
       case 'VOLUNTEER':
+        if (!FEATURE_FLAGS.advancedRoles) return witnessAccess.isUnlocked ? 'Relawan · Saksi TPS' : 'Relawan';
         return isOfficialMember ? 'Satgas Kader Penggerak PANdawa' : 'Relawan Simpatisan';
       case 'CALEG_OPS':
         return 'Bakal Calon Legislatif (Caleg)';
       case 'MEMBER':
       default:
-        return 'Kader & Anggota Partai';
+        return FEATURE_FLAGS.advancedRoles ? 'Kader & Anggota Partai' : 'Anggota Partai';
     }
   };
 
@@ -804,12 +813,12 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
           <View style={{ flex: 1, gap: 1 }}>
             <Text style={[styles.actionTitle, { color: colors.text }]}>
-              {isOfficialMember ? 'Status & Peran Kader' : 'Status & Partisipasi Relawan'}
+              {isOfficialMember ? 'Status & Riwayat Anggota' : 'Status & Riwayat Relawan'}
             </Text>
             <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>
               {isOfficialMember
-                ? 'Portofolio 7 dimensi, keabsahan e-KTA, dan tata kelola'
-                : 'Portofolio tugas, akreditasi BSN Saksi, & tata kelola status'}
+                ? 'Status e-KTA, riwayat kegiatan, dan kelola keanggotaan'
+                : 'Riwayat kegiatan & tugas, dan kelola status relawan'}
             </Text>
           </View>
           {isNonActiveStatus && (
@@ -852,8 +861,8 @@ export default function ProfileScreen({ navigation }: any) {
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
 
-        {/* Surat Mandat Digital (Hanya untuk Saksi / Penugasan Saksi) */}
-        {hasWitnessRole && (
+        {/* Surat Mandat Digital — mode 2 role: ada di layar Saksi TPS, tidak diulang di sini */}
+        {FEATURE_FLAGS.advancedRoles && hasWitnessRole && (
           <>
             <Pressable
               onPress={() => navigation.navigate('AssignmentLetter', { witnessId: activeScope.witnessId, tpsId: activeScope.assignedTpsId })}
@@ -873,7 +882,9 @@ export default function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Kantor Sekretariat simPAN */}
+        {/* Kantor Sekretariat simPAN — mode 2 role: lewat menu Struktur (anggota) */}
+        {FEATURE_FLAGS.advancedRoles && (
+        <>
         <Pressable
           onPress={() => navigation.navigate('SimpanOffices')}
           style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
@@ -891,9 +902,11 @@ export default function ProfileScreen({ navigation }: any) {
         </Pressable>
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+        </>
+        )}
 
-        {/* Struktur Pengurus Partai */}
-        {isOfficialMember && (
+        {/* Struktur Pengurus Partai — mode 2 role: ada di quick menu Anggota */}
+        {FEATURE_FLAGS.advancedRoles && isOfficialMember && (
           <>
             <Pressable
               onPress={() => navigation.navigate('SimpanStructure')}
@@ -916,7 +929,7 @@ export default function ProfileScreen({ navigation }: any) {
         )}
 
         {/* Fraksi Parlemen DPR RI */}
-        {isOfficialMember && (
+        {FEATURE_FLAGS.advancedRoles && isOfficialMember && (
           <>
             <Pressable
               onPress={() => navigation.navigate('PartyRoster')}
@@ -939,7 +952,7 @@ export default function ProfileScreen({ navigation }: any) {
         )}
 
         {/* Pendaftaran Bacaleg 2029 */}
-        {isOfficialMember && (
+        {FEATURE_FLAGS.advancedRoles && isOfficialMember && (
           <>
             <Pressable
               onPress={() => navigation.navigate('SimpanBacaleg')}
@@ -961,7 +974,9 @@ export default function ProfileScreen({ navigation }: any) {
           </>
         )}
 
-        {/* Command Center Mobile */}
+        {/* Command Center Mobile — hanya dirender untuk pengurus/pejabat/caleg */}
+        {(FEATURE_FLAGS.advancedRoles || isPengurusOrPejabat) && (
+        <>
         <Pressable
           onPress={() => navigation.navigate('CommandCenter')}
           style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
@@ -984,8 +999,12 @@ export default function ProfileScreen({ navigation }: any) {
         </Pressable>
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+        </>
+        )}
 
         {/* Transparansi & Akuntabilitas */}
+        {FEATURE_FLAGS.advancedRoles && (
+        <>
         <Pressable
           onPress={() => navigation.navigate('TransparencyHub')}
           style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.7 }]}
@@ -1008,6 +1027,8 @@ export default function ProfileScreen({ navigation }: any) {
         </Pressable>
 
         <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+        </>
+        )}
 
         {/* Keamanan & Privasi */}
         <Pressable
@@ -1036,7 +1057,7 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
           <View style={{ flex: 1, gap: 1 }}>
             <Text style={[styles.actionTitle, { color: colors.text }]}>Pusat Bantuan & Panduan</Text>
-            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>FAQ, kontak call center & regulasi saksi</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textMuted }]}>Tanya jawab, kontak bantuan & panduan</Text>
           </View>
           <Feather name="chevron-right" size={16} color={colors.textMuted} />
         </Pressable>

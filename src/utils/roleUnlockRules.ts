@@ -25,48 +25,33 @@ export interface RoleEligibilityResult {
 }
 
 /**
- * Validasi 4 Syarat Resmi BSN PAN untuk peran Saksi TPS (OFFICIAL_WITNESS)
- * 1. e-KTA simPAN Terverifikasi
- * 2. Kelulusan Diklat Pelatihan Saksi di Amanat Academy (100%)
- * 3. SK Mandat Resmi Penugasan TPS dari DPD/DPW
- * 4. Pakta Integritas / Komitmen Saksi Digital
+ * Syarat saksi versi lama, hanya dipakai mode lanjutan (`FEATURE_FLAGS.advancedRoles`).
+ * Jalur saksi utama kini ada di `src/features/witness` (`getWitnessAccess`).
+ * Syarat e-KTA dihapus: saksi TPS dibuka untuk relawan, bukan khusus anggota ber-KTA.
+ * 1. Kelulusan pelatihan saksi (100%)
+ * 2. Surat mandat penugasan TPS
+ * 3. Pakta integritas saksi
  */
 export function checkWitnessPrerequisites(user: CurrentUser): WitnessPrerequisitesResult {
   const dims = user.dimensions;
 
-  // Syarat 1: e-KTA simPAN Terverifikasi atau ID Relawan Terdaftar
-  const hasKta = Boolean(
-    (dims && (dims.membership === 'active' || dims.membership === 'verified')) ||
-    user.memberships.some((m) => m.type === 'member' && (m.status === 'verified' || m.status === 'active'))
-  );
-
-  // Syarat 2: Diklat Saksi BSN Selesai 100%
+  // Syarat 1: Pelatihan Saksi Selesai 100%
   const hasBimtek = Boolean(
     (dims && (dims.programs.programSaksi === 'CERTIFIED' || dims.programs.programSaksi === 'MANDATED')) ||
     (dims && (dims.programs.saksiProgress ?? 0) >= 100) ||
-    user.candidateStatus === 'VERIFIED' ||
-    user.candidateStatus === 'MANDATED' ||
     user.roles.some((r) => r.role === 'WITNESS')
   );
 
-  // Syarat 3: SK Mandat Resmi Penugasan TPS
+  // Syarat 2: Surat Mandat Penugasan TPS
   const hasMandate = Boolean(
     (dims && (dims.programs.programSaksi === 'MANDATED' || Boolean(dims.programs.skMandatNumber))) ||
     user.roles.some((r) => r.role === 'WITNESS')
   );
 
-  // Syarat 4: Pakta Integritas Saksi
+  // Syarat 3: Pakta Integritas Saksi
   const hasPact = hasMandate || hasBimtek;
 
   const requirements: PrerequisiteRequirement[] = [
-    {
-      id: 'req_kta',
-      title: 'e-KTA simPAN Terverifikasi',
-      desc: 'Terdaftar resmi di database DPP PAN dengan Nomor KTA Nasional aktif.',
-      isPassed: hasKta,
-      actionLabel: hasKta ? undefined : 'Daftar e-KTA',
-      actionScreen: 'SimpanKta',
-    },
     {
       id: 'req_bimtek',
       title: 'Kelulusan Diklat Saksi Amanat Academy',

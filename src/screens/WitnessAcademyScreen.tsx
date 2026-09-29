@@ -16,9 +16,11 @@ import {
 } from '../data/witnessAcademy';
 import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';
+import { useWitnessApplication } from '../features/witness';
 
 export default function WitnessAcademyScreen({ navigation }: any) {
   const { colors, isDark } = useTheme();
+  const { access: witnessAccess, completeTraining } = useWitnessApplication();
   const [modules, setModules] = useState<AcademyModule[]>(
     BSN_PAN_ACADEMY_DATA.syllabus_modules
   );
@@ -49,10 +51,14 @@ export default function WitnessAcademyScreen({ navigation }: any) {
 
   const handlePassQuiz = (cert: WitnessCertificate) => {
     setCertificate(cert);
+    // Jalur saksi: lulus kuis saat status "Wajib pelatihan" → status "Siaga" (menunggu TPS).
+    const advancedToStandby = witnessAccess.status === 'TRAINING' && completeTraining().ok;
     setDialogConfig({
       visible: true,
-      title: 'Akreditasi Saksi Sah!',
-      message: `Selamat, Anda lulus dengan nilai ${cert.score}% dan terakreditasi resmi ber-nomor ${cert.certificateNo}.`,
+      title: 'Lulus Pelatihan Saksi',
+      message: advancedToStandby
+        ? `Selamat, Anda lulus dengan nilai ${cert.score}%. Status Anda kini Siaga — tim pusat akan menempatkan Anda di TPS.`
+        : `Selamat, Anda lulus dengan nilai ${cert.score}% (sertifikat ${cert.certificateNo}).`,
       tone: 'success',
     });
   };

@@ -39,6 +39,24 @@ export const VOLUNTEER_ACCOUNTS: Account[] = [
   },
 ];
 
+// ================================================================
+// AKUN DEMO MODE 2 ROLE (FEATURE_FLAGS.advancedRoles = false)
+// Relawan per tahap jalur saksi + Anggota (biasa & pengurus).
+// Role di sini hanya petunjuk; role dasar diturunkan dari keanggotaan saat login.
+// ================================================================
+export const DEMO_RELAWAN_ACCOUNTS: Account[] = [
+  { role: 'VOLUNTEER', email: 'relawan.baru@pan.go.id', password: 'relawan123', name: 'Nadia Putri — Relawan baru (belum terverifikasi)' },
+  { role: 'VOLUNTEER', email: 'siti.rahmawati@relawanpan.id', password: 'pan123', name: 'Siti Rahmawati — Relawan aktif (bisa daftar saksi)' },
+  { role: 'VOLUNTEER', email: 'relawan@pan.go.id', password: 'relawan123', name: 'Siti R. (Dago) — Saksi: menunggu verifikasi' },
+  { role: 'VOLUNTEER', email: 'relawan.latih@pan.go.id', password: 'relawan123', name: 'Bagas Pratama — Saksi: wajib pelatihan' },
+  { role: 'VOLUNTEER', email: 'saksi@pan.go.id', password: 'saksi123', name: 'Rudi Saputra — Saksi bertugas TPS 001' },
+];
+
+export const DEMO_ANGGOTA_ACCOUNTS: Account[] = [
+  { role: 'MEMBER', email: 'anggota@pan.go.id', password: 'anggota123', name: 'Dina Permata — Anggota' },
+  { role: 'MEMBER', email: 'ahmad.fauzan@pan.go.id', password: 'pan123', name: 'Ahmad Fauzan — Anggota · Pengurus DPD' },
+];
+
 export const COORDINATOR_ACCOUNTS: Account[] = [
   {
     role: 'TPS_COORDINATOR',
@@ -89,6 +107,7 @@ export const LEGACY_AND_WEB_ACCOUNTS: Account[] = [
 ];
 
 export const MOBILE_FIELD_ACCOUNTS: Account[] = [
+  ...DEMO_RELAWAN_ACCOUNTS.filter((a) => a.email.startsWith('relawan.')),
   ...WITNESS_ACCOUNTS,
   ...VOLUNTEER_ACCOUNTS,
   ...COORDINATOR_ACCOUNTS,

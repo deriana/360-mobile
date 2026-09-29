@@ -3,12 +3,14 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { useApp } from '../context/AppContext';
 import { Card, ConfirmDialog, Input, PrimaryButton } from '../components/ui';
 import { fonts, radius, spacing } from '../theme';
+import CheckboxRow from '../core/components/CheckboxRow';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
+import { NOMINATION_STATUS_INFO, NominationErrors, useNominations, validateNomination } from '../features/recruitment';
 
 /**
- * Daftarkan Relawan Baru (Nominasi)
+ * Ajak Relawan — daftarkan calon relawan baru.
  *
  * Relawan terdaftar dapat langsung mengajukan/mendaftarkan calon relawan
  * baru di wilayahnya TANPA calon tersebut harus membuat akun terlebih
@@ -16,40 +18,38 @@ import { fonts, radius, spacing } from '../theme';
  * Command Center; setelah diverifikasi, kredensial akun (email + password)
  * dikirim otomatis via WhatsApp ke calon relawan — bagian pengiriman
  * kredensial itu sendiri adalah pekerjaan backend/notifikasi, di luar
- * cakupan layar ini (lihat catatan analisis terkait).
+ * cakupan layar ini.
+ *
+ * Aturan (siapa boleh mengajak, validasi, batas harian) ada di `src/features/recruitment`.
  */
 export default function NominateVolunteerScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { nominateVolunteerCandidate, nominatedVolunteers } = useApp();
+  const { nominations, summary, recruitAccess, submit, simulateReview } = useNominations();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [region, setRegion] = useState('');
   const [interest, setInterest] = useState('');
   const [note, setNote] = useState('');
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [errors, setErrors] = useState<NominationErrors>({});
+  const [dialog, setDialog] = useState<{ title: string; message: string; success: boolean } | null>(null);
 
-  const validate = () => {
-    const next: Record<string, string> = {};
-    if (!fullName.trim()) next.fullName = 'Nama lengkap wajib diisi';
-    if (!phone.trim() || phone.replace(/\D/g, '').length < 9) next.phone = 'Nomor WhatsApp aktif wajib diisi & valid';
-    if (!region.trim()) next.region = 'Wilayah (kecamatan/kelurahan) wajib diisi';
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
+  const form = { fullName, phone, region, interest, note, consentGiven };
 
   const handleSubmit = () => {
-    if (!validate()) return;
-    nominateVolunteerCandidate({
-      fullName: fullName.trim(),
-      phone: phone.trim(),
-      region: region.trim(),
-      interest: interest.trim() || undefined,
-      note: note.trim() || undefined,
-    });
-    setShowSuccessDialog(true);
+    // Validasi format di layar dulu agar pesan muncul di kolom yang tepat; cek nomor ganda di use case.
+    const fieldErrors = validateNomination(form, []);
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) return;
+
+    const result = submit(form);
+    setDialog(
+      result.ok
+        ? { title: result.value.notice.title, message: result.value.notice.body, success: true }
+        : { title: 'Pengajuan Belum Terkirim', message: result.error, success: false },
+    );
   };
 
   const resetForm = () => {
@@ -58,7 +58,13 @@ export default function NominateVolunteerScreen() {
     setRegion('');
     setInterest('');
     setNote('');
+    setConsentGiven(false);
     setErrors({});
+  };
+
+  const statusColor = (status: keyof typeof NOMINATION_STATUS_INFO) => {
+    const tone = NOMINATION_STATUS_INFO[status].tone;
+    return tone === 'done' ? colors.success : tone === 'action' ? colors.danger : colors.warning;
   };
 
   return (
@@ -74,8 +80,10 @@ export default function NominateVolunteerScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.introTitle, { color: colors.text }]}>Daftarkan Calon Relawan Baru</Text>
             <Text style={[styles.introDesc, { color: colors.textMuted }]}>
-              Calon relawan belum perlu membuat akun. Cukup isi data di bawah — tim pusat akan memverifikasi dan
-              mengirim akses login secara otomatis via WhatsApp ke calon relawan.
+              Calon relawan belum perlu membuat akun. Tim pusat memverifikasi lalu mengirim akses login via WhatsApp.
+            </Text>
+            <Text style={[styles.introMeta, { color: colors.primary }]}>
+              {summary.verified} terverifikasi · {summary.pending} menunggu · sisa {recruitAccess.remainingToday} hari ini
             </Text>
           </View>
         </Card>
@@ -97,7 +105,7 @@ export default function NominateVolunteerScreen() {
             keyboardType="phone-pad"
             placeholder="08xxxxxxxxxx"
             error={errors.phone}
-            helperText="Kredensial akun akan dikirim ke nomor ini setelah diverifikasi pusat"
+            helperText="Akses akun dikirim ke nomor ini setelah diverifikasi pusat"
           />
           <Input
             label="Wilayah (Kecamatan / Kelurahan)"
@@ -112,7 +120,7 @@ export default function NominateVolunteerScreen() {
             icon="star"
             value={interest}
             onChangeText={setInterest}
-            placeholder="Contoh: Pengawalan Suara TPS, Logistik"
+            placeholder="Contoh: Dokumentasi, Logistik posko"
           />
           <Input
             label="Catatan Tambahan (Opsional)"
@@ -122,36 +130,49 @@ export default function NominateVolunteerScreen() {
             placeholder="Info tambahan untuk tim verifikasi"
             multiline
           />
+          <CheckboxRow
+            checked={consentGiven}
+            onToggle={() => setConsentGiven((v) => !v)}
+            label="Calon sudah setuju didaftarkan"
+            description="Calon setuju datanya dikirim ke tim pusat dan dihubungi via WhatsApp (UU PDP No. 27/2022)."
+            error={errors.consentGiven}
+          />
 
           <PrimaryButton label="Kirim Pengajuan" icon="send" onPress={handleSubmit} style={{ marginTop: spacing.sm }} />
         </Card>
 
-        {nominatedVolunteers.length > 0 ? (
+        {nominations.length > 0 ? (
           <Card style={[styles.historyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.historyTitle, { color: colors.text }]}>Pengajuan Saya ({nominatedVolunteers.length})</Text>
-            {nominatedVolunteers.map((item) => (
+            <Text style={[styles.historyTitle, { color: colors.text }]}>Pengajuan Saya ({nominations.length})</Text>
+            {nominations.map((item) => (
               <View key={item.id} style={[styles.historyRow, { borderColor: colors.border }]}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.historyName, { color: colors.text }]} numberOfLines={1}>
                     {item.fullName}
                   </Text>
                   <Text style={[styles.historyRegion, { color: colors.textMuted }]} numberOfLines={1}>
-                    {item.region}
+                    {item.phoneMasked} · {item.region}
                   </Text>
+                  {item.reviewNote ? (
+                    <Text style={[styles.historyRegion, { color: colors.danger }]} numberOfLines={2}>
+                      {item.reviewNote}
+                    </Text>
+                  ) : null}
+                  {FEATURE_FLAGS.demoControls && item.status === 'PENDING_VERIFICATION' ? (
+                    <View style={styles.demoRow}>
+                      <Text style={[styles.demoLabel, { color: colors.textMuted }]}>Demo:</Text>
+                      <Text style={[styles.demoLink, { color: colors.success }]} onPress={() => simulateReview(item.id, 'VERIFIED')}>
+                        Verifikasi
+                      </Text>
+                      <Text style={[styles.demoLink, { color: colors.danger }]} onPress={() => simulateReview(item.id, 'REJECTED')}>
+                        Tolak
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
-                <View
-                  style={[
-                    styles.historyBadge,
-                    { backgroundColor: (item.status === 'VERIFIED' ? colors.success : item.status === 'REJECTED' ? colors.danger : colors.warning) + '1A' },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.historyBadgeText,
-                      { color: item.status === 'VERIFIED' ? colors.success : item.status === 'REJECTED' ? colors.danger : colors.warning },
-                    ]}
-                  >
-                    {item.status === 'VERIFIED' ? 'Terverifikasi' : item.status === 'REJECTED' ? 'Ditolak' : 'Menunggu Verifikasi'}
+                <View style={[styles.historyBadge, { backgroundColor: statusColor(item.status) + '1A' }]}>
+                  <Text style={[styles.historyBadgeText, { color: statusColor(item.status) }]}>
+                    {NOMINATION_STATUS_INFO[item.status].label}
                   </Text>
                 </View>
               </View>
@@ -161,16 +182,19 @@ export default function NominateVolunteerScreen() {
       </ScrollView>
 
       <ConfirmDialog
-        visible={showSuccessDialog}
-        title="Pengajuan Terkirim"
-        message="Data calon relawan telah dikirim ke tim pusat untuk verifikasi. Status pengajuan dapat dipantau di halaman ini."
-        confirmLabel="Selesai"
-        tone="success"
+        visible={dialog !== null}
+        title={dialog?.title ?? ''}
+        message={dialog?.message ?? ''}
+        confirmLabel={dialog?.success ? 'Selesai' : 'Tutup'}
+        tone={dialog?.success ? 'success' : 'danger'}
         singleButton
         onConfirm={() => {
-          setShowSuccessDialog(false);
-          resetForm();
-          navigation.goBack();
+          const success = dialog?.success;
+          setDialog(null);
+          if (success) {
+            resetForm();
+            navigation.goBack();
+          }
         }}
       />
     </KeyboardAvoidingView>
@@ -183,6 +207,7 @@ const styles = StyleSheet.create({
   introIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   introTitle: { fontFamily: fonts.bold, fontSize: 14, marginBottom: 3 },
   introDesc: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17 },
+  introMeta: { fontFamily: fonts.semiBold, fontSize: 11.5, marginTop: 6 },
   formCard: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, gap: spacing.sm },
   historyCard: { padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, gap: spacing.xs },
   historyTitle: { fontFamily: fonts.bold, fontSize: 13, marginBottom: spacing.xs },
@@ -198,4 +223,7 @@ const styles = StyleSheet.create({
   historyRegion: { fontFamily: fonts.regular, fontSize: 10.5 },
   historyBadge: { borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3 },
   historyBadgeText: { fontFamily: fonts.semiBold, fontSize: 9.5 },
+  demoRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
+  demoLabel: { fontFamily: fonts.medium, fontSize: 10.5 },
+  demoLink: { fontFamily: fonts.semiBold, fontSize: 10.5, textDecorationLine: 'underline' },
 });

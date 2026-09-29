@@ -18,7 +18,6 @@ import {
   EmergencyReport,
   EventItem,
   MobileRole,
-  NominatedVolunteerCandidate,
   NotificationItem,
   Payment,
   ResignationRequestPayload,
@@ -53,6 +52,7 @@ import {
   VOLUNTEER_PRESETS,
 } from '../utils/userContext';
 import { checkRoleEligibility } from '../utils/roleUnlockRules';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 
 const SEED_DOCUMENTATION: Record<string, TpsDocPhoto[]> = {
   'TPS-001': [
@@ -220,15 +220,13 @@ interface AppContextValue {
   markNotificationRead: (notifId: string) => void;
   volunteerOpportunities: VolunteerOpportunity[];
   joinOpportunity: (opportunityId: string) => void;
-  applyWitnessCandidate: () => void;
-  nominatedVolunteers: NominatedVolunteerCandidate[];
-  nominateVolunteerCandidate: (payload: {
-    fullName: string;
-    phone: string;
-    region: string;
-    interest?: string;
-    note?: string;
-  }) => void;
+  /** Dipakai fitur baru (`src/features/*`) untuk menambah notifikasi tanpa menyimpan state di sini. */
+  pushNotification: (input: { title: string; body: string; sentBy?: string; type?: NotificationItem['type'] }) => void;
+  /**
+   * Menyelaraskan role WITNESS di `currentUser.roles` dengan status penugasan saksi
+   * (`src/features/witness`) agar layar lama yang membaca `roles` tetap konsisten.
+   */
+  syncWitnessAssignment: (assignment: { tpsId: string; tpsLabel: string } | null) => void;
   upgradeToMember: (ktaNumber: string, details?: { dpd?: string; dpc?: string; registeredAt?: string }) => void;
   checkInEvent: (eventId: string, details?: any) => void;
   poskoCheckIn: { checkedIn: boolean; time: string | null; poskoName: string };
@@ -256,7 +254,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [volunteerOpportunities, setVolunteerOpportunities] = useState<VolunteerOpportunity[]>(INITIAL_VOLUNTEER_OPPORTUNITIES);
-  const [nominatedVolunteers, setNominatedVolunteers] = useState<NominatedVolunteerCandidate[]>([]);
   const [poskoCheckIn, setPoskoCheckIn] = useState<{ checkedIn: boolean; time: string | null; poskoName: string }>({
     checkedIn: false,
     time: null,
@@ -509,9 +506,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ...curDims.programs,
             amanatAcademy: 'GRADUATED',
             academyProgress: 100,
-            programSaksi: 'MANDATED',
+            // Lulus pelatihan ≠ bertugas. Surat mandat & TPS hanya terbit lewat penugasan
+            // tim pusat (status ASSIGNED di `src/features/witness`), bukan otomatis di sini.
+            programSaksi: curDims.programs.programSaksi === 'MANDATED' ? 'MANDATED' : 'CERTIFIED',
             saksiProgress: 100,
-            skMandatNumber: curDims.programs.skMandatNumber || 'BSN/DPD-BDG/2024/018',
           },
         },
       };
@@ -520,10 +518,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const notif: NotificationItem = {
       id: `NOTIF-ACADEMY-DONE-${Date.now()}`,
       type: 'approval',
-      title: 'Selamat! Modul Bimtek Selesai & Lulus 100%',
-      body: `Modul pelatihan ${moduleId} telah diselesaikan. SK Mandat BSN Saksi TPS kini telah aktif dan terverifikasi.`,
+      title: 'Selamat! Pelatihan Selesai',
+      body: `Modul pelatihan ${moduleId} telah diselesaikan. Tunggu penempatan TPS dan surat mandat dari tim pusat.`,
       sentAt: 'Baru saja',
-      sentBy: 'Amanat Academy BSN',
+      sentBy: 'Amanat Academy',
       read: false,
     };
     setNotifications((prev) => [notif, ...prev]);
@@ -606,55 +604,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Relawan aktif mendaftarkan/menominasikan calon relawan baru di
-  // wilayahnya — calon TIDAK perlu membuat akun terlebih dahulu, dan
-  // verifikasi datanya dilakukan sepenuhnya oleh tim pusat via Web
-  // Command Center. Kredensial (email/password) untuk calon dikirim oleh
-  // BACKEND setelah verifikasi (di luar cakupan mobile — lihat catatan
-  // analisis "Pengiriman Kredensial via WhatsApp").
-  const nominateVolunteerCandidate: AppContextValue['nominateVolunteerCandidate'] = (payload) => {
-    const nominatorName = currentUser?.identity?.name || 'Relawan PAN';
-    const newCandidate: NominatedVolunteerCandidate = {
-      id: `NOM-${Date.now()}`,
-      fullName: payload.fullName,
-      phone: payload.phone,
-      region: payload.region,
-      interest: payload.interest,
-      note: payload.note,
-      nominatedByName: nominatorName,
-      nominatedAt: new Date().toISOString(),
-      status: 'PENDING_VERIFICATION',
-    };
-    setNominatedVolunteers((prev) => [newCandidate, ...prev]);
-
+  // Nominasi calon relawan & pengajuan saksi kini dikelola fitur `src/features/recruitment`
+  // dan `src/features/witness`. AppContext hanya menyediakan notifikasi & sinkron role.
+  const pushNotification: AppContextValue['pushNotification'] = ({ title, body, sentBy, type }) => {
     const notif: NotificationItem = {
-      id: `NOTIF-NOM-${Date.now()}`,
-      type: 'assignment',
-      title: 'Pengajuan Calon Relawan Terkirim',
-      body: `Data ${payload.fullName} telah dikirim ke tim pusat untuk verifikasi. Kredensial akun akan dikirim otomatis via WhatsApp ke ${payload.phone} setelah diverifikasi.`,
+      id: `NOTIF-FEATURE-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+      type: type ?? 'assignment',
+      title,
+      body,
       sentAt: 'Baru saja',
-      sentBy: 'Tim Verifikasi Pusat PAN 360',
+      sentBy: sentBy ?? 'Tim Pusat PAN 360',
       read: false,
     };
     setNotifications((prev) => [notif, ...prev]);
   };
 
-  const applyWitnessCandidate = () => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      candidateStatus: 'APPLIED',
-    }));
-
-    const newNotif: NotificationItem = {
-      id: `NOTIF-${Date.now()}`,
-      type: 'assignment',
-      title: 'Pengajuan Calon Saksi TPS Berhasil Dikirim',
-      body: 'Data pengajuan Anda sebagai calon saksi resmi TPS telah diterima Tim BSN DPD PAN Kota Bandung untuk verifikasi administrasi dan penugasan lapangan.',
-      sentAt: 'Baru saja',
-      sentBy: 'BSN DPD Kota Bandung',
-      read: false,
-    };
-    setNotifications((prev) => [newNotif, ...prev]);
+  const syncWitnessAssignment: AppContextValue['syncWitnessAssignment'] = (assignment) => {
+    setCurrentUser((prev) => {
+      const current = prev.roles.find((r) => r.role === 'WITNESS');
+      if (!assignment) {
+        return current ? { ...prev, roles: prev.roles.filter((r) => r.role !== 'WITNESS') } : prev;
+      }
+      if (current?.scope.code === assignment.tpsId) return prev;
+      const witnessRole = {
+        role: 'WITNESS' as MobileRole,
+        status: 'assigned' as const,
+        scope: { level: 'TPS' as const, code: assignment.tpsId, name: assignment.tpsLabel },
+        assignedAt: new Date().toISOString().slice(0, 10),
+      };
+      return { ...prev, roles: [...prev.roles.filter((r) => r.role !== 'WITNESS'), witnessRole] };
+    });
   };
 
   const upgradeToMember = (
@@ -919,8 +898,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = (nextRole: Role, email?: string) => {
     const user = getUserContext(nextRole, email);
-    setCurrentUser(user);
-    setRole(nextRole);
+    if (FEATURE_FLAGS.advancedRoles) {
+      setCurrentUser(user);
+      setRole(nextRole);
+      setLoggedIn(true);
+      return;
+    }
+    // 2 role dasar: Anggota (e-KTA verified/active) atau Relawan. Saksi bukan mode —
+    // kapabilitasnya dibuka lewat status penugasan di `src/features/witness`.
+    const isOfficialMember = user.memberships.some(
+      (m) => m.type === 'member' && (m.status === 'verified' || m.status === 'active'),
+    );
+    const baseRole: MobileRole = isOfficialMember ? 'MEMBER' : 'VOLUNTEER';
+    setCurrentUser({
+      ...user,
+      currentRole: baseRole,
+      permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE[baseRole],
+      dimensions: user.dimensions ? { ...user.dimensions, operationalRole: baseRole } : user.dimensions,
+    });
+    setRole(baseRole);
     setLoggedIn(true);
   };
   const logout = () => setLoggedIn(false);
@@ -970,9 +966,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       markNotificationRead,
       volunteerOpportunities,
       joinOpportunity,
-      applyWitnessCandidate,
-      nominatedVolunteers,
-      nominateVolunteerCandidate,
+      pushNotification,
+      syncWitnessAssignment,
       upgradeToMember,
       checkInEvent,
       poskoCheckIn,
@@ -995,7 +990,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       tasks,
       notifications,
       volunteerOpportunities,
-      nominatedVolunteers,
       poskoCheckIn,
     ],
   );

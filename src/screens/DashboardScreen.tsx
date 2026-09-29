@@ -22,6 +22,10 @@ import { PORTAL_NEWS_LIST } from '../data/portalNews';
 import { maskNik } from '../utils/masking';
 import QrPlaceholder from '../components/QrPlaceholder';
 import { MobileRole } from '../types';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
+import { useWitnessApplication, WitnessProgressCard } from '../features/witness';
+import { useNominations } from '../features/recruitment';
+import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
 
 interface QuickActionItem {
   id: string;
@@ -59,8 +63,12 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     tasks,
     volunteerOpportunities,
     joinOpportunity,
-    applyWitnessCandidate,
   } = useApp();
+  // Aturan saksi & Ajak Relawan dari fitur baru (satu sumber aturan untuk semua layar).
+  const { access: witnessAccess, statusInfo: witnessStatusInfo } = useWitnessApplication();
+  const { recruitAccess } = useNominations();
+  const canSeeAllMapModes = canSeeCommandCenterModes(useAccountSnapshot());
+  const isSimpleMode = !FEATURE_FLAGS.advancedRoles;
   const { colors, isDark } = useTheme();
 
   // Modals & Dialog states
@@ -70,7 +78,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showCoordinatorModal, setShowCoordinatorModal] = useState(false);
   const [showAspirasiModal, setShowAspirasiModal] = useState(false);
-  const [showCandidateConfirmDialog, setShowCandidateConfirmDialog] = useState(false);
   const [showAuditBerkasModal, setShowAuditBerkasModal] = useState(false);
   const [showMaklumatModal, setShowMaklumatModal] = useState(false);
   const [activeWartaTab, setActiveWartaTab] = useState<'instruksi' | 'agenda'>('instruksi');
@@ -273,8 +280,8 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     (currentUser as any)?.electoralStatus === 'CALEG' ||
     currentUser.dimensions?.electoral?.status === 'CALEG' ||
     (currentUser as any)?.roles?.some((r: any) => r.role === 'CALEG' || r.role === 'CALEG_OPS');
-  const hasOfficialWitnessAssignment =
-    isWitnessRole || (isVolunteer && currentUser.dimensions?.programs?.programSaksi === 'MANDATED');
+  // Fitur saksi terbuka hanya bila penugasan saksi aktif (src/features/witness).
+  const hasOfficialWitnessAssignment = witnessAccess.isUnlocked;
 
   // Deteksi Satgas Kader Penggerak (Level 1) vs Anggota Pemula (Level 0)
   const isSatgasMember =
@@ -282,10 +289,99 @@ export default function DashboardScreen({ navigation: propNav }: any) {
     (currentUser.dimensions?.programs?.pandawa === 'ACTIVE' || currentUser.dimensions?.kader === 'kader_aktif') &&
     !isCaleg;
   const isLevel0Member = role === 'MEMBER' && !isSatgasMember && !isCaleg;
-  const isSingleRowQuickMenu = (isVolunteer && !hasOfficialWitnessAssignment) || isLevel0Member;
+  const isSingleRowQuickMenu = isSimpleMode || (isVolunteer && !hasOfficialWitnessAssignment) || isLevel0Member;
+
+  // Mode 2 role (default): quick menu selalu 4 item, 1 baris — arahan "simpel tapi informatif".
+  const getSimpleMenuItems = (): QuickActionItem[] => {
+    if (witnessAccess.accountType === 'ANGGOTA') {
+      return [
+        {
+          id: 'ekta',
+          icon: 'credit-card',
+          title: 'e-KTA',
+          subtitle: 'Kartu anggota',
+          tone: 'primary',
+          onPress: () => navigation.navigate('SimpanKta'),
+        },
+        {
+          id: 'kaderisasi',
+          icon: 'award',
+          title: 'Kaderisasi',
+          subtitle: 'Pelatihan kader',
+          tone: 'primary',
+          onPress: () => navigation.navigate('AmanatAcademy'),
+        },
+        {
+          id: 'aspirasi',
+          icon: 'message-square',
+          title: 'Aspirasi',
+          subtitle: 'Suara warga',
+          badge: `${aspirasiItems.length}`,
+          tone: 'info',
+          onPress: () => setShowAspirasiModal(true),
+        },
+        {
+          id: 'struktur',
+          icon: 'git-branch',
+          title: 'Struktur',
+          subtitle: 'Pengurus & kantor',
+          tone: 'info',
+          onPress: () => navigation.navigate('SimpanStructure'),
+        },
+      ];
+    }
+
+    return [
+      {
+        id: 'tugas',
+        icon: 'briefcase',
+        title: 'Tugas',
+        subtitle: 'Tugas lapangan',
+        tone: 'primary',
+        onPress: () => navigation.navigate('Tasks'),
+      },
+      {
+        id: 'ajak_relawan',
+        icon: recruitAccess.allowed ? 'user-plus' : 'lock',
+        title: 'Ajak Relawan',
+        subtitle: recruitAccess.allowed ? 'Daftarkan calon' : 'Belum tersedia',
+        tone: 'primary',
+        onPress: () => {
+          if (recruitAccess.allowed) {
+            navigation.navigate('NominateVolunteer');
+            return;
+          }
+          setDialogConfig({
+            visible: true,
+            title: 'Ajak Relawan Belum Tersedia',
+            message: recruitAccess.reason ?? 'Fitur ini khusus relawan aktif yang sudah terverifikasi.',
+            tone: 'warning',
+          });
+        },
+      },
+      {
+        id: 'lapor_kejadian',
+        icon: 'alert-triangle',
+        title: 'Lapor Kejadian',
+        subtitle: 'Pelanggaran & gangguan',
+        tone: 'danger',
+        onPress: () => navigation.navigate('EmergencyForm'),
+      },
+      {
+        id: 'saksi_tps',
+        icon: witnessAccess.isUnlocked ? 'shield' : 'lock',
+        title: 'Saksi TPS',
+        subtitle: witnessStatusInfo.label,
+        tone: witnessAccess.isUnlocked ? 'success' : 'info',
+        onPress: () => navigation.navigate('Saksi'),
+      },
+    ];
+  };
 
   // 1. Menu Operasional Lapangan (Spesifik Peran — 100% Nol Duplikasi Navigasi)
   const getOperationalMenuItems = (): QuickActionItem[] => {
+    if (isSimpleMode) return getSimpleMenuItems();
+
     // 1. Relawan: State R2 (Relawan Mandat Saksi TPS) — 4 Aksi Taktis Bilik Bebas Duplikasi
     if (isVolunteer && hasOfficialWitnessAssignment) {
       return [
@@ -897,6 +993,30 @@ export default function DashboardScreen({ navigation: propNav }: any) {
         </View>
       </View>
 
+      {/* Progres jalur saksi untuk relawan yang belum bertugas (status + langkah berikutnya). */}
+      {isSimpleMode && witnessAccess.accountType === 'RELAWAN' && !witnessAccess.isUnlocked && (
+        <WitnessProgressCard onPress={() => navigation.navigate('Saksi')} />
+      )}
+
+      {/* Peta Sebaran untuk semua role (mode Relawan); pengurus melihat semua mode. */}
+      {isSimpleMode && (
+        <Card
+          onPress={() => navigation.navigate('PetaSebaran')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderColor: colors.border }}
+        >
+          <View style={{ width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryLight }}>
+            <Feather name="map" size={18} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.text }}>Peta Sebaran</Text>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted }} numberOfLines={1}>
+              {canSeeAllMapModes ? 'Relawan, saksi TPS & perolehan suara' : 'Sebaran relawan & posko per wilayah'}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.textMuted} />
+        </Card>
+      )}
+
       {/* ========================================================================= */}
       {/* 3. KARTU PERAN UTAMA (CONTEXTUAL ROLE CARD) - BAB 10 & 31                 */}
       {/* ========================================================================= */}
@@ -913,7 +1033,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
                   Penugasan Saksi TPS
                 </Text>
                 <Text style={[styles.witnessCardSubtitle, { color: colors.textMuted }]} numberOfLines={1}>
-                  Mandat BSN Resmi Terverifikasi
+                  Surat mandat resmi sudah terbit
                 </Text>
               </View>
             </View>
@@ -1488,27 +1608,6 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           />
         </View>
       </Modal>
-
-      {/* Candidate Confirmation Dialog */}
-      <ConfirmDialog
-        visible={showCandidateConfirmDialog}
-        title="Ajukan Diri Sebagai Calon Saksi?"
-        message="Portofolio keaktifan relawan (8 tugas selesai) dan sertifikat Bimtek PAN Academy (12 jam) Anda akan dikirimkan ke Tim BSN DPD PAN Kota Bandung untuk verifikasi dan penerbitan SK Mandat."
-        confirmLabel="Ya, Kirim Pengajuan"
-        cancelLabel="Batal"
-        tone="primary"
-        onConfirm={() => {
-          setShowCandidateConfirmDialog(false);
-          applyWitnessCandidate();
-          setDialogConfig({
-            visible: true,
-            title: 'Pengajuan Berhasil Dikirim',
-            message: 'Pengajuan Anda telah tercatat di Web Command Center BSN DPD PAN Kota Bandung. Silakan tunggu penugasan resmi.',
-            tone: 'success',
-          });
-        }}
-        onCancel={() => setShowCandidateConfirmDialog(false)}
-      />
 
       {/* Feedback Dialog */}
       <ConfirmDialog

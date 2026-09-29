@@ -17,6 +17,7 @@ import { fonts, fontSize, radius, spacing } from '../theme';
 import { Card, Pill, PrimaryButton, ConfirmDialog } from '../components/ui';
 import { BSN_PAN_ACADEMY_DATA, AcademyModule, WitnessCertificate } from '../data/witnessAcademy';
 import { WitnessQuizModal } from '../components/WitnessQuizModal';
+import { useWitnessApplication } from '../features/witness';
 import QrPlaceholder from '../components/QrPlaceholder';
 
 export interface AmanatCourse {
@@ -120,6 +121,7 @@ export default function AmanatAcademyScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
   const { currentUser, role, completeAcademyModule } = useApp();
+  const { access: witnessAccess, completeTraining } = useWitnessApplication();
 
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'kaderisasi' | 'kampanye' | 'advokasi' | 'bsn'>('all');
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -159,10 +161,12 @@ export default function AmanatAcademyScreen() {
     if (completeAcademyModule) {
       completeAcademyModule('bsn_bimtek');
     }
+    // Jalur saksi: lulus saat status "Wajib pelatihan" → status "Siaga" (menunggu TPS).
+    if (witnessAccess.status === 'TRAINING') completeTraining();
     setDialogConfig({
       visible: true,
-      title: 'Akreditasi Saksi BSN Sah!',
-      message: `Selamat, Anda lulus dengan nilai ${cert.score}% dan terakreditasi nomor: ${cert.certificateNo}. Prasyarat Saksi TPS Anda kini terpenuhi.`,
+      title: 'Lulus Pelatihan Saksi',
+      message: `Selamat, Anda lulus dengan nilai ${cert.score}% (sertifikat ${cert.certificateNo}). Tunggu penempatan TPS dari tim pusat.`,
       tone: 'success',
     });
   };

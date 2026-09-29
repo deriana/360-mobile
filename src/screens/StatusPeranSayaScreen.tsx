@@ -12,12 +12,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { Card, ConfirmDialog, Pill, PrimaryButton } from '../components/ui';
+import { Card, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, radius, spacing } from '../theme';
 import { getWitnessAvatar } from '../data/images';
 import { maskNik, maskPhone } from '../utils/masking';
 import { ROLE_LABEL } from '../utils/scope';
 import { ROLE_ACTIVITY_TIMELINE } from '../utils/userContext';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
+import { useWitnessApplication } from '../features/witness';
 
 interface LifecycleEvent {
   id: string;
@@ -76,17 +78,15 @@ const LIFECYCLE_HISTORY: LifecycleEvent[] = [
 export default function StatusPeranSayaScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
-  const { currentUser, role, applyWitnessCandidate } = useApp();
+  const { currentUser, role } = useApp();
+  const { access: witnessAccess, statusInfo: witnessStatusInfo } = useWitnessApplication();
 
   const user = currentUser?.identity;
   const officialMembership = currentUser?.memberships?.find((m) => m.type === 'member');
   const volunteerMembership = currentUser?.memberships?.find((m) => m.type === 'volunteer');
   const isOfficialMember = Boolean(officialMembership);
 
-  // Pengajuan naik status Relawan -> calon Saksi TPS. Fungsinya sudah ada
-  // di AppContext (applyWitnessCandidate) tapi sebelumnya belum punya
-  // pemicu UI — dipasang di sini karena ini layar "Status & Peran Saya".
-  const [showApplyWitnessDialog, setShowApplyWitnessDialog] = useState(false);
+  // Pendaftaran saksi kini lewat layar Saksi TPS (`src/features/witness`).
 
   // Tiap kartu DIMENSI sebelumnya selalu menampilkan 4 baris data sekaligus
   // (16+ baris teks kalau 4 kartu ditumpuk). Sekarang cuma baris paling
@@ -98,10 +98,7 @@ export default function StatusPeranSayaScreen() {
   // tiap item). Sekarang default 2 item terbaru + tombol "Lihat Semua Riwayat".
   const [showFullTimeline, setShowFullTimeline] = useState(false);
   const isVolunteerRole = role === 'VOLUNTEER' || role === 'RELAWAN';
-  const hasAppliedAsWitness =
-    currentUser?.candidateStatus === 'APPLIED' ||
-    currentUser?.candidateStatus === 'VERIFIED' ||
-    currentUser?.candidateStatus === 'MANDATED';
+  const hasAppliedAsWitness = witnessAccess.status !== 'NOT_APPLIED';
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -305,7 +302,7 @@ export default function StatusPeranSayaScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.dimNumber, { color: colors.primary }]}>DIMENSI 1</Text>
+                  <Text style={[styles.dimNumber, { color: colors.primary }]}>KEANGGOTAAN</Text>
                   <Pill
                     label={
                       dims.membership === 'resignation_requested'
@@ -387,7 +384,7 @@ export default function StatusPeranSayaScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.dimNumber, { color: '#10B981' }]}>DIMENSI 2</Text>
+                  <Text style={[styles.dimNumber, { color: '#10B981' }]}>PERKADERAN</Text>
                   <Pill
                     label={
                       dims.kader === 'kader_aktif'
@@ -452,7 +449,7 @@ export default function StatusPeranSayaScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.dimNumber, { color: '#3B82F6' }]}>DIMENSI 3</Text>
+                  <Text style={[styles.dimNumber, { color: '#3B82F6' }]}>KEPENGURUSAN</Text>
                   <Pill
                     label={
                       dims.position?.position === 'PENGURUS'
@@ -516,7 +513,7 @@ export default function StatusPeranSayaScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[styles.dimNumber, { color: '#A855F7' }]}>DIMENSI 4</Text>
+                  <Text style={[styles.dimNumber, { color: '#A855F7' }]}>PENCALEGAN</Text>
                   <Pill
                     label={
                       dims.electoral?.status === 'CALEG'
@@ -595,7 +592,7 @@ export default function StatusPeranSayaScreen() {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={[styles.dimNumber, { color: '#F59E0B' }]}>
-                  {isOfficialMember ? 'DIMENSI 5' : 'STATUS UTAMA'}
+                  {isOfficialMember ? 'KERELAWANAN' : 'STATUS UTAMA'}
                 </Text>
                 <Pill
                   label={
@@ -658,7 +655,7 @@ export default function StatusPeranSayaScreen() {
               <Feather name={expandedDim === 'D5' ? 'chevron-up' : 'chevron-down'} size={13} color={colors.primary} />
             </TouchableOpacity>
 
-            {dims.volunteer === 'active' ? (
+            {FEATURE_FLAGS.advancedRoles && dims.volunteer === 'active' ? (
               <PrimaryButton
                 label="Daftarkan Relawan Baru"
                 icon="user-plus"
@@ -680,7 +677,7 @@ export default function StatusPeranSayaScreen() {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={[styles.dimNumber, { color: colors.primary }]}>
-                {isOfficialMember ? 'DIMENSI 6' : 'PROGRAM DIKLAT'}
+                PELATIHAN
               </Text>
               <Pill label={isOfficialMember ? '3 PROGRAM AKTIF' : 'MODUL DIKLAT'} tone="primary" />
             </View>
@@ -728,7 +725,7 @@ export default function StatusPeranSayaScreen() {
           {/* Sub program 3: Saksi BSN PAN */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => navigation.navigate('WitnessAcademy')}
+            onPress={() => navigation.navigate(FEATURE_FLAGS.advancedRoles ? 'WitnessAcademy' : 'Saksi')}
             style={[styles.subProgramRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderColor: colors.border }]}
           >
             <Feather
@@ -737,9 +734,13 @@ export default function StatusPeranSayaScreen() {
               color={dims.programs?.programSaksi === 'MANDATED' ? '#15803D' : colors.primary}
             />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.subProgTitle, { color: colors.text }]}>Badan Saksi Nasional (BSN)</Text>
+              <Text style={[styles.subProgTitle, { color: colors.text }]}>Saksi TPS</Text>
               <Text style={[styles.subProgDesc, { color: colors.textMuted }]}>
-                {dims.programs?.programSaksi === 'MANDATED'
+                {!FEATURE_FLAGS.advancedRoles
+                  ? witnessAccess.accountType === 'ANGGOTA'
+                    ? 'Jalur saksi TPS khusus untuk relawan'
+                    : `Status: ${witnessStatusInfo.label}`
+                  : dims.programs?.programSaksi === 'MANDATED'
                   ? `Tersertifikasi Saksi TPS • SK Mandat No. ${dims.programs?.skMandatNumber || '042/SM-DPP/2026'}`
                   : dims.programs?.programSaksi === 'TRAINING'
                   ? `Pelatihan Saksi TPS BSN (Progres ${dims.programs?.saksiProgress ?? 80}%) • Belum Ber-SK Mandat`
@@ -753,30 +754,16 @@ export default function StatusPeranSayaScreen() {
 
           {/* CTA naik status: hanya untuk Relawan yang belum sama sekali
               mengikuti/mengajukan program Saksi TPS */}
-          {isVolunteerRole && dims.programs?.programSaksi === 'NONE' && !hasAppliedAsWitness ? (
+          {isVolunteerRole && !hasAppliedAsWitness ? (
             <PrimaryButton
-              label="Ajukan Sebagai Saksi TPS"
+              label="Daftar Jadi Saksi TPS"
               icon="award"
-              onPress={() => setShowApplyWitnessDialog(true)}
+              onPress={() => navigation.navigate('Saksi')}
               style={{ marginTop: spacing.xs }}
             />
           ) : null}
         </View>
       </Card>
-
-      <ConfirmDialog
-        visible={showApplyWitnessDialog}
-        title="Ajukan Diri Sebagai Calon Saksi TPS?"
-        message="Data keaktifan relawan Anda akan dikirimkan ke Tim Badan Saksi Nasional (BSN) DPD untuk verifikasi administrasi sebelum penugasan dan pelatihan Amanat Academy."
-        confirmLabel="Ya, Kirim Pengajuan"
-        cancelLabel="Batal"
-        tone="primary"
-        onConfirm={() => {
-          setShowApplyWitnessDialog(false);
-          applyWitnessCandidate();
-        }}
-        onCancel={() => setShowApplyWitnessDialog(false)}
-      />
 
       {/* DIMENSI 7: TIMELINE RIWAYAT STATUS */}
       <Card style={[styles.dimensionCard, { borderColor: colors.border }]}>
@@ -787,7 +774,7 @@ export default function StatusPeranSayaScreen() {
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={[styles.dimNumber, { color: '#6366F1' }]}>
-                {isOfficialMember ? 'DIMENSI 7' : 'RIWAYAT'}
+                RIWAYAT
               </Text>
               <Pill label="TERVERIFIKASI" tone="info" />
             </View>

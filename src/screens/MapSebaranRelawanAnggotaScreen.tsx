@@ -18,6 +18,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { fonts, radius, spacing } from '../theme';
 import { buildCommandCenterMapHtml } from '../utils/gisHtmlBuilder';
+import { canSeeCommandCenterModes, useAccountSnapshot } from '../features/account';
+import { FEATURE_FLAGS } from '../core/config/featureFlags';
 import { INDONESIA_GEOJSON } from '../data/indonesiaGeojsonData';
 import { getProvinceKabupatenGeoJson, getKabupatenKecamatanGeoJson, getFeatureCentroid } from '../utils/geoRegistry';
 import {
@@ -58,11 +60,17 @@ export default function MapSebaranRelawanAnggotaScreen() {
   const { colors, isDark } = useTheme();
   const webViewRef = useRef<WebView>(null);
 
-  const modeTabs = useMemo(() => commandCenterService.getModeTabs(), []);
+  // Peta Relawan untuk semua role; mode Saksi TPS & Kemenangan khusus pengurus/pejabat/caleg.
+  const account = useAccountSnapshot();
+  const canSeeAllModes = FEATURE_FLAGS.advancedRoles || canSeeCommandCenterModes(account);
+  const modeTabs = useMemo(
+    () => commandCenterService.getModeTabs().filter((t) => canSeeAllModes || t.mode === 'relawan'),
+    [canSeeAllModes],
+  );
   const allProvinces = useMemo(() => commandCenterService.getProvinces(), []);
   const nationalSummary = useMemo(() => commandCenterService.getNationalSummary(), []);
 
-  const [mode, setMode] = useState<CommandMode>('saksi_tps');
+  const [mode, setMode] = useState<CommandMode>(canSeeAllModes ? 'saksi_tps' : 'relawan');
   const [drillTier, setDrillTier] = useState<DrillTier>('NATIONAL');
   const [selectedProvince, setSelectedProvince] = useState<ProvinceCommandItem | null>(null);
   const [activeProvinceName, setActiveProvinceName] = useState<string | null>(null);
@@ -321,7 +329,9 @@ export default function MapSebaranRelawanAnggotaScreen() {
         </View>
       </SafeAreaView>
 
-      {/* 3. DOCK KANAN: Tombol Ganti Mode (Layer) — posisi FAB, sejajar top bar */}
+      {/* 3. DOCK KANAN: Tombol Ganti Mode (Layer) — posisi FAB, sejajar top bar.
+          Disembunyikan bila pengguna hanya punya 1 mode (Peta Relawan). */}
+      {modeTabs.length > 1 && (
       <View style={styles.rightDockContainer}>
         <TouchableOpacity
           onPress={() => setIsModeSheetVisible(true)}
@@ -335,6 +345,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
           {activeModeMeta.label}
         </Text>
       </View>
+      )}
 
       {/* 4. DOCK KIRI: Legenda Warna (identik tier website, Bagian 4.3) */}
       <View style={[styles.legendPanel, { backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)', borderColor: colors.border }]}>

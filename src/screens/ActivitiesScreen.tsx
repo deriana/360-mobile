@@ -15,7 +15,10 @@ import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../th
 import { EventItem } from '../types';
 import QrPlaceholder from '../components/QrPlaceholder';
 
-type EventStatusTab = 'all' | 'registered' | 'upcoming' | 'completed';
+type EventStatusTab = 'all' | 'registered' | 'upcoming' | 'training' | 'completed';
+
+/** Kategori kegiatan yang dihitung sebagai pelatihan (web: event kategori "Bimtek Saksi", dll.). */
+const TRAINING_CATEGORIES = ['Bimtek', 'Pelatihan', 'Bimtek Saksi'];
 
 interface GridDay {
   dayNum: number;
@@ -219,6 +222,8 @@ export default function ActivitiesScreen({ route, navigation }: any) {
         if (e.attended) return false;
       } else if (statusTab === 'completed') {
         if (!e.attended) return false;
+      } else if (statusTab === 'training') {
+        if (!TRAINING_CATEGORIES.includes(e.category)) return false;
       }
 
       // 3. Date Filter:
@@ -274,6 +279,14 @@ export default function ActivitiesScreen({ route, navigation }: any) {
             Jadwal musyawarah, bakti sosial, apel siaga, dan konsolidasi resmi partai
           </Text>
         </View>
+
+        {/* Presensi kini ada di tab Kegiatan (sebelumnya tab tersendiri) */}
+        <PrimaryButton
+          label="Presensi Kehadiran"
+          icon="map-pin"
+          variant="secondary"
+          onPress={() => navigation.navigate('CheckIn')}
+        />
 
         {/* Card Kalender Bulan Penuh */}
         <View
@@ -464,6 +477,7 @@ export default function ActivitiesScreen({ route, navigation }: any) {
             { key: 'all' as const, label: 'Semua Agenda' },
             { key: 'registered' as const, label: 'Terdaftar (RSVP)' },
             { key: 'upcoming' as const, label: 'Akan Datang' },
+            { key: 'training' as const, label: 'Pelatihan' },
             { key: 'completed' as const, label: 'Selesai Hadir' },
           ].map((tab) => {
             const isActive = statusTab === tab.key;
@@ -490,6 +504,19 @@ export default function ActivitiesScreen({ route, navigation }: any) {
             );
           })}
         </ScrollView>
+
+        {/* Pelatihan online tetap bisa diakses meski belum ada jadwal tatap muka */}
+        {statusTab === 'training' ? (
+          <Card onPress={() => navigation.navigate('AmanatAcademy')} style={{ gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Feather name="book-open" size={18} color={colors.primary} />
+              <Text style={[styles.topHeaderTitle, { color: colors.text, fontSize: 14 }]}>Belajar Online</Text>
+            </View>
+            <Text style={[styles.topHeaderSubtitle, { color: colors.textMuted }]}>
+              Materi relawan & kader di Amanat Academy — bisa dipelajari kapan saja.
+            </Text>
+          </Card>
+        ) : null}
 
         {/* Events List */}
         <View style={styles.eventsListWrap}>

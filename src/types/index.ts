@@ -168,7 +168,6 @@ export interface CurrentUser {
   skills?: string[];
   interests?: string[];
   volunteerStats?: VolunteerStats;
-  candidateStatus?: VolunteerCandidateStatus;
   coordinatorContact?: {
     name: string;
     phone: string;
@@ -401,27 +400,6 @@ export interface VolunteerOpportunity {
   description: string;
 }
 
-export type VolunteerCandidateStatus =
-  | 'NOT_APPLIED'
-  | 'TRAINED'
-  | 'APPLIED'
-  | 'VERIFIED'
-  | 'MANDATED';
-
-// Pendaftaran calon relawan baru oleh relawan aktif (nominasi, calon belum
-// perlu membuat akun sendiri — verifikasi sepenuhnya dilakukan tim pusat
-// via Web Command Center).
-export type NominatedVolunteerStatus = 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
-
-export interface NominatedVolunteerCandidate {
-  id: string;
-  fullName: string;
-  phone: string;
-  region: string;
-  interest?: string;
-  note?: string;
-  nominatedByName: string;
-  nominatedAt: string;
-  status: NominatedVolunteerStatus;
-}
+// Status pengajuan saksi & nominasi calon relawan kini tinggal di domain fitur:
+// `src/features/witness` dan `src/features/recruitment` (lihat docs/ARSITEKTUR_DAN_KONVENSI.md).
 

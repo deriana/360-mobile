@@ -460,12 +460,6 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
         assignedAt: '15 Agu 2026',
       },
       {
-        role: 'WITNESS',
-        status: 'assigned',
-        scope: { level: 'TPS', code: 'TPS-014', name: 'TPS 014 Kel. Merdeka' },
-        assignedAt: '01 Sep 2026',
-      },
-      {
         role: 'VOLUNTEER',
         status: 'active',
         scope: { level: 'DISTRICT', code: '327302', name: 'Kecamatan Sumur Bandung' },
@@ -600,7 +594,6 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
       trainingHours: 12,
       activitiesCount: 15,
     },
-    candidateStatus: 'TRAINED',
     coordinatorContact: {
       name: 'Asep Ridwan (Korlap Coblong)',
       phone: '0811-2233-4455',
@@ -736,12 +729,6 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
         scope: { level: 'REGENCY', code: '3273', name: 'Dapil Jabar I' },
         assignedAt: '01 Jan 2024',
       },
-      {
-        role: 'WITNESS',
-        status: 'assigned',
-        scope: { level: 'TPS', code: 'TPS-001', name: 'TPS 001 Kel. Dago' },
-        assignedAt: '01 Sep 2026',
-      },
     ],
     currentRole: 'MEMBER',
     permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.MEMBER,
@@ -785,6 +772,89 @@ export const USER_PROFILES_BY_EMAIL: Record<string, CurrentUser> = {
     ],
     currentRole: 'MEMBER',
     permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.MEMBER,
+  },
+
+  // Akun demo mode 2 role — relawan baru yang KTP-nya belum diverifikasi tim pusat.
+  'relawan.baru@pan.go.id': {
+    id: 'USR-RELAWAN-BARU',
+    identity: {
+      id: 'USR-RELAWAN-BARU',
+      name: 'Nadia Putri',
+      nikMasked: '327302******0011',
+      nikFull: '3273025203030011',
+      phone: '0822-1100-3344',
+      email: 'relawan.baru@pan.go.id',
+      avatarIndex: 6,
+      status: 'active',
+    },
+    memberships: [
+      {
+        type: 'volunteer',
+        status: 'pending',
+        ktaNumber: 'REL-3273-2026-0311',
+        registeredAt: '2026-09-25',
+        dpc: 'Posko Sumur Bandung',
+      },
+    ],
+    roles: [
+      {
+        role: 'VOLUNTEER',
+        status: 'active',
+        scope: { level: 'DISTRICT', code: '327302', name: 'Kecamatan Sumur Bandung' },
+        assignedAt: '25 Sep 2026',
+      },
+    ],
+    currentRole: 'VOLUNTEER',
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.VOLUNTEER,
+    volunteerStats: { eventsAttended: 0, tasksCompleted: 0, trainingHours: 0, activitiesCount: 0 },
+    coordinatorContact: {
+      name: 'Hendra Gunawan',
+      phone: '0813-2211-4455',
+      role: 'Koordinator Lapangan Kecamatan',
+      posko: 'Posko Pemenangan Braga No. 12',
+      region: 'Sumur Bandung',
+    },
+  },
+
+  // Akun demo mode 2 role — relawan yang lolos verifikasi saksi dan wajib pelatihan.
+  'relawan.latih@pan.go.id': {
+    id: 'USR-RELAWAN-LATIH',
+    identity: {
+      id: 'USR-RELAWAN-LATIH',
+      name: 'Bagas Pratama',
+      nikMasked: '327301******0007',
+      nikFull: '3273011109970007',
+      phone: '0812-7700-1122',
+      email: 'relawan.latih@pan.go.id',
+      avatarIndex: 2,
+      status: 'active',
+    },
+    memberships: [
+      {
+        type: 'volunteer',
+        status: 'active',
+        ktaNumber: 'REL-3273-2025-0107',
+        registeredAt: '2025-11-02',
+        dpc: 'DPC Coblong',
+      },
+    ],
+    roles: [
+      {
+        role: 'VOLUNTEER',
+        status: 'active',
+        scope: { level: 'DISTRICT', code: '327301', name: 'Kecamatan Coblong' },
+        assignedAt: '02 Nov 2025',
+      },
+    ],
+    currentRole: 'VOLUNTEER',
+    permissions: ROLE_PERMISSIONS_BY_MOBILE_ROLE.VOLUNTEER,
+    volunteerStats: { eventsAttended: 3, tasksCompleted: 5, trainingHours: 6, activitiesCount: 8 },
+    coordinatorContact: {
+      name: 'Asep Ridwan (Korlap Coblong)',
+      phone: '0811-2233-4455',
+      role: 'Koordinator Lapangan Kecamatan',
+      posko: 'Posko Pemenangan Dago Atas No. 84',
+    },
   },
 };
 

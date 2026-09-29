@@ -7,10 +7,10 @@ import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { fonts, iconStrokeWidth } from '../theme';
 import { buildDetailStack } from './DetailStack';
+import { useWitnessRoleSync } from '../features/witness';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import ActivitiesScreen from '../screens/ActivitiesScreen';
-import CheckInScreen from '../screens/CheckInScreen';
 import SimpanNewsScreen from '../screens/SimpanNewsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -18,13 +18,13 @@ const Tab = createBottomTabNavigator<any>();
 
 const DashboardStack = buildDetailStack('Dashboard', DashboardScreen, 'Beranda');
 const ActivitiesStack = buildDetailStack('Activities', ActivitiesScreen, 'Agenda & Kegiatan');
-const CheckInStack = buildDetailStack('CheckIn', CheckInScreen, 'Presensi Kehadiran GPS');
 const NewsStack = buildDetailStack('SimpanNews', SimpanNewsScreen, 'Warta & Kabar PAN');
 const ProfileStack = buildDetailStack('Profile', ProfileScreen, 'Profil Saya');
 
 const STANDARD_BOTTOM_TABS = [
   { name: 'HomeTab', component: DashboardStack, label: 'Beranda', icon: 'home' as const },
-  { name: 'CheckInTab', component: CheckInStack, label: 'Presensi', icon: 'map-pin' as const },
+  // Presensi kini ada di dalam tab Kegiatan (agenda + presensi dalam satu tempat).
+  { name: 'ActivitiesTab', component: ActivitiesStack, label: 'Kegiatan', icon: 'calendar' as const },
   { name: 'ProfileTab', component: ProfileStack, label: 'Profil', icon: 'user' as const },
 ];
 
@@ -134,6 +134,8 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export default function MainTabs() {
   const { role } = useApp();
   const { colors } = useTheme();
+  // Selaraskan role WITNESS lama dengan status penugasan saksi (src/features/witness).
+  useWitnessRoleSync();
 
   return (
     <Tab.Navigator
