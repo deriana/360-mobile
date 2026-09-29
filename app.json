@@ -4,7 +4,7 @@
     "slug": "simpan",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/pan_emblem.png",
+    "icon": "./assets/brand/app_icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "updates": {
@@ -18,10 +18,9 @@
     "android": {
       "package": "com.pan.saksi360",
       "adaptiveIcon": {
-        "backgroundColor": "#0066B3",
-        "foregroundImage": "./assets/brand/pan_emblem.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/brand/pan_emblem.png"
+        "backgroundColor": "#0254A0",
+        "foregroundImage": "./assets/brand/app_icon_foreground.png",
+        "monochromeImage": "./assets/brand/app_icon_monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -32,20 +31,20 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk foto selfie presensi dan pemindaian dokumen."
+          "cameraPermission": "simPAN memerlukan akses kamera untuk foto selfie presensi dan pemindaian dokumen."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "SAKSI PAN 360 memerlukan akses lokasi untuk memverifikasi titik presensi GPS di TPS."
+          "locationWhenInUsePermission": "simPAN memerlukan akses lokasi untuk memverifikasi titik presensi GPS di TPS."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "SAKSI PAN 360 memerlukan akses galeri untuk mengunggah foto dokumen.",
-          "cameraPermission": "SAKSI PAN 360 memerlukan akses kamera untuk memotret dokumen."
+          "photosPermission": "simPAN memerlukan akses galeri untuk mengunggah foto dokumen.",
+          "cameraPermission": "simPAN memerlukan akses kamera untuk memotret dokumen."
         }
       ],
       "expo-font",
