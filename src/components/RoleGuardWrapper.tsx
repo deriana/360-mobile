@@ -95,12 +95,12 @@ const GUARD_RULES: Record<string, GuardRule> = {
     actionLabel: 'Kembali ke Beranda',
   },
   SimpanKta: {
-    isAllowed: ({ isOfficialMember }) => isOfficialMember,
-    title: 'Khusus Anggota Resmi Ber-KTA',
-    badge: 'e-KTA simPAN',
-    message:
-      'e-KTA Digital resmi hanya diterbitkan untuk Kader dan Anggota Resmi Partai Amanat Nasional. Simpatisan dapat mengajukan keanggotaan dengan verifikasi e-KTP.',
-    actionLabel: 'Ajukan Jadi Anggota Resmi',
+    // Layar KTA adaptif: e-KTA simPAN untuk Kader Resmi & KTA Digital Relawan BSN Saksi360 untuk Relawan
+    isAllowed: () => true,
+    title: 'Identitas Digital KTA',
+    badge: 'KTA Digital',
+    message: 'Identitas KTA digital dapat diakses oleh seluruh anggota dan relawan yang terdaftar.',
+    actionLabel: 'Daftar Anggota',
     actionScreen: 'RegisterMember',
   },
   CommandCenter: {

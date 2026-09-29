@@ -1525,15 +1525,11 @@ export default function DashboardScreen({ navigation: propNav }: any) {
               : 'Pindai QR ini untuk presensi kehadiran giat posko dan kegiatan bakti relawan.'}
           </Text>
           <PrimaryButton
-            label={isOfficialMember ? 'Buka e-KTA Penuh' : 'Buka Profil Relawan'}
+            label={isOfficialMember ? 'Buka e-KTA Penuh' : 'Buka KTA Relawan'}
             variant="secondary"
             onPress={() => {
               setShowKtaQrModal(false);
-              if (isOfficialMember) {
-                navigation.navigate('SimpanKta');
-              } else {
-                navigation.navigate('ProfileTab');
-              }
+              navigation.navigate('SimpanKta');
             }}
             style={{ width: '100%' }}
           />
