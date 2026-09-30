@@ -280,6 +280,48 @@ export default function MapSebaranRelawanAnggotaScreen() {
     return commandCenterService.getRegencyBreakdown(selectedProvince, regencyGeoJson);
   }, [selectedProvince, regencyGeoJson]);
 
+  // -------------------------------------------------------------
+  // PENJELASAN PERSENTASE + PETA UNGGUL/BELUM UNGGUL PER MODE — khusus
+  // sheet Ringkasan level Nasional (belum pilih provinsi). Definisi
+  // "unggul" mengikuti tier yang sama dengan warna choropleth (Bagian 4.3):
+  // 2 tier teratas = unggul, 3 tier di bawahnya = belum unggul.
+  // -------------------------------------------------------------
+  const modeExplanation =
+    mode === 'relawan'
+      ? 'Persentase adalah capaian jumlah relawan aktif dibanding target yang ditetapkan di tiap wilayah.'
+      : mode === 'saksi_tps'
+      ? 'Persentase adalah tingkat kehadiran saksi bermandat dibanding total TPS yang harus dikawal di wilayah tersebut.'
+      : 'Persentase adalah proporsi suara sah PAN dibanding total suara sah seluruh partai di wilayah tersebut.';
+
+  const unggulSectionLabel =
+    mode === 'kemenangan' ? 'Wilayah Kita Unggul' : mode === 'saksi_tps' ? 'Kehadiran Saksi Tinggi' : 'Capaian Target Tinggi';
+  const tidakUnggulSectionLabel =
+    mode === 'kemenangan' ? 'Wilayah Belum Unggul' : mode === 'saksi_tps' ? 'Kehadiran Saksi Rendah' : 'Capaian Target Rendah';
+
+  const getRawPercent = (province: ProvinceCommandItem): number => {
+    if (mode === 'relawan') return province.relawan.percent;
+    if (mode === 'saksi_tps') return province.saksi_tps.saksiPercent;
+    return province.kemenangan.panPercent;
+  };
+
+  const isUnggul = (province: ProvinceCommandItem): boolean => {
+    if (mode === 'kemenangan') {
+      const label = province.kemenangan.tierConfig.label;
+      return label === 'Unggul Mutlak' || label === 'Pas-pasan';
+    }
+    const tier = mode === 'relawan' ? province.relawan.statusMeta.tier : province.saksi_tps.saksiStatusMeta.tier;
+    return tier === 'TARGET_MET' || tier === 'NEAR_TARGET';
+  };
+
+  const { unggulList, tidakUnggulList } = useMemo(() => {
+    const sortedDesc = [...allProvinces].sort((a, b) => getRawPercent(b) - getRawPercent(a));
+    return {
+      unggulList: sortedDesc.filter((p) => isUnggul(p)),
+      tidakUnggulList: [...sortedDesc].reverse().filter((p) => !isUnggul(p)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allProvinces, mode]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
@@ -508,9 +550,10 @@ export default function MapSebaranRelawanAnggotaScreen() {
                 <Feather name="x" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-            <Text style={[styles.optionDesc, { color: colors.textMuted, marginBottom: spacing.sm }]}>
-              Mode: {activeModeMeta.label} — {activeModeMeta.sublabel}
-            </Text>
+            <View style={[styles.modeExplanationBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[styles.modeExplanationTitle, { color: colors.primary }]}>{activeModeMeta.label.toUpperCase()}</Text>
+              <Text style={[styles.modeExplanationText, { color: colors.textMuted }]}>{modeExplanation}</Text>
+            </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.kpiGrid}>
                 {/* Kartu dipangkas jadi ikon + angka + label saja (1 arti per kartu).
@@ -556,6 +599,28 @@ export default function MapSebaranRelawanAnggotaScreen() {
                   <Text style={[styles.sectionSubtitle, { color: colors.text }]}>
                     Kabupaten/Kota di {selectedProvince.name}
                   </Text>
+                  {regencyBreakdown.length > 0 && (
+                    // Penjelasan 3 ikon di tiap kartu kab/kota di bawah —
+                    // supaya jelas persentase mana milik mode peta yang mana.
+                    <View style={styles.regencyLegendRow}>
+                      <View style={styles.regencyLegendItem}>
+                        <Feather name="target" size={11} color={colors.textMuted} />
+                        <Text style={[styles.regencyLegendText, { color: colors.textMuted }]}>= Peta Relawan</Text>
+                      </View>
+                      {canSeeAllModes && (
+                        <>
+                          <View style={styles.regencyLegendItem}>
+                            <Feather name="shield" size={11} color={colors.textMuted} />
+                            <Text style={[styles.regencyLegendText, { color: colors.textMuted }]}>= Saksi Mandat (TPS)</Text>
+                          </View>
+                          <View style={styles.regencyLegendItem}>
+                            <Feather name="bar-chart-2" size={11} color={colors.textMuted} />
+                            <Text style={[styles.regencyLegendText, { color: colors.textMuted }]}>= Peta Kemenangan</Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  )}
                   {regencyBreakdown.length === 0 ? (
                     <Text style={[styles.optionDesc, { color: colors.textMuted, paddingVertical: spacing.sm }]}>
                       Data batas kab/kota untuk provinsi ini belum tersedia di dataset (batasan sumber pihak ketiga).
@@ -610,7 +675,76 @@ export default function MapSebaranRelawanAnggotaScreen() {
                     ))
                   )}
                 </>
-              ) : null}
+              ) : (
+                <>
+                  {/* Level Nasional: daftar wilayah unggul & belum unggul
+                      sesuai mode peta aktif — tap satu wilayah untuk
+                      langsung drill-down ke provinsi itu di peta. */}
+                  <View style={styles.standingSection}>
+                    <View style={styles.standingHeaderRow}>
+                      <View style={[styles.standingDotBig, { backgroundColor: '#1D4ED8' }]} />
+                      <Text style={[styles.sectionSubtitle, { color: colors.text, marginTop: 0, marginBottom: 0 }]}>
+                        {unggulSectionLabel} (Top {Math.min(5, unggulList.length)})
+                      </Text>
+                    </View>
+                    <View style={styles.standingCardList}>
+                      {unggulList.slice(0, 5).map((province, index) => (
+                        <TouchableOpacity
+                          key={province.id}
+                          onPress={() => selectProvince(province)}
+                          activeOpacity={0.75}
+                          style={[
+                            styles.standingCard,
+                            { backgroundColor: isDark ? 'rgba(29,78,216,0.14)' : '#F8FAFF', borderColor: colors.border, borderLeftColor: '#1D4ED8' },
+                          ]}
+                        >
+                          <Text style={[styles.standingCardRank, { color: '#1D4ED8' }]}>{index + 1}</Text>
+                          <Text style={[styles.standingCardText, { color: colors.text }]} numberOfLines={1}>
+                            {province.name}
+                          </Text>
+                          <Text style={[styles.standingCardValue, { color: '#1D4ED8' }]}>{getTierValueLabelForMode(province, mode)}</Text>
+                          <Feather name="chevron-right" size={16} color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,23,42,0.28)'} />
+                        </TouchableOpacity>
+                      ))}
+                      {unggulList.length === 0 && (
+                        <Text style={[styles.optionDesc, { color: colors.textMuted }]}>Belum ada wilayah pada kategori ini.</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.standingSection}>
+                    <View style={styles.standingHeaderRow}>
+                      <View style={[styles.standingDotBig, { backgroundColor: '#EF4444' }]} />
+                      <Text style={[styles.sectionSubtitle, { color: colors.text, marginTop: 0, marginBottom: 0 }]}>
+                        {tidakUnggulSectionLabel} (Top {Math.min(5, tidakUnggulList.length)})
+                      </Text>
+                    </View>
+                    <View style={styles.standingCardList}>
+                      {tidakUnggulList.slice(0, 5).map((province, index) => (
+                        <TouchableOpacity
+                          key={province.id}
+                          onPress={() => selectProvince(province)}
+                          activeOpacity={0.75}
+                          style={[
+                            styles.standingCard,
+                            { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FFFBFB', borderColor: colors.border, borderLeftColor: '#EF4444' },
+                          ]}
+                        >
+                          <Text style={[styles.standingCardRank, { color: '#EF4444' }]}>{index + 1}</Text>
+                          <Text style={[styles.standingCardText, { color: colors.text }]} numberOfLines={1}>
+                            {province.name}
+                          </Text>
+                          <Text style={[styles.standingCardValue, { color: '#EF4444' }]}>{getTierValueLabelForMode(province, mode)}</Text>
+                          <Feather name="chevron-right" size={16} color={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,23,42,0.28)'} />
+                        </TouchableOpacity>
+                      ))}
+                      {tidakUnggulList.length === 0 && (
+                        <Text style={[styles.optionDesc, { color: colors.textMuted }]}>Belum ada wilayah pada kategori ini.</Text>
+                      )}
+                    </View>
+                  </View>
+                </>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -749,4 +883,30 @@ const styles = StyleSheet.create({
   regencyMetricsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   regencyMetricItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   regencyMetricValue: { fontFamily: fonts.bold, fontSize: 12.5 },
+  regencyLegendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: spacing.xs },
+  regencyLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  regencyLegendText: { fontFamily: fonts.regular, fontSize: 10 },
+
+  modeExplanationBox: { borderWidth: 1, borderRadius: radius.md, padding: spacing.sm, gap: 3, marginBottom: spacing.sm },
+  modeExplanationTitle: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 0.4 },
+  modeExplanationText: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 16 },
+
+  standingSection: { marginTop: spacing.sm },
+  standingHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
+  standingDotBig: { width: 8, height: 8, borderRadius: 4 },
+  standingCardList: { gap: 8 },
+  standingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  standingCardRank: { fontFamily: fonts.bold, fontSize: 11.5, width: 16 },
+  standingCardText: { flex: 1, fontFamily: fonts.medium, fontSize: 13 },
+  standingCardValue: { fontFamily: fonts.bold, fontSize: 14 },
 });

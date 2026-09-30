@@ -39,9 +39,20 @@
  * volunteer-map-service.ts / saksi-anomaly-service.ts /
  * pan-kemenangan-service.ts) diekspos lewat API dan dikonsumsi ulang oleh
  * mobile — bukan ditulis ulang logikanya (Bagian 9 Roadmap, Fase 1).
+ *
+ * SINKRONISASI PERSENTASE (2026-09-30) — persentase Relawan, Saksi Mandat
+ * TPS, dan Kemenangan PAN di level Provinsi & Kabupaten/Kota TIDAK lagi
+ * di-generate dari formula seeded-random di file ini, melainkan diambil
+ * langsung dari PERSENTASE_COMMAND_CENTER.md (repo Saksi360-Admin) lewat
+ * `commandCenterPercentages.ts` — hasil ekstraksi langsung fungsi data
+ * asli web, sehingga nilainya identik dengan Command Center web saat ini
+ * (bukan cuma meniru formula). Kuantitas turunan (target, active, tpsCount,
+ * poskoCount, dll.) tetap dihitung sintetis dari sizeFactor seperti semula
+ * karena web tidak mengeksop angka absolut tsb, hanya persentasenya.
  */
 
 import { normalizeProvinceSlug } from '../utils/geoRegistry';
+import { PROVINCE_PERCENTAGE_DATA, REGENCY_PERCENTAGE_DATA, RegencyPercentageEntry } from '../data/commandCenterPercentages';
 
 export type CommandMode = 'relawan' | 'saksi_tps' | 'kemenangan';
 
@@ -248,16 +259,21 @@ function buildProvinceStats(region: ProvinceRegion): ProvinceCommandItem {
   const sizeFactor = 0.15 + seeded(region.id, 'size') * 0.85; // wilayah besar vs kecil
   const totalTps = Math.max(600, Math.round(sizeFactor * 140000));
 
+  // Persentase resmi (Relawan, Saksi Mandat TPS, Kemenangan PAN) diambil
+  // dari PERSENTASE_COMMAND_CENTER.md (lihat catatan header file), bukan
+  // formula seeded-random lagi — hanya kuantitas turunan yang masih sintetis.
+  const percentEntry = PROVINCE_PERCENTAGE_DATA[region.id];
+
   // Mode Relawan
   const target = Math.max(300, Math.round(totalTps * (0.25 + seeded(region.id, 'target') * 0.15)));
-  const relawanPercent = Math.round((55 + seeded(region.id, 'relawan') * 55) * 10) / 10;
+  const relawanPercent = percentEntry ? percentEntry.relawanPercent : Math.round((55 + seeded(region.id, 'relawan') * 55) * 10) / 10;
   const active = Math.round(target * (relawanPercent / 100));
   const poskoCount = Math.max(3, Math.round(target / (180 + seeded(region.id, 'posko') * 220)));
 
   // Mode Saksi Mandat (TPS)
   const tpsCount = totalTps;
   const saksiMandat = Math.round(tpsCount * (1 + seeded(region.id, 'mandat') * 0.1));
-  const saksiPercent = Math.round((70 + seeded(region.id, 'saksi') * 30) * 10) / 10;
+  const saksiPercent = percentEntry ? percentEntry.saksiPercent : Math.round((70 + seeded(region.id, 'saksi') * 30) * 10) / 10;
   const saksiHadirCount = Math.round(saksiMandat * (saksiPercent / 100));
   // C1 Masuk berjenjang murni dari saksiHadirCount (bukan independen dari
   // tpsCount) — rasio 0.90–0.96 meniru c1PlanoCount/sirekapOcrCount web
@@ -268,7 +284,7 @@ function buildProvinceStats(region: ProvinceRegion): ProvinceCommandItem {
   const saksiAnomaliCount = Math.round(seeded(region.id, 'anomali') * 6);
 
   // Mode Kemenangan
-  const panPercent = Math.round((3 + seeded(region.id, 'menang') * 40) * 10) / 10;
+  const panPercent = percentEntry ? percentEntry.panPercent : Math.round((3 + seeded(region.id, 'menang') * 40) * 10) / 10;
   const totalValidVotes = Math.round(totalTps * (280 + seeded(region.id, 'dpt') * 80));
   const panVotes = Math.round(totalValidVotes * (panPercent / 100));
   const victoryTier = getVictoryTier(panPercent);
@@ -448,9 +464,53 @@ function inheritRedTier(childPercent: number, parentTier: TierMeta): number {
   return childPercent;
 }
 
+// PERSENTASE_COMMAND_CENTER.md menamai kab/kota "Kab. X" / "Kota X", sedang
+// properti `kabupaten` pada geojson batas wilayah cuma "X" (tanpa prefix
+// "Kab. ") untuk kabupaten, dan "Kota X" (prefix dipertahankan) untuk kota —
+// dikonfirmasi langsung dari data geojson (mis. jawa-barat.json: "Bandung"
+// vs "Kota Bandung"). Ejaan keduanya juga kadang beda spasi/kapitalisasi
+// (mis. "Gunungkidul" vs "Gunung Kidul", "Pangkajene dan Kepulauan" vs
+// "Pangkajene Dan Kepulauan") — dicocokkan via `normalizeRegencyKey`
+// (lowercase, buang semua non-alfanumerik). Sebagian kecil kab/kota di
+// geojson masih pakai nama lama dari sebelum pemekaran/ganti nama
+// administratif (mis. "Mamuju Utara" utk "Pasangkayu") — dipetakan manual
+// lewat `REGENCY_NAME_ALIASES`.
+function toGeoJsonRegencyName(docName: string): string {
+  return docName.startsWith('Kab. ') ? docName.slice(5) : docName;
+}
+
+function normalizeRegencyKey(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+// key = normalizeRegencyKey(nama di PERSENTASE_COMMAND_CENTER.md, setelah toGeoJsonRegencyName)
+// value = nama sesuai geojson batas wilayah
+const REGENCY_NAME_ALIASES: Record<string, string> = {
+  [normalizeRegencyKey('Toba')]: 'Toba Samosir',
+  [normalizeRegencyKey('OKU Timur')]: 'Ogan Komering Ulu Timur',
+  [normalizeRegencyKey('OKU Selatan')]: 'Ogan Komering Ulu Selatan',
+  [normalizeRegencyKey('Mahakam Ulu')]: 'Mahakam Hulu',
+  [normalizeRegencyKey('Kepulauan Siau Tagulandang Biaro')]: 'Siau Tagulandang Biaro',
+  [normalizeRegencyKey('Pasangkayu')]: 'Mamuju Utara',
+  [normalizeRegencyKey('Kepulauan Tanimbar')]: 'Maluku Tenggara Barat',
+};
+
+function buildRegencyPercentageLookup(provinceId: string): Map<string, RegencyPercentageEntry> {
+  const entries = REGENCY_PERCENTAGE_DATA[provinceId] || [];
+  const map = new Map<string, RegencyPercentageEntry>();
+  entries.forEach((entry) => {
+    const geoName = toGeoJsonRegencyName(entry.name);
+    map.set(normalizeRegencyKey(geoName), entry);
+    const alias = REGENCY_NAME_ALIASES[normalizeRegencyKey(geoName)];
+    if (alias) map.set(normalizeRegencyKey(alias), entry);
+  });
+  return map;
+}
+
 export function buildRegencyBreakdown(province: ProvinceCommandItem, regencyGeoJson: any): RegencyBreakdownItem[] {
   const features = regencyGeoJson && Array.isArray(regencyGeoJson.features) ? regencyGeoJson.features : [];
   const seenNames = new Set<string>();
+  const percentageLookup = buildRegencyPercentageLookup(province.id);
 
   return features
     .map((feature: any): RegencyBreakdownItem | null => {
@@ -459,15 +519,15 @@ export function buildRegencyBreakdown(province: ProvinceCommandItem, regencyGeoJ
       seenNames.add(name);
 
       const seed = `${province.name}::${name}`;
-      const relawanPercent = inheritRedTier(
-        Math.round((55 + seeded(seed, 'relawan') * 55) * 10) / 10,
-        province.relawan.statusMeta,
-      );
-      const saksiPercent = inheritRedTier(
-        Math.round((70 + seeded(seed, 'saksi') * 30) * 10) / 10,
-        province.saksi_tps.saksiStatusMeta,
-      );
-      const kemenanganPercent = Math.round(seeded(seed, 'menang') * 45 * 10) / 10;
+      const fixedEntry = percentageLookup.get(normalizeRegencyKey(name));
+
+      const relawanPercent = fixedEntry
+        ? fixedEntry.relawanPercent
+        : inheritRedTier(Math.round((55 + seeded(seed, 'relawan') * 55) * 10) / 10, province.relawan.statusMeta);
+      const saksiPercent = fixedEntry
+        ? fixedEntry.saksiPercent
+        : inheritRedTier(Math.round((70 + seeded(seed, 'saksi') * 30) * 10) / 10, province.saksi_tps.saksiStatusMeta);
+      const kemenanganPercent = fixedEntry ? fixedEntry.panPercent : Math.round(seeded(seed, 'menang') * 45 * 10) / 10;
 
       return {
         name,
