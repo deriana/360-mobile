@@ -53,7 +53,7 @@ export default function SimpanKtaScreen() {
     barcodeClean: `*${cleanRelawanNo.replace(/[^A-Z0-9]/g, '')}*`,
     nama: currentUser.identity.name,
     nik: currentUser.identity.nikMasked,
-    roleTitle: volunteerRole?.scope?.name ? 'Koordinator Posko' : 'Relawan Posko & Saksi',
+    roleTitle: volunteerRole?.scope?.name ? 'Koordinator Posko' : 'Relawan Posko',
     poskoName: volunteerMembership?.dpc || volunteerRole?.scope?.name || 'Posko Kel. Dago, Kec. Coblong',
     unitTugas: 'Divisi Penggalangan Suara TPS 018',
     tglBergabung: formatJoinDate(volunteerMembership?.registeredAt || '2024-03-01'),
@@ -100,7 +100,7 @@ export default function SimpanKtaScreen() {
       </View>
 
       {/* =========================================================================
-          KARTU FISIK-DIGITAL (PRECISE DESIGN MATCH DENGAN SAKSI360-ADMIN)
+          KARTU FISIK-DIGITAL (PROPORSI STANDAR KARTU ISO/IEC 7810 ID-1 RATIO 1.58:1)
          ========================================================================= */}
       {isOfficialMember ? (
         // CARD A: e-KTA simPAN KADER RESMI
@@ -115,8 +115,8 @@ export default function SimpanKtaScreen() {
                 <Image source={BRAND_ASSETS.official} style={styles.adminLogoImg} resizeMode="contain" />
               </View>
               <View style={styles.adminHeaderTitles}>
-                <Text style={styles.adminCardMainTitle}>KARTU TANDA ANGGOTA ELEKTRONIK</Text>
-                <Text style={styles.adminCardSubTitle}>PARTAI AMANAT NASIONAL · simPAN</Text>
+                <Text style={styles.adminCardMainTitle} numberOfLines={1}>KARTU TANDA ANGGOTA ELEKTRONIK</Text>
+                <Text style={styles.adminCardSubTitle} numberOfLines={1}>PARTAI AMANAT NASIONAL · simPAN</Text>
               </View>
             </View>
 
@@ -147,7 +147,7 @@ export default function SimpanKtaScreen() {
                 </View>
                 <Text style={styles.adminLabelKta}>NOMOR ANGGOTA KTA</Text>
                 <View style={styles.adminKtaNumberRow}>
-                  <Text style={styles.adminKtaNumberText}>{kaderKta.noKta}</Text>
+                  <Text style={styles.adminKtaNumberText} numberOfLines={1}>{kaderKta.noKta}</Text>
                   <Pressable
                     onPress={() => handleCopy(kaderKta.noKta, 'kader')}
                     style={({ pressed }) => [styles.adminCopyBtn, pressed && { opacity: 0.6 }]}
@@ -156,7 +156,7 @@ export default function SimpanKtaScreen() {
                   >
                     <Feather
                       name={copiedField === 'kader' ? 'check' : 'copy'}
-                      size={12}
+                      size={11}
                       color={copiedField === 'kader' ? '#10B981' : '#94A3B8'}
                     />
                   </Pressable>
@@ -172,7 +172,7 @@ export default function SimpanKtaScreen() {
               accessibilityLabel="Perbesar QR Code"
             >
               <View style={styles.adminQrInnerBox}>
-                <QrPlaceholder seed={kaderKta.noKta} size={48} />
+                <QrPlaceholder seed={kaderKta.noKta} size={38} />
               </View>
               <Text style={styles.adminQrLabel}>VERIFIKASI QR</Text>
             </Pressable>
@@ -202,11 +202,6 @@ export default function SimpanKtaScreen() {
             </View>
           </View>
 
-          {/* Legal Signatures Note */}
-          <View style={styles.adminLegalRow}>
-            <Text style={styles.adminLegalNote}>Tanda Tangan DPP: Ketua Umum {kaderKta.tandaTanganKetum}</Text>
-          </View>
-
           {/* Card Footer Barcode & Legalitas */}
           <View style={styles.adminCardFooter}>
             <View style={styles.adminBarcodeGroup}>
@@ -216,9 +211,9 @@ export default function SimpanKtaScreen() {
                     key={idx}
                     style={{
                       width: w,
-                      height: 14,
+                      height: 10,
                       backgroundColor: '#FFFFFF',
-                      marginRight: idx % 2 === 0 ? 1.5 : 2,
+                      marginRight: idx % 2 === 0 ? 1 : 1.5,
                     }}
                   />
                 ))}
@@ -234,7 +229,7 @@ export default function SimpanKtaScreen() {
           </View>
         </View>
       ) : (
-        // CARD B: KTA DIGITAL RELAWAN (100% PERSIS DENGAN DESAIN ADMIN SAKSI360)
+        // CARD B: KTA DIGITAL RELAWAN (PROPORSI KARTU FISIK ASLI 1.58:1)
         <View style={styles.adminCardContainer}>
           {/* Watermark Logo PAN Transparan di Sudut Kanan Atas */}
           <Image source={BRAND_ASSETS.official} style={styles.adminCardWatermark} resizeMode="contain" />
@@ -246,8 +241,8 @@ export default function SimpanKtaScreen() {
                 <Image source={BRAND_ASSETS.official} style={styles.adminLogoImg} resizeMode="contain" />
               </View>
               <View style={styles.adminHeaderTitles}>
-                <Text style={styles.adminCardMainTitle}>KARTU TANDA ANGGOTA RELAWAN</Text>
-                <Text style={styles.adminCardSubTitle}>PARTAI AMANAT NASIONAL · BSN SAKSI360</Text>
+                <Text style={styles.adminCardMainTitle} numberOfLines={1}>KARTU TANDA ANGGOTA RELAWAN</Text>
+                <Text style={styles.adminCardSubTitle} numberOfLines={1}>PARTAI AMANAT NASIONAL · BSN SAKSI360</Text>
               </View>
             </View>
 
@@ -281,7 +276,7 @@ export default function SimpanKtaScreen() {
                 </View>
                 <Text style={styles.adminLabelKta}>NOMOR ANGGOTA KTA</Text>
                 <View style={styles.adminKtaNumberRow}>
-                  <Text style={styles.adminKtaNumberText}>{relawanKta.noKta}</Text>
+                  <Text style={styles.adminKtaNumberText} numberOfLines={1}>{relawanKta.noKta}</Text>
                   <Pressable
                     onPress={() => handleCopy(relawanKta.noKta, 'relawan')}
                     style={({ pressed }) => [styles.adminCopyBtn, pressed && { opacity: 0.6 }]}
@@ -290,7 +285,7 @@ export default function SimpanKtaScreen() {
                   >
                     <Feather
                       name={copiedField === 'relawan' ? 'check' : 'copy'}
-                      size={12}
+                      size={11}
                       color={copiedField === 'relawan' ? '#10B981' : '#94A3B8'}
                     />
                   </Pressable>
@@ -306,7 +301,7 @@ export default function SimpanKtaScreen() {
               accessibilityLabel="Perbesar QR Code"
             >
               <View style={styles.adminQrInnerBox}>
-                <QrPlaceholder seed={relawanKta.noKta} size={48} />
+                <QrPlaceholder seed={relawanKta.noKta} size={38} />
               </View>
               <Text style={styles.adminQrLabel}>VERIFIKASI QR</Text>
             </Pressable>
@@ -327,7 +322,7 @@ export default function SimpanKtaScreen() {
             <View style={styles.adminBentoRow}>
               <View style={styles.adminBentoTile}>
                 <Text style={styles.adminBentoLabel}>UNIT PENUGASAN</Text>
-                <Text style={styles.adminBentoValue} numberOfLines={1}>{relawanKta.unitTugas}</Text>
+                <Text style={styles.adminBentoValueSmall} numberOfLines={1}>{relawanKta.unitTugas}</Text>
               </View>
               <View style={styles.adminBentoTile}>
                 <Text style={styles.adminBentoLabel}>MASA BERLAKU</Text>
@@ -345,9 +340,9 @@ export default function SimpanKtaScreen() {
                     key={idx}
                     style={{
                       width: w,
-                      height: 14,
+                      height: 10,
                       backgroundColor: '#FFFFFF',
-                      marginRight: idx % 2 === 0 ? 1.5 : 2,
+                      marginRight: idx % 2 === 0 ? 1 : 1.5,
                     }}
                   />
                 ))}
@@ -518,29 +513,30 @@ export default function SimpanKtaScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+  content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   topStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
 
   // =========================================================================
-  // GAYA SMARTCARD PRECISE MATCHING DENGAN SAKSI360-ADMIN (DARK OBSIDIAN THEME)
+  // GAYA SMARTCARD DENGAN PROPORSI STANDAR KARTU IDENTITAS ISO/IEC 7810 ID-1 (1.58:1)
   // =========================================================================
   adminCardContainer: {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#0A3D6B',
     backgroundColor: '#030D1A',
-    padding: 16,
-    gap: 12,
+    padding: 12,
+    aspectRatio: 1.58, // Standar rasio kartu fisik (85.6mm x 53.98mm = 1.586 : 1)
+    justifyContent: 'space-between',
     ...shadow.lg,
   },
   adminCardWatermark: {
     position: 'absolute',
-    top: -15,
-    right: -15,
-    width: 140,
-    height: 140,
+    top: -10,
+    right: -10,
+    width: 110,
+    height: 110,
     opacity: 0.08,
   },
   adminCardHeader: {
@@ -549,19 +545,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(56, 189, 248, 0.2)',
-    paddingBottom: 12,
+    paddingBottom: 6,
   },
   adminHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
     minWidth: 0,
   },
   adminLogoBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BAE6FD',
@@ -571,8 +567,8 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   adminLogoImg: {
-    width: 36,
-    height: 36,
+    width: 26,
+    height: 26,
   },
   adminHeaderTitles: {
     flex: 1,
@@ -580,60 +576,60 @@ const styles = StyleSheet.create({
   },
   adminCardMainTitle: {
     fontFamily: fonts.extraBold,
-    fontSize: 12,
+    fontSize: 10.5,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   adminCardSubTitle: {
     fontFamily: fonts.semiBold,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
     color: '#94A3B8',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     marginTop: 1,
   },
   adminHeaderBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     flexShrink: 0,
   },
   adminPanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3.5,
+    gap: 3,
     backgroundColor: 'rgba(2, 6, 23, 0.85)',
     borderWidth: 1,
     borderColor: '#1E3A8A',
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
-    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   adminPanMiniLogo: {
-    width: 13,
-    height: 13,
+    width: 10,
+    height: 10,
   },
   adminPanBadgeText: {
     fontFamily: fonts.extraBold,
-    fontSize: 10,
+    fontSize: 8.5,
     fontWeight: '900',
     color: '#38BDF8',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   adminStatusBadge: {
     backgroundColor: '#059669',
-    paddingHorizontal: 8,
-    paddingVertical: 4.5,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   adminStatusBadgeText: {
     fontFamily: fonts.bold,
-    fontSize: 9.5,
+    fontSize: 8,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
 
   // Middle Row
@@ -641,12 +637,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
   adminPhotoAndInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
     minWidth: 0,
   },
@@ -655,105 +651,105 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   adminPhotoSquircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.85)',
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   adminOnlineDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    bottom: -1,
+    right: -1,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
     backgroundColor: '#10B981',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#030D1A',
     justifyContent: 'center',
     alignItems: 'center',
   },
   adminOnlinePulse: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: '#FFFFFF',
   },
   adminKtaDetails: {
     flex: 1,
     minWidth: 0,
-    gap: 1,
+    gap: 0.5,
   },
   adminNfcChipWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   adminNfcMicrochip: {
-    width: 18,
-    height: 12,
-    borderRadius: 2.5,
+    width: 15,
+    height: 10,
+    borderRadius: 2,
     backgroundColor: '#F59E0B',
-    borderWidth: 1,
+    borderWidth: 0.8,
     borderColor: '#D97706',
-    padding: 1,
+    padding: 0.5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   adminNfcLines: {
-    width: 12,
-    height: 6,
-    borderWidth: 0.8,
+    width: 10,
+    height: 5,
+    borderWidth: 0.6,
     borderColor: '#78350F',
-    borderRadius: 1,
+    borderRadius: 0.5,
   },
   adminNfcChipText: {
     fontFamily: fonts.bold,
-    fontSize: 8.5,
+    fontSize: 7.5,
     fontWeight: '800',
     color: '#94A3B8',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   adminSimpanChipWrap: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(56, 189, 248, 0.3)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
     alignSelf: 'flex-start',
   },
   adminSimpanChipText: {
     fontFamily: fonts.bold,
-    fontSize: 8.5,
+    fontSize: 7.5,
     fontWeight: '800',
     color: '#38BDF8',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   adminLabelKta: {
     fontFamily: fonts.bold,
-    fontSize: 8.5,
+    fontSize: 7,
     fontWeight: '700',
     color: '#94A3B8',
-    letterSpacing: 0.6,
-    marginTop: 3,
+    letterSpacing: 0.5,
+    marginTop: 1.5,
   },
   adminKtaNumberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   adminKtaNumberText: {
     fontFamily: fonts.extraBold,
-    fontSize: 14,
+    fontSize: 12.5,
     fontWeight: '900',
     color: '#38BDF8',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   adminCopyBtn: {
-    padding: 3,
-    borderRadius: 4,
+    padding: 2,
+    borderRadius: 3,
   },
 
   // QR Container
@@ -761,77 +757,73 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
     borderWidth: 1,
     borderColor: 'rgba(56, 189, 248, 0.25)',
-    borderRadius: 12,
-    padding: 5,
+    borderRadius: 8,
+    padding: 3.5,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   adminQrInnerBox: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 7,
-    padding: 2,
+    borderRadius: 5,
+    padding: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   adminQrLabel: {
     fontFamily: fonts.bold,
-    fontSize: 7,
+    fontSize: 6.5,
     fontWeight: '800',
     color: '#94A3B8',
-    letterSpacing: 0.5,
-    marginTop: 2.5,
+    letterSpacing: 0.4,
+    marginTop: 2,
   },
 
   // Bento Grid
   adminBentoGrid: {
-    gap: 6,
-    marginTop: 4,
+    gap: 3.5,
   },
   adminBentoRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
   },
   adminBentoTile: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.7)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
   },
   adminBentoLabel: {
     fontFamily: fonts.bold,
-    fontSize: 8,
+    fontSize: 6.8,
     fontWeight: '700',
     color: '#94A3B8',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   adminBentoValue: {
     fontFamily: fonts.bold,
-    fontSize: 11.5,
+    fontSize: 9.8,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: 1.5,
+    marginTop: 1,
+  },
+  adminBentoValueSmall: {
+    fontFamily: fonts.semiBold,
+    fontSize: 8.8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 1,
   },
   adminBentoValueMono: {
     fontFamily: fonts.bold,
-    fontSize: 10.5,
+    fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: 1.5,
-    letterSpacing: 0.5,
-  },
-
-  // Legal Row
-  adminLegalRow: {
-    paddingTop: 2,
-  },
-  adminLegalNote: {
-    fontFamily: fonts.regular,
-    fontSize: 8.5,
-    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 1,
+    letterSpacing: 0.4,
   },
 
   // Card Footer
@@ -841,12 +833,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: 'rgba(56, 189, 248, 0.2)',
-    paddingTop: 8,
-    marginTop: 2,
+    paddingTop: 5,
   },
   adminBarcodeGroup: {
     flexDirection: 'column',
-    gap: 2,
+    gap: 1,
   },
   barcodeLinesRow: {
     flexDirection: 'row',
@@ -854,32 +845,32 @@ const styles = StyleSheet.create({
   },
   adminBarcodeText: {
     fontFamily: fonts.semiBold,
-    fontSize: 7.5,
+    fontSize: 6.5,
     color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   adminBrandingWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   adminBrandTitle: {
     fontFamily: fonts.bold,
-    fontSize: 9,
+    fontSize: 8,
     color: 'rgba(255, 255, 255, 0.9)',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   adminBrandDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    width: 2.5,
+    height: 2.5,
+    borderRadius: 1.25,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
   adminBrandSub: {
     fontFamily: fonts.extraBold,
-    fontSize: 8.5,
+    fontSize: 7.5,
     color: '#38BDF8',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 
   // Supplementary details
