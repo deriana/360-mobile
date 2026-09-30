@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
@@ -150,6 +151,9 @@ function buildLiveLocationMapHtml(lat: number, lng: number, accuracy: number | n
 export default function CheckInScreen({ route, navigation }: any) {
   const { role, currentUser, witnesses, tps, events, checkInWitness, checkInEvent, poskoCheckIn, checkInPosko } = useApp();
   const { colors, isDark } = useTheme();
+  // Dipakai supaya tombol tutup & shutter di kamera fullscreen presensi
+  // (di bawah) tidak tertutup status bar / tombol navigasi perangkat.
+  const insets = useSafeAreaInsets();
   const activeScope = useActiveWitnessScope();
   const witness = activeScope.witness;
   const assignedTps = activeScope.tps;
@@ -1410,7 +1414,7 @@ export default function CheckInScreen({ route, navigation }: any) {
             </View>
           ) : (
             <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front">
-              <Pressable onPress={() => setCameraModalVisible(false)} style={styles.fullscreenCloseBtn}>
+              <Pressable onPress={() => setCameraModalVisible(false)} style={[styles.fullscreenCloseBtn, { top: insets.top + 10 }]}>
                 <Feather name="x" size={22} color="#FFFFFF" strokeWidth={iconStrokeWidth} />
               </Pressable>
               <View style={styles.cameraGridOverlay}>
@@ -1421,7 +1425,7 @@ export default function CheckInScreen({ route, navigation }: any) {
                   <View style={[styles.cornerBR, styles.cornerMark]} />
                 </View>
               </View>
-              <View style={styles.fullscreenFooter}>
+              <View style={[styles.fullscreenFooter, { bottom: insets.bottom + 50 }]}>
                 <Pressable
                   onPress={takePhoto}
                   style={({ pressed }) => [styles.shutterBtn, pressed && { transform: [{ scale: 0.92 }] }]}
@@ -1535,6 +1539,7 @@ const styles = StyleSheet.create({
   fullscreenRoot: { flex: 1, backgroundColor: '#000000' },
   fullscreenCentered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
   fullscreenCloseBtn: {
+    // `top` di-override inline dengan insets.top + 10 (safe area/status bar).
     position: 'absolute',
     top: 50,
     left: spacing.lg,
@@ -1546,6 +1551,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
+  // `bottom` di-override inline dengan insets.bottom + 50 (hindari tombol navigasi perangkat).
   fullscreenFooter: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center' },
   mapHeaderBar: {
     flexDirection: 'row',

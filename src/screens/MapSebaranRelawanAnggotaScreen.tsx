@@ -3,8 +3,6 @@ import {
   Alert,
   BackHandler,
   Modal,
-  Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -12,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -58,6 +57,11 @@ const NATIONAL_CAMERA = { lat: -2.5, lng: 118.0, zoom: 5, label: 'Nasional (38 P
 export default function MapSebaranRelawanAnggotaScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
+  // react-native-safe-area-context (bukan SafeAreaView bawaan react-native,
+  // yang no-op di Android) — dipakai supaya top bar, dock kanan/kiri, dan
+  // kartu ringkasan bawah tidak tertutup status bar atau tombol navigasi
+  // perangkat (gesture bar/3-button nav) di semua platform & device.
+  const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
 
   // Peta Relawan untuk semua role; mode Saksi TPS & Kemenangan khusus pengurus/pejabat/caleg.
@@ -343,7 +347,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
       </View>
 
       {/* 2. TOP BAR: Back + Chip Wilayah (mode & legenda dipindah jadi dock terpisah) */}
-      <SafeAreaView style={styles.topSafeArea}>
+      <View style={[styles.topSafeArea, { paddingTop: insets.top + 8 }]}>
         <View style={styles.topBarRow}>
           <TouchableOpacity
             onPress={goBackOneTier}
@@ -369,12 +373,12 @@ export default function MapSebaranRelawanAnggotaScreen() {
             <Feather name="chevron-down" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* 3. DOCK KANAN: Tombol Ganti Mode (Layer) — posisi FAB, sejajar top bar.
           Disembunyikan bila pengguna hanya punya 1 mode (Peta Relawan). */}
       {modeTabs.length > 1 && (
-      <View style={styles.rightDockContainer}>
+      <View style={[styles.rightDockContainer, { top: insets.top + 62 }]}>
         <TouchableOpacity
           onPress={() => setIsModeSheetVisible(true)}
           style={[styles.dockFabButton, { backgroundColor: isDark ? 'rgba(15,23,42,0.94)' : 'rgba(255,255,255,0.96)', borderColor: colors.border }]}
@@ -390,7 +394,12 @@ export default function MapSebaranRelawanAnggotaScreen() {
       )}
 
       {/* 4. DOCK KIRI: Legenda Warna (identik tier website, Bagian 4.3) */}
-      <View style={[styles.legendPanel, { backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)', borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.legendPanel,
+          { top: insets.top + 62, backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.95)', borderColor: colors.border },
+        ]}
+      >
         {legendItems.map((item) => (
           <View key={item.label} style={styles.legendRow}>
             <View style={[styles.legendDot, { backgroundColor: item.color }]} />
@@ -402,7 +411,7 @@ export default function MapSebaranRelawanAnggotaScreen() {
       </View>
 
       {/* 5. FLOATING BOTTOM SUMMARY CARD — minim info, detail lengkap ada di sheet Ringkasan */}
-      <View style={styles.bottomCardContainer}>
+      <View style={[styles.bottomCardContainer, { bottom: insets.bottom + 16 }]}>
         <TouchableOpacity
           onPress={() => setIsRingkasanVisible(true)}
           style={[
@@ -757,10 +766,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#091322' },
   topSafeArea: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, gap: 8 },
   topBarRow: {
+    // Jarak dari status bar kini ditangani insets.top di styles.topSafeArea
+    // (parent), jadi di sini tidak perlu paddingTop tambahan lagi.
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 8 : 36) : 10,
     gap: spacing.sm,
   },
   circleButton: {
@@ -795,8 +805,10 @@ const styles = StyleSheet.create({
   // Dock kanan: tombol ganti mode (posisi FAB, sejajar top bar — bukan
   // menumpuk di bawah chip wilayah seperti sebelumnya)
   rightDockContainer: {
+    // `top` sebenarnya di-override inline dengan insets.top + 62 (safe area) —
+    // nilai di sini cuma fallback sebelum insets tersedia.
     position: 'absolute',
-    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 62 : 90) : 66,
+    top: 66,
     right: 14,
     zIndex: 35,
     alignItems: 'center',
@@ -823,8 +835,9 @@ const styles = StyleSheet.create({
 
   // Dock kiri: legenda warna choropleth
   legendPanel: {
+    // `top` di-override inline dengan insets.top + 62 (safe area), sama seperti rightDockContainer.
     position: 'absolute',
-    top: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 62 : 90) : 66,
+    top: 66,
     left: 14,
     zIndex: 35,
     borderWidth: 1,
@@ -841,7 +854,8 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendLabel: { fontSize: 9.5, fontFamily: fonts.medium, maxWidth: 118 },
 
-  bottomCardContainer: { position: 'absolute', bottom: Platform.OS === 'ios' ? 32 : 24, left: 14, right: 14, zIndex: 40 },
+  // `bottom` di-override inline dengan insets.bottom + 16 (safe area, hindari tombol navigasi perangkat).
+  bottomCardContainer: { position: 'absolute', bottom: 24, left: 14, right: 14, zIndex: 40 },
   floatingSummaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
