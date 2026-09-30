@@ -133,12 +133,37 @@ export default function SimpanKtaScreen() {
             </View>
           </View>
 
-          {/* Card Footer with QR Code */}
-          <View style={styles.cardFooter}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.footerNote}>Masa Berlaku: {kaderKta.masaBerlaku}</Text>
-              <Text style={styles.footerNote}>Ketua Umum: {kaderKta.tandaTanganKetum}</Text>
+          {/* Legal Signatures Note */}
+          <View style={styles.kaderSignaturesRow}>
+            <Text style={styles.footerNote}>Masa Berlaku: {kaderKta.masaBerlaku}</Text>
+            <Text style={styles.footerNote}>Ketua Umum: {kaderKta.tandaTanganKetum}</Text>
+          </View>
+
+          {/* Card Footer Barcode & Legalitas (Saksi360-Admin Spec) */}
+          <View style={styles.relawanFooterWrap}>
+            <View style={styles.barcodeColumn}>
+              <View style={styles.barcodeLinesRow}>
+                {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 3].map((w, idx) => (
+                  <View
+                    key={idx}
+                    style={{
+                      width: w,
+                      height: 16,
+                      backgroundColor: '#FFFFFF',
+                      marginRight: idx % 2 === 0 ? 1.5 : 2,
+                    }}
+                  />
+                ))}
+              </View>
+              <Text style={styles.barcodeLabelText}>{`*${kaderKta.noKta.replace(/[^A-Z0-9]/g, '')}*`}</Text>
             </View>
+
+            <View style={styles.relawanBrandingWrap}>
+              <Text style={styles.relawanBrandTitle}>simPAN</Text>
+              <View style={styles.relawanBrandDot} />
+              <Text style={styles.relawanBrandSub}>EDISI 2026</Text>
+            </View>
+
             <Pressable
               onPress={() => setShowQrModal(true)}
               style={({ pressed }) => [styles.qrMock, pressed && { opacity: 0.8 }]}
@@ -515,6 +540,15 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     color: '#38BDF8',
     letterSpacing: 0.5,
+  },
+  kaderSignaturesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    paddingBottom: 2,
   },
   footerNote: { fontFamily: fonts.regular, fontSize: 9, color: 'rgba(255,255,255,0.75)' },
   qrMock: {
