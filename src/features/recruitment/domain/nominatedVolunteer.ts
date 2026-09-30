@@ -28,7 +28,7 @@ export const NOMINATION_STATUS_INFO: Record<
   NominatedVolunteerStatus,
   { label: string; tone: 'done' | 'waiting' | 'action' }
 > = {
-  PENDING_VERIFICATION: { label: 'Menunggu verifikasi', tone: 'waiting' },
-  VERIFIED: { label: 'Terverifikasi', tone: 'done' },
-  REJECTED: { label: 'Ditolak', tone: 'action' },
+  PENDING_VERIFICATION: { label: 'Menunggu Validasi DPD', tone: 'waiting' },
+  VERIFIED: { label: 'Disetujui DPD', tone: 'done' },
+  REJECTED: { label: 'Ditolak DPD', tone: 'action' },
 };

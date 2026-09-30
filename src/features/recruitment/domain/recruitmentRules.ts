@@ -12,7 +12,7 @@ export interface RecruitAccess {
   remainingToday: number;
 }
 
-/** Hanya relawan terverifikasi (KTP) dengan status aktif yang boleh mendaftarkan calon relawan. */
+/** Hanya relawan terverifikasi (divalidasi DPD) dengan status aktif yang boleh mendaftarkan calon relawan. */
 export function canRecruit(account: AccountSnapshot, nominationsToday: number): RecruitAccess {
   const remainingToday = Math.max(0, DAILY_NOMINATION_LIMIT - nominationsToday);
 
@@ -24,7 +24,7 @@ export function canRecruit(account: AccountSnapshot, nominationsToday: number): 
     const first = requirements.unmet[0];
     return {
       allowed: false,
-      reason: `Selesaikan verifikasi relawan dulu — ${first.label}. ${first.hint}`,
+      reason: `Akun relawan memerlukan validasi DPD — ${first.label}. ${first.hint}`,
       remainingToday,
     };
   }

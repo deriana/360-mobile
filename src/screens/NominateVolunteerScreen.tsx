@@ -80,10 +80,10 @@ export default function NominateVolunteerScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.introTitle, { color: colors.text }]}>Daftarkan Calon Relawan Baru</Text>
             <Text style={[styles.introDesc, { color: colors.textMuted }]}>
-              Calon relawan belum perlu membuat akun. Tim pusat memverifikasi lalu mengirim akses login via WhatsApp.
+              Calon relawan didaftarkan ke sistem wilayah. Admin DPD memvalidasi berkas sebelum akun dan Digital ID diterbitkan.
             </Text>
             <Text style={[styles.introMeta, { color: colors.primary }]}>
-              {summary.verified} terverifikasi · {summary.pending} menunggu · sisa {recruitAccess.remainingToday} hari ini
+              {summary.verified} disetujui DPD · {summary.pending} menunggu · sisa {recruitAccess.remainingToday} hari ini
             </Text>
           </View>
         </Card>
@@ -105,7 +105,7 @@ export default function NominateVolunteerScreen() {
             keyboardType="phone-pad"
             placeholder="08xxxxxxxxxx"
             error={errors.phone}
-            helperText="Akses akun dikirim ke nomor ini setelah diverifikasi pusat"
+            helperText="Akses akun dikirim ke nomor ini setelah divalidasi admin DPD"
           />
           <Input
             label="Wilayah (Kecamatan / Kelurahan)"
@@ -134,7 +134,7 @@ export default function NominateVolunteerScreen() {
             checked={consentGiven}
             onToggle={() => setConsentGiven((v) => !v)}
             label="Calon sudah setuju didaftarkan"
-            description="Calon setuju datanya dikirim ke tim pusat dan dihubungi via WhatsApp (UU PDP No. 27/2022)."
+            description="Calon setuju datanya dikirim ke antrean validasi DPD dan dihubungi via WhatsApp (UU PDP No. 27/2022)."
             error={errors.consentGiven}
           />
 
@@ -162,10 +162,10 @@ export default function NominateVolunteerScreen() {
                     <View style={styles.demoRow}>
                       <Text style={[styles.demoLabel, { color: colors.textMuted }]}>Demo:</Text>
                       <Text style={[styles.demoLink, { color: colors.success }]} onPress={() => simulateReview(item.id, 'VERIFIED')}>
-                        Verifikasi
+                        Setujui DPD
                       </Text>
                       <Text style={[styles.demoLink, { color: colors.danger }]} onPress={() => simulateReview(item.id, 'REJECTED')}>
-                        Tolak
+                        Tolak DPD
                       </Text>
                     </View>
                   ) : null}

@@ -120,7 +120,7 @@ const GUARD_RULES: Record<string, GuardRule> = {
     isAllowed: ({ canRecruit }) => canRecruit,
     title: 'Ajak Relawan Belum Tersedia',
     badge: 'Ajak Relawan',
-    message: 'Fitur Ajak Relawan khusus untuk relawan aktif yang sudah terverifikasi.',
+    message: 'Fitur Ajak Relawan khusus untuk relawan aktif yang datanya telah divalidasi oleh admin DPD.',
     actionLabel: 'Kembali ke Beranda',
   },
 };

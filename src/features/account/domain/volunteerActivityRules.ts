@@ -24,8 +24,8 @@ export interface UnmetRequirement {
 
 const REQUIREMENT_TEXT: Record<EligibilityRequirementId, Omit<UnmetRequirement, 'id'>> = {
   KTP_VERIFIED: {
-    label: 'Data KTP diverifikasi tim pusat',
-    hint: 'Biasanya selesai 1–3 hari kerja setelah mendaftar.',
+    label: 'Data pendaftaran divalidasi admin DPD',
+    hint: 'Memerlukan validasi pada sisi admin oleh DPD (1–3 hari kerja).',
   },
   ACTIVE_STATUS: {
     label: 'Status relawan aktif',

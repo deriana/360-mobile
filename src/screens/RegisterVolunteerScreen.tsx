@@ -569,12 +569,12 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
         {step === 'completed' && (
           <View style={{ gap: spacing.md }}>
             <View style={[styles.successCelebrationCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.celebrationIcon, { backgroundColor: '#E0F2FE' }]}>
-                <Feather name="heart" size={28} color="#0284C7" />
+              <View style={[styles.celebrationIcon, { backgroundColor: isDark ? 'rgba(217, 119, 6, 0.2)' : '#FEF3C7' }]}>
+                <Feather name="clock" size={28} color="#D97706" />
               </View>
-              <Text style={[styles.celebrationTitle, { color: colors.text }]}>Selamat Bergabung, Relawan!</Text>
+              <Text style={[styles.celebrationTitle, { color: colors.text }]}>Pendaftaran Terkirim ke DPD</Text>
               <Text style={[styles.celebrationSub, { color: colors.textMuted }]}>
-                Digital ID Relawan PAN resmi diterbitkan. Anda kini terhubung dengan posko pemenangan dan bursa tugas lapangan.
+                Data pendaftaran relawan telah masuk ke sistem. Berkas sedang dalam proses validasi oleh admin DPD. KTA Digital di bawah berstatus pratinjau informasi.
               </Text>
             </View>
 
@@ -600,8 +600,8 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
                     <Image source={BRAND_ASSETS.official} style={styles.adminPanMiniLogo} resizeMode="contain" />
                     <Text style={styles.adminPanBadgeText}>PAN</Text>
                   </View>
-                  <View style={styles.adminStatusBadge}>
-                    <Text style={styles.adminStatusBadgeText}>AKTIF & SAH</Text>
+                  <View style={styles.adminStatusBadgePending}>
+                    <Text style={styles.adminStatusBadgeTextPending}>PROSES VALIDASI DPD</Text>
                   </View>
                 </View>
               </View>
@@ -710,6 +710,25 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
               </View>
             </View>
 
+            {/* Kartu Informasi Status Validasi DPD */}
+            <Card
+              style={{
+                gap: spacing.xs,
+                backgroundColor: isDark ? 'rgba(217, 119, 6, 0.08)' : '#FFFBEB',
+                borderColor: isDark ? '#78350F' : '#FDE68A',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Feather name="info" size={16} color="#D97706" />
+                <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: '#B45309' }}>
+                  Informasi Status Pendaftaran
+                </Text>
+              </View>
+              <Text style={{ fontFamily: fonts.regular, fontSize: 11.5, color: isDark ? '#FDE047' : '#92400E', lineHeight: 17 }}>
+                Data pendaftaran Anda telah tercatat dan saat ini berstatus "PROSES VALIDASI DPD". Setelah admin DPD melakukan validasi berkas pada Web Command Center, status kartu akan beralih menjadi "AKTIF & SAH" serta membuka fitur Ajak Relawan dan penugasan resmi Saksi TPS.
+              </Text>
+            </Card>
+
             <Card style={{ gap: spacing.sm }}>
               <PrimaryButton
                 label="Masuk ke Akun Relawan"
@@ -761,9 +780,9 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
               {displayKtaNo}
             </Text>
             <Pill
-              label="Relawan Sah & Aktif BSN"
-              tone="success"
-              icon="check-circle"
+              label="Menunggu Validasi DPD"
+              tone="warning"
+              icon="clock"
               style={{ marginTop: 4 }}
             />
           </View>
@@ -972,6 +991,19 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   adminStatusBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  adminStatusBadgePending: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  adminStatusBadgeTextPending: {
     fontFamily: fonts.bold,
     fontSize: 8,
     fontWeight: '800',

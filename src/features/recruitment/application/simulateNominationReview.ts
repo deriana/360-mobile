@@ -22,7 +22,7 @@ export function simulateNominationReview(
   return ok({
     nomination,
     notice: verified
-      ? { title: 'Calon Relawan Terverifikasi', body: `${nomination.fullName} resmi menjadi relawan. Terima kasih sudah mengajak!` }
-      : { title: 'Pengajuan Calon Relawan Ditolak', body: nomination.reviewNote ?? '' },
+      ? { title: 'Calon Relawan Disetujui DPD', body: `${nomination.fullName} resmi divalidasi oleh admin DPD sebagai relawan aktif.` }
+      : { title: 'Pengajuan Calon Relawan Ditolak DPD', body: nomination.reviewNote ?? '' },
   });
 }

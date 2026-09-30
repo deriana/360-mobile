@@ -61,6 +61,10 @@ export default function SimpanKtaScreen() {
     organisasi: 'PARTAI AMANAT NASIONAL · BSN SAKSI360',
   };
 
+  const isVolunteerPending = volunteerMembership?.status === 'pending';
+  const volunteerBadgeLabel = isVolunteerPending ? 'PROSES VALIDASI DPD' : 'AKTIF & SAH';
+  const volunteerBadgeBg = isVolunteerPending ? '#D97706' : '#059669';
+
   const activeKtaNumber = isOfficialMember ? kaderKta.noKta : relawanKta.noKta;
 
   const [downloading, setDownloading] = useState(false);
@@ -251,8 +255,8 @@ export default function SimpanKtaScreen() {
                 <Image source={BRAND_ASSETS.official} style={styles.adminPanMiniLogo} resizeMode="contain" />
                 <Text style={styles.adminPanBadgeText}>PAN</Text>
               </View>
-              <View style={styles.adminStatusBadge}>
-                <Text style={styles.adminStatusBadgeText}>AKTIF & SAH</Text>
+              <View style={[styles.adminStatusBadge, { backgroundColor: volunteerBadgeBg }]}>
+                <Text style={styles.adminStatusBadgeText}>{volunteerBadgeLabel}</Text>
               </View>
             </View>
           </View>
@@ -394,7 +398,7 @@ export default function SimpanKtaScreen() {
               { label: 'Posko Wilayah', value: relawanKta.poskoName },
               { label: 'Divisi Penugasan', value: relawanKta.unitTugas },
               { label: 'Terdaftar Sejak', value: relawanKta.tglBergabung },
-              { label: 'Status Akreditasi', value: 'Terdaftar Sah BSN Saksi360' },
+              { label: 'Status Akreditasi', value: isVolunteerPending ? 'Menunggu Validasi Admin DPD' : 'Terdaftar Sah BSN Saksi360' },
             ]
         ).map((row, index, list) => (
           <View
@@ -430,6 +434,27 @@ export default function SimpanKtaScreen() {
           </View>
         ))}
       </Card>
+
+      {/* Banner Menunggu Validasi DPD untuk Relawan Baru */}
+      {!isOfficialMember && isVolunteerPending && (
+        <Card
+          style={{
+            gap: spacing.xs,
+            borderColor: isDark ? '#78350F' : '#FDE68A',
+            backgroundColor: isDark ? 'rgba(217, 119, 6, 0.08)' : '#FFFBEB',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Feather name="clock" size={18} color="#D97706" />
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, fontWeight: '800', color: '#B45309' }}>
+              Status: Menunggu Validasi Admin DPD
+            </Text>
+          </View>
+          <Text style={[styles.benefitText, { color: isDark ? '#FDE047' : '#92400E' }]}>
+            Pendaftaran relawan Anda sedang dalam proses verifikasi oleh admin DPD melalui Web Command Center. Selama masa peninjauan, kartu identitas berstatus pratinjau informasi. Fitur penugasan lapangan dan Ajak Relawan akan aktif otomatis setelah disetujui.
+          </Text>
+        </Card>
+      )}
 
       {/* Banner Konversi Kaderisasi */}
       {!isOfficialMember && (
@@ -478,9 +503,15 @@ export default function SimpanKtaScreen() {
               {activeKtaNumber}
             </Text>
             <Pill
-              label={isOfficialMember ? 'Keanggotaan Sah & Aktif' : 'Relawan Sah & Aktif BSN'}
-              tone="success"
-              icon="check-circle"
+              label={
+                isOfficialMember
+                  ? 'Keanggotaan Sah & Aktif'
+                  : isVolunteerPending
+                  ? 'Menunggu Validasi DPD'
+                  : 'Relawan Sah & Aktif BSN'
+              }
+              tone={isVolunteerPending ? 'warning' : 'success'}
+              icon={isVolunteerPending ? 'clock' : 'check-circle'}
               style={{ marginTop: 4 }}
             />
           </View>

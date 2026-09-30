@@ -44,7 +44,7 @@ export function submitNomination(
     nomination,
     notice: {
       title: 'Pengajuan Calon Relawan Terkirim',
-      body: `Data ${nomination.fullName} dikirim ke tim pusat untuk verifikasi. Akses akun akan dikirim via WhatsApp setelah diverifikasi.`,
+      body: `Data ${nomination.fullName} dikirim ke antrean validasi admin DPD. Akses akun dan Digital ID akan diterbitkan setelah divalidasi.`,
     },
   });
 }

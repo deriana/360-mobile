@@ -10,11 +10,11 @@ export function simulateKtpVerification(
   input: { userId: string },
 ): Result<{ title: string; body: string }> {
   if (repository.getRecord(input.userId)?.volunteerVerification === 'terverifikasi') {
-    return fail('Data KTP Anda sudah terverifikasi.');
+    return fail('Data pendaftaran Anda sudah divalidasi oleh admin DPD.');
   }
   repository.save({ userId: input.userId, volunteerVerification: 'terverifikasi' });
   return ok({
-    title: 'Data KTP Terverifikasi',
-    body: 'Tim pusat sudah memverifikasi data KTP Anda. Pendaftaran saksi dan Ajak Relawan kini terbuka.',
+    title: 'Data Berhasil Divalidasi DPD',
+    body: 'Admin DPD telah memvalidasi berkas pendaftaran Anda. Status kartu menjadi AKTIF & SAH, penugasan saksi dan fitur Ajak Relawan kini terbuka.',
   });
 }

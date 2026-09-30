@@ -371,7 +371,7 @@ export default function DashboardScreen({ navigation: propNav }: any) {
           setDialogConfig({
             visible: true,
             title: 'Ajak Relawan Belum Tersedia',
-            message: recruitAccess.reason ?? 'Fitur ini khusus relawan aktif yang sudah terverifikasi.',
+            message: recruitAccess.reason ?? 'Fitur ini khusus relawan aktif yang datanya telah divalidasi oleh admin DPD.',
             tone: 'warning',
             // Langkah berikutnya sesuai syarat yang belum terpenuhi (batas harian: tidak ada langkah lain).
             next: witnessAccess.unmetRequirements.some((req) => req.id === 'ACTIVE_STATUS')
