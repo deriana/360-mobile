@@ -15,6 +15,14 @@ export default function SimpanKtaScreen() {
   const { currentUser } = useApp();
   const navigation = useNavigation<any>();
 
+  // State untuk copy feedback
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (val: string, label: string) => {
+    setCopiedField(label);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   // Evaluasi jenis keanggotaan terdaftar
   const officialMembership = currentUser.memberships.find(
     (m) => m.type === 'member' && m.status !== 'ended' && m.status !== 'inactive'
@@ -24,8 +32,10 @@ export default function SimpanKtaScreen() {
   const volunteerRole = currentUser.roles.find((r) => r.role === 'VOLUNTEER');
 
   // Data KTA Kader Resmi (simPAN)
+  const rawKaderNo = officialMembership?.ktaNumber ?? '32.73.01.2024.08912';
   const kaderKta = {
-    noKta: officialMembership?.ktaNumber ?? 'Nomor KTA sedang diterbitkan',
+    noKta: rawKaderNo,
+    barcodeClean: `*${rawKaderNo.replace(/[^A-Z0-9]/g, '')}*`,
     nama: currentUser.identity.name,
     nik: currentUser.identity.nikMasked,
     dpd: officialMembership?.dpd ?? 'DPD Kota Bandung',
@@ -35,18 +45,19 @@ export default function SimpanKtaScreen() {
     tandaTanganKetum: CURRENT_KADER_KTA.tandaTanganKetum,
   };
 
-  // Data KTA Relawan Lapangan (BSN Saksi360 adopsi dari Saksi360-Admin)
-  const rawRelawanNo = volunteerMembership?.ktaNumber || 'KTA-3273-2024-0042';
+  // Data KTA Relawan Lapangan (BSN Saksi360 adopsi presisi Saksi360-Admin)
+  const rawRelawanNo = volunteerMembership?.ktaNumber || 'KTA-338171-000';
+  const cleanRelawanNo = rawRelawanNo.startsWith('REL-') ? rawRelawanNo.replace('REL-', 'KTA-') : rawRelawanNo;
   const relawanKta = {
-    noKta: rawRelawanNo,
-    barcodeClean: `*${rawRelawanNo.replace(/[^A-Z0-9]/g, '')}*`,
+    noKta: cleanRelawanNo,
+    barcodeClean: `*${cleanRelawanNo.replace(/[^A-Z0-9]/g, '')}*`,
     nama: currentUser.identity.name,
     nik: currentUser.identity.nikMasked,
-    roleTitle: 'Relawan Penggerak Posko & Door-to-Door',
+    roleTitle: volunteerRole?.scope?.name ? 'Koordinator Posko' : 'Relawan Posko & Saksi',
     poskoName: volunteerMembership?.dpc || volunteerRole?.scope?.name || 'Posko Kel. Dago, Kec. Coblong',
-    unitTugas: 'Divisi Penggalangan Suara & Posko Saksi TPS',
+    unitTugas: 'Divisi Penggalangan Suara TPS 018',
     tglBergabung: formatJoinDate(volunteerMembership?.registeredAt || '2024-03-01'),
-    masaBerlaku: '31 Desember 2026',
+    masaBerlaku: '31 DESEMBER 2026',
     organisasi: 'PARTAI AMANAT NASIONAL · BSN SAKSI360',
   };
 
@@ -89,170 +100,266 @@ export default function SimpanKtaScreen() {
       </View>
 
       {/* =========================================================================
-          KARTU FISIK-DIGITAL (ADAPTIF: KADER simPAN vs RELAWAN BSN SAKSI360)
+          KARTU FISIK-DIGITAL (PRECISE DESIGN MATCH DENGAN SAKSI360-ADMIN)
          ========================================================================= */}
       {isOfficialMember ? (
         // CARD A: e-KTA simPAN KADER RESMI
-        <View style={[styles.cardContainer, { backgroundColor: '#004F8A', borderColor: '#0066B3' }]}>
+        <View style={styles.adminCardContainer}>
+          {/* Watermark Logo PAN Transparan di Sudut Kanan Atas */}
+          <Image source={BRAND_ASSETS.official} style={styles.adminCardWatermark} resizeMode="contain" />
+
           {/* Top Header Card */}
-          <View style={styles.cardHeader}>
-            <Image source={BRAND_ASSETS.official} style={{ width: 44, height: 44 }} resizeMode="contain" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.ktaOrgTitle}>PARTAI AMANAT NASIONAL</Text>
-              <Text style={styles.ktaSubTitle}>KARTU TANDA ANGGOTA ELEKTRONIK (e-KTA)</Text>
+          <View style={styles.adminCardHeader}>
+            <View style={styles.adminHeaderLeft}>
+              <View style={styles.adminLogoBox}>
+                <Image source={BRAND_ASSETS.official} style={styles.adminLogoImg} resizeMode="contain" />
+              </View>
+              <View style={styles.adminHeaderTitles}>
+                <Text style={styles.adminCardMainTitle}>KARTU TANDA ANGGOTA ELEKTRONIK</Text>
+                <Text style={styles.adminCardSubTitle}>PARTAI AMANAT NASIONAL · simPAN</Text>
+              </View>
             </View>
-            <View style={styles.chipSimpan}>
-              <Text style={styles.chipText}>simPAN</Text>
+
+            <View style={styles.adminHeaderBadges}>
+              <View style={styles.adminPanBadge}>
+                <Image source={BRAND_ASSETS.official} style={styles.adminPanMiniLogo} resizeMode="contain" />
+                <Text style={styles.adminPanBadgeText}>PAN</Text>
+              </View>
+              <View style={styles.adminStatusBadge}>
+                <Text style={styles.adminStatusBadgeText}>TERVERIFIKASI</Text>
+              </View>
             </View>
           </View>
 
-          {/* Card Body */}
-          <View style={styles.cardBody}>
-            <View style={styles.photoContainer}>
-              <Image source={getWitnessAvatar(currentUser.identity.avatarIndex)} style={styles.memberPhoto} />
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusBadgeText}>TERVERIFIKASI</Text>
+          {/* Card Middle: Foto Squircle + Chip simPAN + No KTA + QR */}
+          <View style={styles.adminCardMiddleRow}>
+            <View style={styles.adminPhotoAndInfo}>
+              <View style={styles.adminPhotoWrap}>
+                <Image source={getWitnessAvatar(currentUser.identity.avatarIndex)} style={styles.adminPhotoSquircle} />
+                <View style={styles.adminOnlineDot}>
+                  <View style={styles.adminOnlinePulse} />
+                </View>
+              </View>
+
+              <View style={styles.adminKtaDetails}>
+                <View style={styles.adminSimpanChipWrap}>
+                  <Text style={styles.adminSimpanChipText}>simPAN PASS</Text>
+                </View>
+                <Text style={styles.adminLabelKta}>NOMOR ANGGOTA KTA</Text>
+                <View style={styles.adminKtaNumberRow}>
+                  <Text style={styles.adminKtaNumberText}>{kaderKta.noKta}</Text>
+                  <Pressable
+                    onPress={() => handleCopy(kaderKta.noKta, 'kader')}
+                    style={({ pressed }) => [styles.adminCopyBtn, pressed && { opacity: 0.6 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Salin Nomor KTA"
+                  >
+                    <Feather
+                      name={copiedField === 'kader' ? 'check' : 'copy'}
+                      size={12}
+                      color={copiedField === 'kader' ? '#10B981' : '#94A3B8'}
+                    />
+                  </Pressable>
+                </View>
               </View>
             </View>
 
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberNoKta}>{kaderKta.noKta}</Text>
-              <Text style={styles.memberName}>{kaderKta.nama}</Text>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>NIK:</Text>
-                <Text style={styles.detailVal}>{kaderKta.nik}</Text>
+            {/* QR Code Card */}
+            <Pressable
+              onPress={() => setShowQrModal(true)}
+              style={({ pressed }) => [styles.adminQrContainer, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Perbesar QR Code"
+            >
+              <View style={styles.adminQrInnerBox}>
+                <QrPlaceholder seed={kaderKta.noKta} size={48} />
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>DPD / Kota:</Text>
-                <Text style={styles.detailVal}>{kaderKta.dpd}</Text>
+              <Text style={styles.adminQrLabel}>VERIFIKASI QR</Text>
+            </Pressable>
+          </View>
+
+          {/* Bento Grid 2x2 Info */}
+          <View style={styles.adminBentoGrid}>
+            <View style={styles.adminBentoRow}>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>NAMA ANGGOTA</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{kaderKta.nama}</Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Kecamatan:</Text>
-                <Text style={styles.detailVal}>{kaderKta.dpc}</Text>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>KEPENGURUSAN / DPD</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{kaderKta.dpd}</Text>
+              </View>
+            </View>
+            <View style={styles.adminBentoRow}>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>UNIT WILAYAH / DPC</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{kaderKta.dpc}</Text>
+              </View>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>MASA BERLAKU</Text>
+                <Text style={styles.adminBentoValueMono} numberOfLines={1}>{kaderKta.masaBerlaku}</Text>
               </View>
             </View>
           </View>
 
           {/* Legal Signatures Note */}
-          <View style={styles.kaderSignaturesRow}>
-            <Text style={styles.footerNote}>Masa Berlaku: {kaderKta.masaBerlaku}</Text>
-            <Text style={styles.footerNote}>Ketua Umum: {kaderKta.tandaTanganKetum}</Text>
+          <View style={styles.adminLegalRow}>
+            <Text style={styles.adminLegalNote}>Tanda Tangan DPP: Ketua Umum {kaderKta.tandaTanganKetum}</Text>
           </View>
 
-          {/* Card Footer Barcode & Legalitas (Saksi360-Admin Spec) */}
-          <View style={styles.relawanFooterWrap}>
-            <View style={styles.barcodeColumn}>
+          {/* Card Footer Barcode & Legalitas */}
+          <View style={styles.adminCardFooter}>
+            <View style={styles.adminBarcodeGroup}>
               <View style={styles.barcodeLinesRow}>
                 {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 3].map((w, idx) => (
                   <View
                     key={idx}
                     style={{
                       width: w,
-                      height: 16,
+                      height: 14,
                       backgroundColor: '#FFFFFF',
                       marginRight: idx % 2 === 0 ? 1.5 : 2,
                     }}
                   />
                 ))}
               </View>
-              <Text style={styles.barcodeLabelText}>{`*${kaderKta.noKta.replace(/[^A-Z0-9]/g, '')}*`}</Text>
+              <Text style={styles.adminBarcodeText}>{`*${kaderKta.noKta.replace(/[^A-Z0-9]/g, '')}*`}</Text>
             </View>
 
-            <View style={styles.relawanBrandingWrap}>
-              <Text style={styles.relawanBrandTitle}>simPAN</Text>
-              <View style={styles.relawanBrandDot} />
-              <Text style={styles.relawanBrandSub}>EDISI 2026</Text>
+            <View style={styles.adminBrandingWrap}>
+              <Text style={styles.adminBrandTitle}>simPAN</Text>
+              <View style={styles.adminBrandDot} />
+              <Text style={styles.adminBrandSub}>EDISI 2026</Text>
             </View>
-
-            <Pressable
-              onPress={() => setShowQrModal(true)}
-              style={({ pressed }) => [styles.qrMock, pressed && { opacity: 0.8 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Perbesar QR Code e-KTA"
-            >
-              <QrPlaceholder seed={kaderKta.noKta} size={34} />
-            </Pressable>
           </View>
         </View>
       ) : (
-        // CARD B: KTA DIGITAL RELAWAN (ADOPSI RESMI DARI SAKSI360-ADMIN)
-        <View style={[styles.cardContainer, { backgroundColor: '#00437A', borderColor: '#0066B3' }]}>
+        // CARD B: KTA DIGITAL RELAWAN (100% PERSIS DENGAN DESAIN ADMIN SAKSI360)
+        <View style={styles.adminCardContainer}>
+          {/* Watermark Logo PAN Transparan di Sudut Kanan Atas */}
+          <Image source={BRAND_ASSETS.official} style={styles.adminCardWatermark} resizeMode="contain" />
+
           {/* Top Header Card */}
-          <View style={styles.cardHeader}>
-            <Image source={BRAND_ASSETS.official} style={{ width: 44, height: 44 }} resizeMode="contain" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.ktaOrgTitle}>PARTAI AMANAT NASIONAL</Text>
-              <Text style={styles.ktaSubTitle}>KARTU TANDA ANGGOTA RELAWAN</Text>
-              <Text style={styles.ktaOrgAffiliation}>BSN SAKSI360 · SATGAS PEMENANGAN</Text>
-            </View>
-            <View style={styles.nfcChipWrap}>
-              <View style={styles.nfcChipIcon}>
-                <View style={styles.nfcChipInner} />
+          <View style={styles.adminCardHeader}>
+            <View style={styles.adminHeaderLeft}>
+              <View style={styles.adminLogoBox}>
+                <Image source={BRAND_ASSETS.official} style={styles.adminLogoImg} resizeMode="contain" />
               </View>
-              <Text style={styles.nfcChipText}>NFC PASS</Text>
-            </View>
-          </View>
-
-          {/* Card Body */}
-          <View style={styles.cardBody}>
-            <View style={styles.photoContainer}>
-              <Image source={getWitnessAvatar(currentUser.identity.avatarIndex)} style={styles.memberPhoto} />
-              <View style={styles.statusBadgeGreen}>
-                <Text style={styles.statusBadgeGreenText}>AKTIF & SAH</Text>
+              <View style={styles.adminHeaderTitles}>
+                <Text style={styles.adminCardMainTitle}>KARTU TANDA ANGGOTA RELAWAN</Text>
+                <Text style={styles.adminCardSubTitle}>PARTAI AMANAT NASIONAL · BSN SAKSI360</Text>
               </View>
             </View>
 
-            <View style={styles.memberInfo}>
-              <Text style={styles.memberNoKta}>{relawanKta.noKta}</Text>
-              <Text style={styles.memberName}>{relawanKta.nama}</Text>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>NIK:</Text>
-                <Text style={styles.detailVal}>{relawanKta.nik}</Text>
+            <View style={styles.adminHeaderBadges}>
+              <View style={styles.adminPanBadge}>
+                <Image source={BRAND_ASSETS.official} style={styles.adminPanMiniLogo} resizeMode="contain" />
+                <Text style={styles.adminPanBadgeText}>PAN</Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Penugasan:</Text>
-                <Text style={styles.detailVal} numberOfLines={1}>{relawanKta.poskoName}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Peran:</Text>
-                <Text style={styles.detailVal} numberOfLines={1}>{relawanKta.roleTitle}</Text>
+              <View style={styles.adminStatusBadge}>
+                <Text style={styles.adminStatusBadgeText}>AKTIF & SAH</Text>
               </View>
             </View>
           </View>
 
-          {/* Card Footer Barcode & Legalitas (Saksi360-Admin Spec) */}
-          <View style={styles.relawanFooterWrap}>
-            <View style={styles.barcodeColumn}>
+          {/* Card Middle: Foto Squircle + Chip NFC + No KTA + QR Code */}
+          <View style={styles.adminCardMiddleRow}>
+            <View style={styles.adminPhotoAndInfo}>
+              <View style={styles.adminPhotoWrap}>
+                <Image source={getWitnessAvatar(currentUser.identity.avatarIndex)} style={styles.adminPhotoSquircle} />
+                <View style={styles.adminOnlineDot}>
+                  <View style={styles.adminOnlinePulse} />
+                </View>
+              </View>
+
+              <View style={styles.adminKtaDetails}>
+                <View style={styles.adminNfcChipWrap}>
+                  <View style={styles.adminNfcMicrochip}>
+                    <View style={styles.adminNfcLines} />
+                  </View>
+                  <Text style={styles.adminNfcChipText}>NFC SMARTPASS</Text>
+                </View>
+                <Text style={styles.adminLabelKta}>NOMOR ANGGOTA KTA</Text>
+                <View style={styles.adminKtaNumberRow}>
+                  <Text style={styles.adminKtaNumberText}>{relawanKta.noKta}</Text>
+                  <Pressable
+                    onPress={() => handleCopy(relawanKta.noKta, 'relawan')}
+                    style={({ pressed }) => [styles.adminCopyBtn, pressed && { opacity: 0.6 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Salin Nomor KTA"
+                  >
+                    <Feather
+                      name={copiedField === 'relawan' ? 'check' : 'copy'}
+                      size={12}
+                      color={copiedField === 'relawan' ? '#10B981' : '#94A3B8'}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+
+            {/* QR Code Card */}
+            <Pressable
+              onPress={() => setShowQrModal(true)}
+              style={({ pressed }) => [styles.adminQrContainer, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Perbesar QR Code"
+            >
+              <View style={styles.adminQrInnerBox}>
+                <QrPlaceholder seed={relawanKta.noKta} size={48} />
+              </View>
+              <Text style={styles.adminQrLabel}>VERIFIKASI QR</Text>
+            </Pressable>
+          </View>
+
+          {/* Bento Grid 2x2 Info (Sesuai Persis Tangkapan Layar Admin) */}
+          <View style={styles.adminBentoGrid}>
+            <View style={styles.adminBentoRow}>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>NAMA ANGGOTA</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{relawanKta.nama}</Text>
+              </View>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>JABATAN / ROLE</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{relawanKta.roleTitle}</Text>
+              </View>
+            </View>
+            <View style={styles.adminBentoRow}>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>UNIT PENUGASAN</Text>
+                <Text style={styles.adminBentoValue} numberOfLines={1}>{relawanKta.unitTugas}</Text>
+              </View>
+              <View style={styles.adminBentoTile}>
+                <Text style={styles.adminBentoLabel}>MASA BERLAKU</Text>
+                <Text style={styles.adminBentoValueMono} numberOfLines={1}>{relawanKta.masaBerlaku}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Card Footer Barcode & Legalitas */}
+          <View style={styles.adminCardFooter}>
+            <View style={styles.adminBarcodeGroup}>
               <View style={styles.barcodeLinesRow}>
                 {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 3].map((w, idx) => (
                   <View
                     key={idx}
                     style={{
                       width: w,
-                      height: 16,
+                      height: 14,
                       backgroundColor: '#FFFFFF',
                       marginRight: idx % 2 === 0 ? 1.5 : 2,
                     }}
                   />
                 ))}
               </View>
-              <Text style={styles.barcodeLabelText}>{relawanKta.barcodeClean}</Text>
+              <Text style={styles.adminBarcodeText}>{relawanKta.barcodeClean}</Text>
             </View>
 
-            <View style={styles.relawanBrandingWrap}>
-              <Text style={styles.relawanBrandTitle}>Saksi360</Text>
-              <View style={styles.relawanBrandDot} />
-              <Text style={styles.relawanBrandSub}>EDISI 2026</Text>
+            <View style={styles.adminBrandingWrap}>
+              <Text style={styles.adminBrandTitle}>Saksi360</Text>
+              <View style={styles.adminBrandDot} />
+              <Text style={styles.adminBrandSub}>EDISI 2026</Text>
             </View>
-
-            <Pressable
-              onPress={() => setShowQrModal(true)}
-              style={({ pressed }) => [styles.qrMock, pressed && { opacity: 0.8 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Perbesar QR Code KTA Relawan"
-            >
-              <QrPlaceholder seed={relawanKta.noKta} size={34} />
-            </Pressable>
           </View>
         </View>
       )}
@@ -329,10 +436,7 @@ export default function SimpanKtaScreen() {
         ))}
       </Card>
 
-      {/* =========================================================================
-          BANNER KADERISASI STRATEGIS (HANYA MUNCUL PADA MODE RELAWAN)
-          Menjelaskan perbedaan hak yuridis dan menyediakan jembatan konversi resmi
-         ========================================================================= */}
+      {/* Banner Konversi Kaderisasi */}
       {!isOfficialMember && (
         <Card
           style={{
@@ -416,95 +520,331 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   topStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
-  cardContainer: {
-    borderRadius: 18,
+
+  // =========================================================================
+  // GAYA SMARTCARD PRECISE MATCHING DENGAN SAKSI360-ADMIN (DARK OBSIDIAN THEME)
+  // =========================================================================
+  adminCardContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 20,
     borderWidth: 1.5,
-    padding: spacing.md,
-    gap: spacing.md,
+    borderColor: '#0A3D6B',
+    backgroundColor: '#030D1A',
+    padding: 16,
+    gap: 12,
     ...shadow.lg,
   },
-  cardHeader: {
+  adminCardWatermark: {
+    position: 'absolute',
+    top: -15,
+    right: -15,
+    width: 140,
+    height: 140,
+    opacity: 0.08,
+  },
+  adminCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(56, 189, 248, 0.2)',
+    paddingBottom: 12,
+  },
+  adminHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
-    paddingBottom: spacing.sm,
+    flex: 1,
+    minWidth: 0,
   },
-  ktaOrgTitle: { fontFamily: fonts.extraBold, fontSize: 13, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
-  ktaSubTitle: { fontFamily: fonts.semiBold, fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 },
-  ktaOrgAffiliation: { fontFamily: fonts.bold, fontSize: 8, fontWeight: '700', color: '#38BDF8', letterSpacing: 0.4, marginTop: 1 },
-  chipSimpan: {
+  adminLogoBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+    ...shadow.sm,
   },
-  chipText: { fontFamily: fonts.extraBold, fontSize: 10, fontWeight: '900', color: '#004F8A' },
-  nfcChipWrap: {
+  adminLogoImg: {
+    width: 36,
+    height: 36,
+  },
+  adminHeaderTitles: {
+    flex: 1,
+    minWidth: 0,
+  },
+  adminCardMainTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  adminCardSubTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.3,
+    marginTop: 1,
+  },
+  adminHeaderBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
+    gap: 5,
+    flexShrink: 0,
   },
-  nfcChipIcon: {
-    width: 14,
-    height: 10,
-    borderRadius: 2,
+  adminPanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    borderWidth: 1,
+    borderColor: '#1E3A8A',
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 8,
+  },
+  adminPanMiniLogo: {
+    width: 13,
+    height: 13,
+  },
+  adminPanBadgeText: {
+    fontFamily: fonts.extraBold,
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#38BDF8',
+    letterSpacing: 0.5,
+  },
+  adminStatusBadge: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+  },
+  adminStatusBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.4,
+  },
+
+  // Middle Row
+  adminCardMiddleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  adminPhotoAndInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  adminPhotoWrap: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  adminPhotoSquircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  adminOnlineDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#030D1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adminOnlinePulse: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#FFFFFF',
+  },
+  adminKtaDetails: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  adminNfcChipWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  adminNfcMicrochip: {
+    width: 18,
+    height: 12,
+    borderRadius: 2.5,
     backgroundColor: '#F59E0B',
+    borderWidth: 1,
+    borderColor: '#D97706',
     padding: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  nfcChipInner: {
-    width: 8,
-    height: 5,
+  adminNfcLines: {
+    width: 12,
+    height: 6,
+    borderWidth: 0.8,
+    borderColor: '#78350F',
     borderRadius: 1,
-    backgroundColor: '#B45309',
   },
-  nfcChipText: {
+  adminNfcChipText: {
     fontFamily: fonts.bold,
     fontSize: 8.5,
     fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  adminSimpanChipWrap: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  adminSimpanChipText: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#38BDF8',
+    letterSpacing: 0.4,
+  },
+  adminLabelKta: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.6,
+    marginTop: 3,
+  },
+  adminKtaNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  adminKtaNumberText: {
+    fontFamily: fonts.extraBold,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#38BDF8',
+    letterSpacing: 0.8,
+  },
+  adminCopyBtn: {
+    padding: 3,
+    borderRadius: 4,
+  },
+
+  // QR Container
+  adminQrContainer: {
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderRadius: 12,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  adminQrInnerBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 7,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminQrLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 7,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginTop: 2.5,
+  },
+
+  // Bento Grid
+  adminBentoGrid: {
+    gap: 6,
+    marginTop: 4,
+  },
+  adminBentoRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  adminBentoTile: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  adminBentoLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  adminBentoValue: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
+    marginTop: 1.5,
   },
-  cardBody: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  photoContainer: { alignItems: 'center', gap: 4 },
-  memberPhoto: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: '#FFFFFF' },
-  statusBadge: { backgroundColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  statusBadgeText: { fontFamily: fonts.bold, fontSize: 8, fontWeight: '800', color: '#FFFFFF' },
-  statusBadgeGreen: { backgroundColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  statusBadgeGreenText: { fontFamily: fonts.bold, fontSize: 8, fontWeight: '800', color: '#FFFFFF' },
-  memberInfo: { flex: 1, gap: 2 },
-  memberNoKta: { fontSize: 11, color: '#38BDF8', fontWeight: '800', fontFamily: fonts.bold },
-  memberName: { fontFamily: fonts.extraBold, fontSize: fontSize.md, fontWeight: '800', color: '#FFFFFF' },
-  detailRow: { flexDirection: 'row', gap: 4 },
-  detailLabel: { fontFamily: fonts.medium, fontSize: 10, color: 'rgba(255,255,255,0.7)', width: 68 },
-  detailVal: { fontFamily: fonts.semiBold, fontSize: 10, color: '#FFFFFF', fontWeight: '600', flex: 1 },
-  cardFooter: {
+  adminBentoValueMono: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 1.5,
+    letterSpacing: 0.5,
+  },
+
+  // Legal Row
+  adminLegalRow: {
+    paddingTop: 2,
+  },
+  adminLegalNote: {
+    fontFamily: fonts.regular,
+    fontSize: 8.5,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+
+  // Card Footer
+  adminCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
-    paddingTop: spacing.xs,
+    borderTopColor: 'rgba(56, 189, 248, 0.2)',
+    paddingTop: 8,
+    marginTop: 2,
   },
-  relawanFooterWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
-    paddingTop: spacing.xs,
-    gap: 8,
-  },
-  barcodeColumn: {
+  adminBarcodeGroup: {
     flexDirection: 'column',
     gap: 2,
   },
@@ -512,54 +852,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  barcodeLabelText: {
+  adminBarcodeText: {
     fontFamily: fonts.semiBold,
     fontSize: 7.5,
     color: 'rgba(255, 255, 255, 0.85)',
     letterSpacing: 1.2,
   },
-  relawanBrandingWrap: {
+  adminBrandingWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  relawanBrandTitle: {
+  adminBrandTitle: {
     fontFamily: fonts.bold,
     fontSize: 9,
     color: 'rgba(255, 255, 255, 0.9)',
     letterSpacing: 0.4,
   },
-  relawanBrandDot: {
+  adminBrandDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
-  relawanBrandSub: {
+  adminBrandSub: {
     fontFamily: fonts.extraBold,
     fontSize: 8.5,
     color: '#38BDF8',
     letterSpacing: 0.5,
   },
-  kaderSignaturesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
-    paddingBottom: 2,
-  },
-  footerNote: { fontFamily: fonts.regular, fontSize: 9, color: 'rgba(255,255,255,0.75)' },
-  qrMock: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
+
+  // Supplementary details
   actionBtnRow: {
     flexDirection: 'row',
     gap: spacing.sm,
