@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  BackHandler,
   Image,
   ImageBackground,
   KeyboardAvoidingView,
@@ -11,14 +12,18 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { Card, ConfirmDialog, Input, Pill, PrimaryButton } from '../components/ui';
+import { Card, ConfirmDialog, Input, Modal, Pill, PrimaryButton } from '../components/ui';
 import { fonts, fontSize, iconStrokeWidth, radius, shadow, spacing } from '../theme';
 import { BRAND_ASSETS, getWitnessAvatar } from '../data/images';
 import { pickImage } from '../utils/pickImage';
 import { scanKtpWithVisionAi } from '../utils/ocrApi';
+import QrPlaceholder from '../components/QrPlaceholder';
 
 type RegisterStep = 'scan' | 'verify' | 'completed';
 
@@ -26,7 +31,10 @@ const OCR_STEPS = ['Pindai KTP', 'Validasi Relawan', 'Digital ID Terbit'];
 
 export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
   const { colors, isDark } = useTheme();
-  const { login } = useApp();
+  const { login, loggedIn } = useApp();
+  const insets = useSafeAreaInsets();
+  const navigationHook = useNavigation<any>();
+  const nav = navigation || navigationHook;
 
   const [step, setStep] = useState<RegisterStep>('scan');
   const [isScanning, setIsScanning] = useState(false);
@@ -48,13 +56,20 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
   const [posko, setPosko] = useState('Posko Pemenangan Coblong / Dago Atas');
   const [minatKeahlian, setMinatKeahlian] = useState('Pengawalan Warga & Suara TPS');
 
-  // Generated Volunteer ID
+  // Generated Volunteer ID & UI State
   const [volunteerId, setVolunteerId] = useState('');
+  const [copiedField, setCopiedField] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [dialogConfig, setDialogConfig] = useState<{
     visible: boolean;
     title: string;
     message: string;
     tone?: 'danger' | 'primary' | 'warning' | 'success' | 'info';
+    singleButton?: boolean;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
   }>({ visible: false, title: '', message: '' });
 
   // Scanning animation
@@ -128,9 +143,14 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
       return;
     }
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const generatedId = `REL-3273-2024-${randomSuffix}`;
+    const generatedId = `KTA-3273-2024-${randomSuffix}`;
     setVolunteerId(generatedId);
     setStep('completed');
+  };
+
+  const handleCopyKta = () => {
+    setCopiedField(true);
+    setTimeout(() => setCopiedField(false), 2000);
   };
 
   // Pendaftar baru masuk sebagai relawan yang belum terverifikasi (akun demo Nadia),
@@ -139,19 +159,170 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
     login('VOLUNTEER', 'relawan.baru@pan.go.id');
   };
 
-  const handleBack = () => {
+  const isExitingRef = useRef(false);
+
+  const handleExitToLogin = () => {
+    isExitingRef.current = true;
     if (onBack) {
       onBack();
-    } else if (navigation?.goBack) {
-      navigation.goBack();
+    } else if (nav?.canGoBack?.() || nav?.goBack) {
+      nav.goBack();
     }
   };
+
+  const handleBack = () => {
+    // Jika sedang di Step 2 (Verifikasi/Form), kembali ke Step 1 (Pindai KTP)
+    if (step === 'verify') {
+      setStep('scan');
+      return;
+    }
+
+    // Jika sedang di Step 1 dan sudah ada data KTP pindaian/input, konfirmasi sebelum batal
+    if (step === 'scan' && (photoUri || nik || nama)) {
+      setDialogConfig({
+        visible: true,
+        title: 'Batalkan Pendaftaran?',
+        message: 'Data pendaftaran relawan yang telah dimasukkan akan dibatalkan.',
+        tone: 'danger',
+        singleButton: false,
+        confirmLabel: 'Ya, Keluar',
+        cancelLabel: 'Batal',
+        onConfirm: () => {
+          isExitingRef.current = true;
+          setDialogConfig((prev) => ({ ...prev, visible: false }));
+          handleExitToLogin();
+        },
+        onCancel: () => {
+          setDialogConfig((prev) => ({ ...prev, visible: false }));
+        },
+      });
+      return;
+    }
+
+    // Step 3 (Completed) atau Step 1 bersih langsung keluar ke login
+    handleExitToLogin();
+  };
+
+  // React Navigation beforeRemove Listener (Menangkap hardware back, edge swipe gesture, predictive back)
+  useEffect(() => {
+    if (!nav?.addListener) return;
+
+    return nav.addListener('beforeRemove', (e: any) => {
+      // Jika keluar sudah disetujui, biarkan aksi default navigasi berjalan
+      if (isExitingRef.current) {
+        return;
+      }
+
+      // Jika sedang di Step 2 (Verifikasi/Form), tahan dan kembali ke Step 1 (Pindai KTP)
+      if (step === 'verify') {
+        e.preventDefault();
+        setStep('scan');
+        return;
+      }
+
+      // Jika sedang di Step 1 dan ada data KTP pindaian/input, tahan dan minta konfirmasi
+      if (step === 'scan' && (photoUri || nik || nama)) {
+        e.preventDefault();
+        setDialogConfig({
+          visible: true,
+          title: 'Batalkan Pendaftaran?',
+          message: 'Data pendaftaran relawan yang telah dimasukkan akan dibatalkan.',
+          tone: 'danger',
+          singleButton: false,
+          confirmLabel: 'Ya, Keluar',
+          cancelLabel: 'Batal',
+          onConfirm: () => {
+            isExitingRef.current = true;
+            setDialogConfig((prev) => ({ ...prev, visible: false }));
+            nav.dispatch(e.data.action);
+          },
+          onCancel: () => {
+            setDialogConfig((prev) => ({ ...prev, visible: false }));
+          },
+        });
+        return;
+      }
+
+      // Step 3 (Completed) atau Step 1 kosong: biarkan action default berjalan (pop ke Login)
+    });
+  }, [nav, step, photoUri, nik, nama]);
+
+  // Hardware Back Button fallback listener (Android)
+  useEffect(() => {
+    const onHardwareBack = () => {
+      handleBack();
+      return true;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, [step, photoUri, nik, nama, onBack, nav]);
+
+  // Web Browser Back Button support (popstate)
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handlePopState = () => {
+        if (step === 'verify') {
+          window.history.pushState({ step: 'verify' }, '');
+          setStep('scan');
+        } else {
+          handleExitToLogin();
+        }
+      };
+
+      window.history.pushState({ step }, '');
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [step, photoUri, nik, nama, onBack, nav]);
+
+  const backButtonLabel =
+    step === 'verify'
+      ? 'Kembali ke Pindai KTP'
+      : loggedIn
+      ? 'Kembali'
+      : 'Kembali ke Login';
+
+  const displayKtaNo = (volunteerId || 'KTA-3273-2024-0018').replace(/^REL-/, 'KTA-');
+  const barcodeClean = `*${displayKtaNo.replace(/[^A-Z0-9]/g, '')}*`;
 
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style={isDark ? 'light' : 'dark'} animated />
+
+      {/* Top Header Bar dengan Navigasi Berjenjang */}
+      <View
+        style={[
+          styles.headerBar,
+          {
+            backgroundColor: colors.surface,
+            borderBottomColor: colors.border,
+            paddingTop: Math.max(insets.top, 14),
+          },
+        ]}
+      >
+        <Pressable
+          onPress={handleBack}
+          style={({ pressed }) => [
+            styles.backBtn,
+            pressed && { opacity: 0.7 },
+            Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+          ]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel={backButtonLabel}
+        >
+          <Feather name="arrow-left" size={20} color={colors.text} strokeWidth={iconStrokeWidth} />
+          <Text style={[styles.backBtnText, { color: colors.text }]}>{backButtonLabel}</Text>
+        </Pressable>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Header Title */}
         <View style={styles.header}>
@@ -407,43 +578,134 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
               </Text>
             </View>
 
-            {/* Kartu Digital ID Relawan */}
-            <View style={styles.volunteerCard}>
-              <View style={styles.volunteerCardHeader}>
-                <Image source={BRAND_ASSETS.official} style={{ width: 38, height: 38 }} resizeMode="contain" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.volunteerCardParty}>PARTAI AMANAT NASIONAL</Text>
-                  <Text style={styles.volunteerCardSubtitle}>KARTU TANDA RELAWAN DIGITAL</Text>
+            {/* KTA DIGITAL RELAWAN (PROPORSI KARTU FISIK ASLI ISO/IEC 7810 ID-1 1.58:1) */}
+            <View style={styles.adminCardContainer}>
+              {/* Watermark Logo PAN Transparan di Sudut Kanan Atas */}
+              <Image source={BRAND_ASSETS.official} style={styles.adminCardWatermark} resizeMode="contain" />
+
+              {/* Top Header Card */}
+              <View style={styles.adminCardHeader}>
+                <View style={styles.adminHeaderLeft}>
+                  <View style={styles.adminLogoBox}>
+                    <Image source={BRAND_ASSETS.official} style={styles.adminLogoImg} resizeMode="contain" />
+                  </View>
+                  <View style={styles.adminHeaderTitles}>
+                    <Text style={styles.adminCardMainTitle} numberOfLines={1}>KARTU TANDA ANGGOTA RELAWAN</Text>
+                    <Text style={styles.adminCardSubTitle} numberOfLines={1}>PARTAI AMANAT NASIONAL · BSN SAKSI360</Text>
+                  </View>
                 </View>
-                <View style={styles.volunteerBadge}>
-                  <Text style={styles.volunteerBadgeText}>RELAWAN</Text>
+
+                <View style={styles.adminHeaderBadges}>
+                  <View style={styles.adminPanBadge}>
+                    <Image source={BRAND_ASSETS.official} style={styles.adminPanMiniLogo} resizeMode="contain" />
+                    <Text style={styles.adminPanBadgeText}>PAN</Text>
+                  </View>
+                  <View style={styles.adminStatusBadge}>
+                    <Text style={styles.adminStatusBadgeText}>AKTIF & SAH</Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.volunteerCardBody}>
-                <View style={styles.volunteerAvatarWrap}>
-                  {photoUri ? (
-                    <Image source={{ uri: photoUri }} style={{ width: '100%', height: '100%', borderRadius: radius.sm }} />
-                  ) : (
-                    <Image source={getWitnessAvatar(2)} style={{ width: '100%', height: '100%', borderRadius: radius.sm }} />
-                  )}
+              {/* Card Middle: Foto Squircle + Chip NFC + No KTA + QR Code */}
+              <View style={styles.adminCardMiddleRow}>
+                <View style={styles.adminPhotoAndInfo}>
+                  <View style={styles.adminPhotoWrap}>
+                    <Image
+                      source={photoUri ? { uri: photoUri } : getWitnessAvatar(2)}
+                      style={styles.adminPhotoSquircle}
+                    />
+                    <View style={styles.adminOnlineDot}>
+                      <View style={styles.adminOnlinePulse} />
+                    </View>
+                  </View>
+
+                  <View style={styles.adminKtaDetails}>
+                    <View style={styles.adminNfcChipWrap}>
+                      <View style={styles.adminNfcMicrochip}>
+                        <View style={styles.adminNfcLines} />
+                      </View>
+                      <Text style={styles.adminNfcChipText}>NFC SMARTPASS</Text>
+                    </View>
+                    <Text style={styles.adminLabelKta}>NOMOR ANGGOTA KTA</Text>
+                    <View style={styles.adminKtaNumberRow}>
+                      <Text style={styles.adminKtaNumberText} numberOfLines={1}>{displayKtaNo}</Text>
+                      <Pressable
+                        onPress={handleCopyKta}
+                        style={({ pressed }) => [styles.adminCopyBtn, pressed && { opacity: 0.6 }]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Salin Nomor KTA"
+                      >
+                        <Feather
+                          name={copiedField ? 'check' : 'copy'}
+                          size={11}
+                          color={copiedField ? '#10B981' : '#94A3B8'}
+                        />
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={styles.volunteerIdNum}>{volunteerId || 'REL-3273-2024-0018'}</Text>
-                  <Text style={styles.volunteerName}>{nama || 'SITI RAHMAWATI'}</Text>
-                  <Text style={styles.volunteerMeta}>Domisili: {kecamatan}, {kota}</Text>
-                  <Text style={styles.volunteerMeta}>Posko: {posko}</Text>
-                  <Text style={styles.volunteerMetaHighlight}>Fokus: {minatKeahlian}</Text>
+
+                {/* QR Code Card */}
+                <Pressable
+                  onPress={() => setShowQrModal(true)}
+                  style={({ pressed }) => [styles.adminQrContainer, pressed && { opacity: 0.85 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Perbesar QR Code"
+                >
+                  <View style={styles.adminQrInnerBox}>
+                    <QrPlaceholder seed={displayKtaNo} size={38} />
+                  </View>
+                  <Text style={styles.adminQrLabel}>VERIFIKASI QR</Text>
+                </Pressable>
+              </View>
+
+              {/* Bento Grid 2x2 Info (Sesuai Persis Tangkapan Layar Admin) */}
+              <View style={styles.adminBentoGrid}>
+                <View style={styles.adminBentoRow}>
+                  <View style={styles.adminBentoTile}>
+                    <Text style={styles.adminBentoLabel}>NAMA ANGGOTA</Text>
+                    <Text style={styles.adminBentoValue} numberOfLines={1}>{nama || 'SITI RAHMAWATI'}</Text>
+                  </View>
+                  <View style={styles.adminBentoTile}>
+                    <Text style={styles.adminBentoLabel}>JABATAN / ROLE</Text>
+                    <Text style={styles.adminBentoValue} numberOfLines={1}>Relawan Penggerak Posko</Text>
+                  </View>
+                </View>
+                <View style={styles.adminBentoRow}>
+                  <View style={styles.adminBentoTile}>
+                    <Text style={styles.adminBentoLabel}>UNIT PENUGASAN</Text>
+                    <Text style={styles.adminBentoValueSmall} numberOfLines={1}>{posko || 'Posko Kel. Dago, Kec. Coblong'}</Text>
+                  </View>
+                  <View style={styles.adminBentoTile}>
+                    <Text style={styles.adminBentoLabel}>MASA BERLAKU</Text>
+                    <Text style={styles.adminBentoValueMono} numberOfLines={1}>31 DESEMBER 2026</Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.volunteerCardFooter}>
-                <View style={styles.qrBox}>
-                  <Feather name="grid" size={28} color="#0369A1" />
+              {/* Card Footer Barcode & Legalitas */}
+              <View style={styles.adminCardFooter}>
+                <View style={styles.adminBarcodeGroup}>
+                  <View style={styles.barcodeLinesRow}>
+                    {[2, 1, 3, 1, 2, 4, 1, 2, 3, 1, 2, 1, 3, 2, 1, 4, 2, 1, 3, 1, 2, 3].map((w, idx) => (
+                      <View
+                        key={idx}
+                        style={{
+                          width: w,
+                          height: 10,
+                          backgroundColor: '#FFFFFF',
+                          marginRight: idx % 2 === 0 ? 1 : 1.5,
+                        }}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.adminBarcodeText}>{barcodeClean}</Text>
                 </View>
-                <View style={{ flex: 1, alignItems: 'flex-end', gap: 1 }}>
-                  <Text style={styles.footerNote}>Menunggu verifikasi tim pusat</Text>
-                  <Text style={styles.footerDate}>Terdaftar: {new Date().toLocaleDateString('id-ID')}</Text>
+
+                <View style={styles.adminBrandingWrap}>
+                  <Text style={styles.adminBrandTitle}>Saksi360</Text>
+                  <View style={styles.adminBrandDot} />
+                  <Text style={styles.adminBrandSub}>EDISI 2026</Text>
                 </View>
               </View>
             </View>
@@ -478,16 +740,65 @@ export default function RegisterVolunteerScreen({ navigation, onBack }: any) {
         title={dialogConfig.title}
         message={dialogConfig.message}
         tone={dialogConfig.tone || 'info'}
-        singleButton
-        confirmLabel="OK"
-        onConfirm={() => setDialogConfig((prev) => ({ ...prev, visible: false }))}
+        singleButton={dialogConfig.singleButton ?? true}
+        confirmLabel={dialogConfig.confirmLabel || 'OK'}
+        cancelLabel={dialogConfig.cancelLabel || 'Batal'}
+        onConfirm={dialogConfig.onConfirm || (() => setDialogConfig((prev) => ({ ...prev, visible: false })))}
+        onCancel={dialogConfig.onCancel || (() => setDialogConfig((prev) => ({ ...prev, visible: false })))}
       />
+
+      {/* Modal Zoom QR Code */}
+      <Modal visible={showQrModal} onClose={() => setShowQrModal(false)} title="Kode QR Verifikasi Relawan">
+        <View style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm }}>
+          <View style={[styles.qrModalBox, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+            <QrPlaceholder seed={displayKtaNo} size={180} />
+          </View>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.sm, fontWeight: '800', color: colors.text }}>
+              {nama || 'SITI RAHMAWATI'}
+            </Text>
+            <Text style={{ fontFamily: fonts.bold, fontSize: fontSize.xs, color: '#0284C7', fontWeight: '800' }}>
+              {displayKtaNo}
+            </Text>
+            <Pill
+              label="Relawan Sah & Aktif BSN"
+              tone="success"
+              icon="check-circle"
+              style={{ marginTop: 4 }}
+            />
+          </View>
+          <PrimaryButton
+            label="Tutup"
+            icon="x"
+            variant="secondary"
+            style={{ width: '100%', marginTop: spacing.xs }}
+            onPress={() => setShowQrModal(false)}
+          />
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  headerBar: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+  },
+  backBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+  },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
   header: { gap: 4 },
   title: { fontFamily: fonts.extraBold, fontSize: fontSize.lg },
@@ -554,37 +865,351 @@ const styles = StyleSheet.create({
   celebrationIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   celebrationTitle: { fontFamily: fonts.extraBold, fontSize: fontSize.lg },
   celebrationSub: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', lineHeight: 17, maxWidth: 280 },
-  volunteerCard: {
-    backgroundColor: '#0369A1',
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    gap: spacing.sm,
+  // GAYA SMARTCARD DENGAN PROPORSI STANDAR KARTU IDENTITAS ISO/IEC 7810 ID-1 (1.58:1)
+  adminCardContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#38BDF8',
-    ...shadow.card,
+    borderColor: '#0A3D6B',
+    backgroundColor: '#030D1A',
+    padding: 12,
+    aspectRatio: 1.58, // Standar rasio kartu fisik (85.6mm x 53.98mm = 1.586 : 1)
+    justifyContent: 'space-between',
+    ...shadow.lg,
   },
-  volunteerCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.2)', paddingBottom: 8 },
-  volunteerCardParty: { fontFamily: fonts.extraBold, fontSize: 12, color: '#FFFFFF', letterSpacing: 0.5 },
-  volunteerCardSubtitle: { fontFamily: fonts.bold, fontSize: 8.5, color: '#BAE6FD' },
-  volunteerBadge: { backgroundColor: '#0284C7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#7DD3FC' },
-  volunteerBadgeText: { fontFamily: fonts.extraBold, fontSize: 9, color: '#FFFFFF' },
-  volunteerCardBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
-  volunteerAvatarWrap: { width: 56, height: 68, borderRadius: radius.sm, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  volunteerIdNum: { fontFamily: fonts.extraBold, fontSize: 12, color: '#7DD3FC', letterSpacing: 0.5 },
-  volunteerName: { fontFamily: fonts.bold, fontSize: 13, color: '#FFFFFF' },
-  volunteerMeta: { fontFamily: fonts.medium, fontSize: 9.5, color: 'rgba(255,255,255,0.85)' },
-  volunteerMetaHighlight: { fontFamily: fonts.bold, fontSize: 9.5, color: '#E0F2FE' },
-  volunteerCardFooter: {
+  adminCardWatermark: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    width: 110,
+    height: 110,
+    opacity: 0.08,
+  },
+  adminCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(56, 189, 248, 0.2)',
+    paddingBottom: 6,
+  },
+  adminHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  adminLogoBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 2,
+    ...shadow.sm,
+  },
+  adminLogoImg: {
+    width: 26,
+    height: 26,
+  },
+  adminHeaderTitles: {
+    flex: 1,
+    minWidth: 0,
+  },
+  adminCardMainTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  adminCardSubTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.2,
+    marginTop: 1,
+  },
+  adminHeaderBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  adminPanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(2, 6, 23, 0.85)',
+    borderWidth: 1,
+    borderColor: '#1E3A8A',
+    paddingHorizontal: 5,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  adminPanMiniLogo: {
+    width: 10,
+    height: 10,
+  },
+  adminPanBadgeText: {
+    fontFamily: fonts.extraBold,
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: '#38BDF8',
+    letterSpacing: 0.4,
+  },
+  adminStatusBadge: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  adminStatusBadgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+
+  // Middle Row
+  adminCardMiddleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  adminPhotoAndInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  adminPhotoWrap: {
+    position: 'relative',
+    flexShrink: 0,
+  },
+  adminPhotoSquircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  adminOnlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    backgroundColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#030D1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adminOnlinePulse: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  adminKtaDetails: {
+    flex: 1,
+    minWidth: 0,
+    gap: 0.5,
+  },
+  adminNfcChipWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  adminNfcMicrochip: {
+    width: 15,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: '#F59E0B',
+    borderWidth: 0.8,
+    borderColor: '#D97706',
+    padding: 0.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adminNfcLines: {
+    width: 10,
+    height: 5,
+    borderWidth: 0.6,
+    borderColor: '#78350F',
+    borderRadius: 0.5,
+  },
+  adminNfcChipText: {
+    fontFamily: fonts.bold,
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.4,
+  },
+  adminLabelKta: {
+    fontFamily: fonts.bold,
+    fontSize: 7,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginTop: 1.5,
+  },
+  adminKtaNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  adminKtaNumberText: {
+    fontFamily: fonts.extraBold,
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#38BDF8',
+    letterSpacing: 0.5,
+  },
+  adminCopyBtn: {
+    padding: 2,
+    borderRadius: 3,
+  },
+
+  // QR Container
+  adminQrContainer: {
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderRadius: 8,
+    padding: 3.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  adminQrInnerBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    padding: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminQrLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 6.5,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 0.4,
+    marginTop: 2,
+  },
+
+  // Bento Grid
+  adminBentoGrid: {
+    gap: 3.5,
+  },
+  adminBentoRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  adminBentoTile: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+  },
+  adminBentoLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 6.8,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.4,
+  },
+  adminBentoValue: {
+    fontFamily: fonts.bold,
+    fontSize: 9.8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 1,
+  },
+  adminBentoValueSmall: {
+    fontFamily: fonts.semiBold,
+    fontSize: 8.8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 1,
+  },
+  adminBentoValueMono: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 1,
+    letterSpacing: 0.4,
+  },
+
+  // Card Footer
+  adminCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
-    paddingTop: 8,
+    borderTopColor: 'rgba(56, 189, 248, 0.2)',
+    paddingTop: 5,
   },
-  qrBox: { width: 40, height: 40, borderRadius: 4, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  footerNote: { fontFamily: fonts.bold, fontSize: 9, color: '#FFFFFF' },
-  footerDate: { fontFamily: fonts.regular, fontSize: 8, color: 'rgba(255,255,255,0.75)' },
+  adminBarcodeGroup: {
+    flexDirection: 'column',
+    gap: 1,
+  },
+  barcodeLinesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  adminBarcodeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 6.5,
+    color: 'rgba(255, 255, 255, 0.85)',
+    letterSpacing: 1,
+  },
+  adminBrandingWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  adminBrandTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.9)',
+    letterSpacing: 0.3,
+  },
+  adminBrandDot: {
+    width: 2.5,
+    height: 2.5,
+    borderRadius: 1.5,
+    backgroundColor: '#38BDF8',
+  },
+  adminBrandSub: {
+    fontFamily: fonts.bold,
+    fontSize: 7.5,
+    color: '#38BDF8',
+    letterSpacing: 0.5,
+  },
+  qrModalBox: {
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   registerOtherBtn: { alignItems: 'center', paddingVertical: 8 },
   registerOtherText: { fontFamily: fonts.bold, fontSize: fontSize.xs },
 });

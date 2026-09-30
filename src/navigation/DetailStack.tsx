@@ -101,7 +101,7 @@ const DETAIL_SCREENS: Array<{ name: string; component: React.ComponentType<any>;
   { name: 'SimpanBacaleg', component: SimpanBacalegScreen, title: 'Pendaftaran Bacaleg simPAN' },
   { name: 'SimpanNews', component: SimpanNewsScreen, title: 'Berita & Instruksi' },
   { name: 'RegisterMember', component: RegisterMemberScreen, title: 'Daftar Anggota' },
-  { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Daftar Relawan' },
+  { name: 'RegisterVolunteer', component: RegisterVolunteerScreen, title: 'Daftar Relawan', headerShown: false },
   { name: 'NominateVolunteer', component: NominateVolunteerScreen, title: 'Ajak Relawan' },
   { name: 'WitnessAcademy', component: WitnessAcademyScreen, title: 'Pelatihan Saksi' },
   { name: 'WitnessLesson', component: WitnessLessonScreen, title: 'Materi Pelatihan' },

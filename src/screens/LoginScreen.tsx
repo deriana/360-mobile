@@ -35,7 +35,7 @@ const QUICK_LOGIN_CATEGORIES: QuickLoginCategory[] = [
   { key: 'anggota', label: 'Anggota', fullLabel: 'Kader & Anggota Partai (simPAN)', icon: 'user-check', accounts: MEMBER_ACCOUNTS },
 ];
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }: any) {
   const { login } = useApp();
   const { colors, shadow, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -64,15 +64,7 @@ export default function LoginScreen() {
   if (showRegisterScreen) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={[styles.registerHeaderBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <Pressable
-            onPress={() => setShowRegisterScreen(false)}
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Feather name="arrow-left" size={20} color={colors.text} />
-            <Text style={[styles.backBtnText, { color: colors.text }]}>Kembali ke Login</Text>
-          </Pressable>
-        </View>
+        <StatusBar style={isDark ? 'light' : 'dark'} animated />
         <RegisterVolunteerScreen onBack={() => setShowRegisterScreen(false)} />
       </View>
     );
@@ -154,7 +146,13 @@ export default function LoginScreen() {
 
           {/* Tombol Pendaftaran Relawan AI Scan KTP */}
           <Pressable
-            onPress={() => setShowRegisterScreen(true)}
+            onPress={() => {
+              if (navigation?.navigate) {
+                navigation.navigate('RegisterVolunteer');
+              } else {
+                setShowRegisterScreen(true);
+              }
+            }}
             style={({ pressed }) => [
               styles.registerBannerBtn,
               { backgroundColor: isDark ? 'rgba(2,132,199,0.15)' : '#E0F2FE', borderColor: '#0284C7' },
@@ -323,23 +321,6 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontFamily: fonts.bold, fontSize: fontSize.xs, fontWeight: '700' },
   footnote: { fontFamily: fonts.regular, fontSize: fontSize.xs, textAlign: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.md },
-  registerHeaderBar: {
-    paddingTop: 48,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 6,
-  },
-  backBtnText: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-  },
   registerBannerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
