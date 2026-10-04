@@ -615,7 +615,7 @@ export default function CheckInScreen({ route, navigation }: any) {
           >
             <Feather name="calendar" size={14} color={targetType === 'event' ? '#FFFFFF' : colors.textMuted} />
             <Text style={[styles.targetText, { color: targetType === 'event' ? '#FFFFFF' : colors.textMuted }]} numberOfLines={1}>
-              Event & Giat
+              Event
             </Text>
           </Pressable>
 
